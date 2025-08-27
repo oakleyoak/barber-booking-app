@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Calendar, Clock, User, Phone, Mail, Save, X } from 'lucide-react';
 import { UserManagementService } from '../services/userManagementService';
+import { SERVICES, ServicePricingService } from '../services/servicePricing';
 import { supabase } from '../lib/supabase';
 
 interface Staff {
@@ -51,15 +52,8 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
   ];
 
-  // Service options with Turkish pricing
-  const services = [
-    { name: 'Haircut', duration: 30, price: 200 },
-    { name: 'Beard Trim', duration: 20, price: 150 },
-    { name: 'Hair + Beard', duration: 45, price: 300 },
-    { name: 'Hair Wash', duration: 15, price: 100 },
-    { name: 'Styling', duration: 25, price: 180 },
-    { name: 'Full Service', duration: 60, price: 400 }
-  ];
+  // Use the same service options as BookingCalendar
+  const serviceOptions = SERVICES;
 
   // Load staff members when component mounts
   useEffect(() => {
@@ -82,18 +76,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     
     loadStaff();
   }, [currentUser.shop_name]);
-
-  // Handle service selection
-  const handleServiceChange = (serviceName: string) => {
-    const service = services.find(s => s.name === serviceName);
-    if (service) {
-      setBookingData(prev => ({
-        ...prev,
-        service_type: serviceName,
-        amount: service.price
-      }));
-    }
-  };
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -220,12 +202,19 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                 <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
                 <select
                   value={bookingData.service_type}
-                  onChange={(e) => handleServiceChange(e.target.value)}
+                  onChange={(e) => {
+                    const service = serviceOptions.find(s => s.name === e.target.value);
+                    setBookingData(prev => ({
+                      ...prev,
+                      service_type: e.target.value,
+                      amount: service?.price || 200
+                    }));
+                  }}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
-                  {services.map(service => (
+                  {serviceOptions.map(service => (
                     <option key={service.name} value={service.name}>
-                      {service.name} - ₺{service.price} ({service.duration}min)
+                      {ServicePricingService.formatServiceDisplay(service)}
                     </option>
                   ))}
                 </select>
