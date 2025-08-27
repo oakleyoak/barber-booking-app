@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, Edit2 } from 'lucide-react';
+import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, Edit2, Search, Filter, Phone, Mail, CreditCard, FileText, CheckSquare, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 
@@ -9,10 +9,24 @@ interface Booking {
   service: string;
   price: number;
   date: string;
+  time?: string;
   user_id: string;
   customer_id: string;
+  status: string;
+  payment_status?: string;
+  notes?: string;
   users?: {
     name: string;
+  };
+}
+
+interface BookingManagementProps {
+  currentUser: {
+    id?: string;
+    name: string;
+    email: string;
+    role: string;
+    shop_name: string;
   };
 }
 
@@ -29,15 +43,20 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'today'>('all');
+  const [filter, setFilter] = useState<'all' | 'today' | 'upcoming' | 'completed' | 'cancelled'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [editForm, setEditForm] = useState({
     customer_name: '',
     service: '',
     price: 0,
     date: '',
     time: '',
-    status: 'scheduled'
+    status: 'scheduled',
+    payment_status: 'unpaid',
+    notes: ''
   });
 
   // Load bookings
@@ -53,7 +72,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .order('date', { ascending: true });
 
       // If not owner, only show own bookings
-      if (currentUser.role !== 'owner') {
+      if (currentUser.role !== 'owner' && currentUser.role !== 'Owner') {
         query = query.eq('user_id', currentUser.id);
       }
 
@@ -73,21 +92,25 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   }, [currentUser.id]);
 
   // Delete booking
-  const deleteBooking = async (bookingId: string) => {
-    if (!confirm('Are you sure you want to delete this booking?')) {
-      return;
-    }
+  const deleteBooking = (booking: Booking) => {
+    setBookingToDelete(booking);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteBooking = async () => {
+    if (!bookingToDelete) return;
 
     try {
       const { error } = await supabase
         .from('bookings')
         .delete()
-        .eq('id', bookingId);
+        .eq('id', bookingToDelete.id);
 
       if (error) throw error;
 
       loadBookings();
-      alert('Booking deleted successfully!');
+      setShowDeleteModal(false);
+      setBookingToDelete(null);
     } catch (error) {
       console.error('Error deleting booking:', error);
       alert('Failed to delete booking');
@@ -102,14 +125,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       service: booking.service,
       price: booking.price,
       date: booking.date.split('T')[0],
-      time: booking.date.split('T')[1]?.slice(0, 5) || '09:00',
-      status: 'scheduled'
+      time: booking.time || booking.date.split('T')[1]?.slice(0, 5) || '09:00',
+      status: booking.status || 'scheduled',
+      payment_status: booking.payment_status || 'unpaid',
+      notes: booking.notes || ''
     });
   };
 
   const saveEdit = async () => {
     if (!editingBooking) return;
-    
+
     try {
       const { error } = await supabase
         .from('bookings')
@@ -119,7 +144,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           price: editForm.price,
           date: editForm.date,
           time: editForm.time,
-          status: editForm.status
+          status: editForm.status,
+          payment_status: editForm.payment_status,
+          notes: editForm.notes
         })
         .eq('id', editingBooking.id);
 
@@ -127,7 +154,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       setEditingBooking(null);
       loadBookings();
-      alert('Booking updated successfully!');
     } catch (error) {
       console.error('Error updating booking:', error);
       alert('Failed to update booking');
@@ -142,16 +168,69 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       price: 0,
       date: '',
       time: '',
-      status: 'scheduled'
+      status: 'scheduled',
+      payment_status: 'unpaid',
+      notes: ''
     });
   };
 
+  // Quick status update functions
+  const updateBookingStatus = async (bookingId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+      loadBookings();
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      alert('Failed to update booking status');
+    }
+  };
+
+  const updatePaymentStatus = async (bookingId: string, payment_status: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ payment_status })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+      loadBookings();
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      alert('Failed to update payment status');
+    }
+  };
   // Filter bookings
   const filteredBookings = bookings.filter(booking => {
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        booking.customer_name.toLowerCase().includes(query) ||
+        booking.service.toLowerCase().includes(query) ||
+        (booking.users?.name || '').toLowerCase().includes(query);
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
     if (filter === 'all') return true;
     if (filter === 'today') {
       const today = new Date().toISOString().split('T')[0];
       return booking.date.split('T')[0] === today;
+    }
+    if (filter === 'upcoming') {
+      const today = new Date().toISOString().split('T')[0];
+      return booking.date.split('T')[0] >= today && booking.status === 'scheduled';
+    }
+    if (filter === 'completed') {
+      return booking.status === 'completed';
+    }
+    if (filter === 'cancelled') {
+      return booking.status === 'cancelled';
     }
     return true;
   });
@@ -189,19 +268,44 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         <p className="text-gray-600">Manage appointment status and payments</p>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="relative">
+          <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search by customer name, service, or barber..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+          />
+        </div>
+        {searchQuery && (
+          <div className="mt-2 text-sm text-gray-600">
+            Found {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
+          </div>
+        )}
+      </div>
+
       {/* Filter buttons */}
-      <div className="mb-6 flex space-x-2">
-        {['all', 'today'].map((filterOption) => (
+      <div className="mb-6 flex flex-wrap gap-2">
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'today', label: 'Today' },
+          { key: 'upcoming', label: 'Upcoming' },
+          { key: 'completed', label: 'Completed' },
+          { key: 'cancelled', label: 'Cancelled' }
+        ].map((filterOption) => (
           <button
-            key={filterOption}
-            onClick={() => setFilter(filterOption as any)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${
-              filter === filterOption
+            key={filterOption.key}
+            onClick={() => setFilter(filterOption.key as any)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap ${
+              filter === filterOption.key
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {filterOption.charAt(0).toUpperCase() + filterOption.slice(1)}
+            {filterOption.label}
           </button>
         ))}
       </div>
@@ -215,52 +319,183 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           </div>
         ) : (
           filteredBookings.map((booking) => (
-            <div key={booking.id} className="bg-white border border-gray-200 rounded-lg p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-4 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      {booking.customer_name}
-                    </h3>
+            <div key={booking.id} className="bg-white border border-gray-200 rounded-lg p-4 md:p-6 hover:shadow-md transition-shadow">
+              {/* Mobile Layout */}
+              <div className="block md:hidden">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 text-lg">{booking.customer_name}</h3>
+                    <p className="text-sm text-gray-600">{booking.service} - ₺{booking.price}</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      Service: {booking.service}
-                    </div>
-                    <div className="flex items-center">
-                      <DollarSign className="h-4 w-4 mr-2" />
-                      Price: ₺{booking.price}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="h-4 w-4 mr-2" />
-                      Date: {new Date(booking.date).toLocaleString()}
-                    </div>
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      Barber: {booking.users?.name || 'Unknown'}
-                    </div>
+                  <div className="flex flex-col gap-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                      {booking.status}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentColor(booking.payment_status || 'unpaid')}`}>
+                      {booking.payment_status || 'unpaid'}
+                    </span>
                   </div>
                 </div>
-                
-                <div className="flex flex-col space-y-2">
-                  {(currentUser.role === 'Owner' || currentUser.role === 'owner') && (
+
+                <div className="space-y-2 text-sm text-gray-600 mb-4">
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-blue-500" />
+                    {new Date(booking.date).toLocaleDateString()} at {booking.time || 'TBD'}
+                  </div>
+                  <div className="flex items-center">
+                    <User className="h-4 w-4 mr-2 text-green-500" />
+                    {booking.users?.name || 'Unknown'}
+                  </div>
+                  {booking.notes && (
+                    <div className="flex items-start">
+                      <FileText className="h-4 w-4 mr-2 text-purple-500 mt-0.5" />
+                      <span className="text-xs">{booking.notes}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Actions for Mobile */}
+                <div className="flex flex-wrap gap-2">
+                  {(currentUser.role === 'Owner' || currentUser.role === 'owner' || booking.user_id === currentUser.id) && (
                     <>
+                      {booking.status === 'scheduled' && (
+                        <button
+                          onClick={() => updateBookingStatus(booking.id, 'completed')}
+                          className="flex items-center px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Complete
+                        </button>
+                      )}
+                      {booking.status === 'scheduled' && (
+                        <button
+                          onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                          className="flex items-center px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Cancel
+                        </button>
+                      )}
+                      {(booking.payment_status === 'unpaid' || !booking.payment_status) && (
+                        <button
+                          onClick={() => updatePaymentStatus(booking.id, 'paid')}
+                          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                        >
+                          <CreditCard className="h-3 w-3 mr-1" />
+                          Mark Paid
+                        </button>
+                      )}
                       <button
                         onClick={() => startEdit(booking)}
-                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center"
+                        className="flex items-center px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
                       >
                         <Edit2 className="h-3 w-3 mr-1" />
                         Edit
                       </button>
-                      <button
-                        onClick={() => deleteBooking(booking.id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                      >
-                        Delete
-                      </button>
+                      {(currentUser.role === 'Owner' || currentUser.role === 'owner') && (
+                        <button
+                          onClick={() => deleteBooking(booking)}
+                          className="flex items-center px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Delete
+                        </button>
+                      )}
                     </>
                   )}
+                </div>
+              </div>
+
+              {/* Desktop Layout */}
+              <div className="hidden md:block">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-4 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {booking.customer_name}
+                      </h3>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.status)}`}>
+                        {booking.status}
+                      </span>
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentColor(booking.payment_status || 'unpaid')}`}>
+                        {booking.payment_status || 'unpaid'}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        Service: {booking.service}
+                      </div>
+                      <div className="flex items-center">
+                        <DollarSign className="h-4 w-4 mr-2" />
+                        Price: ₺{booking.price}
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-2" />
+                        Date: {new Date(booking.date).toLocaleString()}
+                      </div>
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        Barber: {booking.users?.name || 'Unknown'}
+                      </div>
+                    </div>
+                    {booking.notes && (
+                      <div className="mt-2 text-sm text-gray-600 flex items-start">
+                        <FileText className="h-4 w-4 mr-2 text-purple-500 mt-0.5" />
+                        {booking.notes}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col space-y-2 ml-4">
+                    {(currentUser.role === 'Owner' || currentUser.role === 'owner' || booking.user_id === currentUser.id) && (
+                      <>
+                        {booking.status === 'scheduled' && (
+                          <button
+                            onClick={() => updateBookingStatus(booking.id, 'completed')}
+                            className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 flex items-center"
+                          >
+                            <CheckCircle className="h-3 w-3 mr-1" />
+                            Complete
+                          </button>
+                        )}
+                        {booking.status === 'scheduled' && (
+                          <button
+                            onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 flex items-center"
+                          >
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Cancel
+                          </button>
+                        )}
+                        {(booking.payment_status === 'unpaid' || !booking.payment_status) && (
+                          <button
+                            onClick={() => updatePaymentStatus(booking.id, 'paid')}
+                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center"
+                          >
+                            <CreditCard className="h-3 w-3 mr-1" />
+                            Mark Paid
+                          </button>
+                        )}
+                        <button
+                          onClick={() => startEdit(booking)}
+                          className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 flex items-center"
+                        >
+                          <Edit2 className="h-3 w-3 mr-1" />
+                          Edit
+                        </button>
+                        {(currentUser.role === 'Owner' || currentUser.role === 'owner') && (
+                          <button
+                            onClick={() => deleteBooking(booking)}
+                            className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700 flex items-center"
+                          >
+                            <X className="h-3 w-3 mr-1" />
+                            Delete
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -341,6 +576,30 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   <option value="cancelled">Cancelled</option>
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
+                <select
+                  value={editForm.payment_status}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, payment_status: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="unpaid">Unpaid</option>
+                  <option value="paid">Paid</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                  placeholder="Add any notes about this booking..."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                  rows={3}
+                />
+              </div>
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -355,6 +614,39 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && bookingToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-500 mr-3" />
+              <h3 className="text-lg font-semibold text-gray-900">Delete Booking</h3>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete the booking for <strong>{bookingToDelete.customer_name}</strong>?
+              This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setBookingToDelete(null);
+                }}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteBooking}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+              >
+                Delete Booking
               </button>
             </div>
           </div>
