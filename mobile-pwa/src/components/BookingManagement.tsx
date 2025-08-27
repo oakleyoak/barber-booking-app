@@ -75,18 +75,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       if (error) throw error;
 
-      // If marking as completed and paid, add to earnings
+      // Update the corresponding EarningsService transaction status too
       const booking = bookings.find(b => b.id === bookingId);
-      if (booking && status === 'completed' && booking.payment_status === 'paid') {
-        EarningsService.addTransaction(currentUser.shop_name, {
-          service: `${booking.service} - ${booking.customer_name}`,
-          customer: booking.customer_name,
-          date: booking.date,
-          amount: booking.price,
-          barber: booking.users?.name || 'Unknown',
-          commission: 60,
-          status: 'completed'
-        });
+      if (booking) {
+        EarningsService.updateTransactionStatus(
+          currentUser.shop_name, 
+          booking.customer_name, 
+          booking.date, 
+          status as any
+        );
       }
 
       loadBookings();
@@ -107,19 +104,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       if (error) throw error;
 
-      // If marking as paid and completed, add to earnings
-      const booking = bookings.find(b => b.id === bookingId);
-      if (booking && paymentStatus === 'paid' && booking.status === 'completed') {
-        EarningsService.addTransaction(currentUser.shop_name, {
-          service: `${booking.service} - ${booking.customer_name}`,
-          customer: booking.customer_name,
-          date: booking.date,
-          amount: booking.price,
-          barber: booking.users?.name || 'Unknown',
-          commission: 60,
-          status: 'completed'
-        });
-      }
+      // Note: Payment status doesn't directly affect EarningsService 
+      // since EarningsService tracks transactions regardless of payment status
+      // The booking status (pending/completed) is what matters for earnings counting
 
       loadBookings();
       alert('Payment status updated successfully!');

@@ -218,4 +218,33 @@ export class EarningsService {
   static clearAllEarnings(shopName: string): void {
     localStorage.removeItem(this.getStorageKey(shopName));
   }
+
+  // Update transaction status
+  static updateTransactionStatus(shopName: string, customerName: string, date: string, newStatus: 'completed' | 'pending' | 'cancelled'): void {
+    const earnings = this.getEarnings(shopName);
+    const transactionDate = new Date(date).toISOString().split('T')[0];
+    
+    // Find the day with the transaction
+    const dayEarnings = earnings.find(e => e.date === transactionDate);
+    if (dayEarnings) {
+      // Find and update the transaction
+      const transaction = dayEarnings.transactions.find(t => 
+        t.customer === customerName && 
+        new Date(t.date).toISOString().split('T')[0] === transactionDate
+      );
+      
+      if (transaction) {
+        transaction.status = newStatus;
+        
+        // Recalculate day totals
+        dayEarnings.totalAmount = dayEarnings.transactions.reduce((sum, t) => sum + t.amount, 0);
+        dayEarnings.totalCommission = dayEarnings.transactions.reduce((sum, t) => 
+          sum + (t.amount * t.commission / 100), 0
+        );
+        dayEarnings.bookingCount = dayEarnings.transactions.filter(t => t.status === 'completed').length;
+        
+        this.saveEarnings(shopName, earnings);
+      }
+    }
+  }
 }
