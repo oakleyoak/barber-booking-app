@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, Edit2, Search, Filter, Phone, Mail, CreditCard, FileText, CheckSquare, X, AlertTriangle } from 'lucide-react';
+import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, Edit2, Search, Filter, Phone, Mail, CheckSquare, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 
@@ -9,24 +9,14 @@ interface Booking {
   service: string;
   price: number;
   date: string;
-  time?: string;
+  time: string;
   user_id: string;
   customer_id: string;
   status: string;
-  payment_status?: string;
-  notes?: string;
+  created_at?: string;
+  updated_at?: string;
   users?: {
     name: string;
-  };
-}
-
-interface BookingManagementProps {
-  currentUser: {
-    id?: string;
-    name: string;
-    email: string;
-    role: string;
-    shop_name: string;
   };
 }
 
@@ -54,9 +44,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     price: 0,
     date: '',
     time: '',
-    status: 'scheduled',
-    payment_status: 'unpaid',
-    notes: ''
+    status: 'scheduled'
   });
 
   // Load bookings
@@ -126,9 +114,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       price: booking.price,
       date: booking.date.split('T')[0],
       time: booking.time || booking.date.split('T')[1]?.slice(0, 5) || '09:00',
-      status: booking.status || 'scheduled',
-      payment_status: booking.payment_status || 'unpaid',
-      notes: booking.notes || ''
+      status: booking.status || 'scheduled'
     });
   };
 
@@ -144,9 +130,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           price: editForm.price,
           date: editForm.date,
           time: editForm.time,
-          status: editForm.status,
-          payment_status: editForm.payment_status,
-          notes: editForm.notes
+          status: editForm.status
         })
         .eq('id', editingBooking.id);
 
@@ -168,13 +152,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       price: 0,
       date: '',
       time: '',
-      status: 'scheduled',
-      payment_status: 'unpaid',
-      notes: ''
+      status: 'scheduled'
     });
   };
 
-  // Quick status update functions
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
       const { error } = await supabase
@@ -187,21 +168,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } catch (error) {
       console.error('Error updating booking status:', error);
       alert('Failed to update booking status');
-    }
-  };
-
-  const updatePaymentStatus = async (bookingId: string, payment_status: string) => {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ payment_status })
-        .eq('id', bookingId);
-
-      if (error) throw error;
-      loadBookings();
-    } catch (error) {
-      console.error('Error updating payment status:', error);
-      alert('Failed to update payment status');
     }
   };
   // Filter bookings
@@ -240,15 +206,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       case 'scheduled': return 'bg-blue-100 text-blue-800';
       case 'completed': return 'bg-green-100 text-green-800';
       case 'cancelled': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getPaymentColor = (status: string) => {
-    switch (status) {
-      case 'paid': return 'bg-green-100 text-green-800';
-      case 'unpaid': return 'bg-red-100 text-red-800';
-      case 'refunded': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -331,9 +288,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                       {booking.status}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentColor(booking.payment_status || 'unpaid')}`}>
-                      {booking.payment_status || 'unpaid'}
-                    </span>
                   </div>
                 </div>
 
@@ -346,12 +300,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <User className="h-4 w-4 mr-2 text-green-500" />
                     {booking.users?.name || 'Unknown'}
                   </div>
-                  {booking.notes && (
-                    <div className="flex items-start">
-                      <FileText className="h-4 w-4 mr-2 text-purple-500 mt-0.5" />
-                      <span className="text-xs">{booking.notes}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Quick Actions for Mobile */}
@@ -374,15 +322,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                         >
                           <XCircle className="h-3 w-3 mr-1" />
                           Cancel
-                        </button>
-                      )}
-                      {(booking.payment_status === 'unpaid' || !booking.payment_status) && (
-                        <button
-                          onClick={() => updatePaymentStatus(booking.id, 'paid')}
-                          className="flex items-center px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                        >
-                          <CreditCard className="h-3 w-3 mr-1" />
-                          Mark Paid
                         </button>
                       )}
                       <button
@@ -417,9 +356,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.status)}`}>
                         {booking.status}
                       </span>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPaymentColor(booking.payment_status || 'unpaid')}`}>
-                        {booking.payment_status || 'unpaid'}
-                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                       <div className="flex items-center">
@@ -439,12 +375,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                         Barber: {booking.users?.name || 'Unknown'}
                       </div>
                     </div>
-                    {booking.notes && (
-                      <div className="mt-2 text-sm text-gray-600 flex items-start">
-                        <FileText className="h-4 w-4 mr-2 text-purple-500 mt-0.5" />
-                        {booking.notes}
-                      </div>
-                    )}
                   </div>
 
                   <div className="flex flex-col space-y-2 ml-4">
@@ -466,15 +396,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                           >
                             <XCircle className="h-3 w-3 mr-1" />
                             Cancel
-                          </button>
-                        )}
-                        {(booking.payment_status === 'unpaid' || !booking.payment_status) && (
-                          <button
-                            onClick={() => updatePaymentStatus(booking.id, 'paid')}
-                            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center"
-                          >
-                            <CreditCard className="h-3 w-3 mr-1" />
-                            Mark Paid
                           </button>
                         )}
                         <button
@@ -575,30 +496,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   <option value="completed">Completed</option>
                   <option value="cancelled">Cancelled</option>
                 </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Status</label>
-                <select
-                  value={editForm.payment_status}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, payment_status: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                >
-                  <option value="unpaid">Unpaid</option>
-                  <option value="paid">Paid</option>
-                  <option value="refunded">Refunded</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                <textarea
-                  value={editForm.notes}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Add any notes about this booking..."
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                  rows={3}
-                />
               </div>
             </div>
 
