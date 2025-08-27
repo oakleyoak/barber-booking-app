@@ -128,10 +128,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           customer_name: bookingData.customer_name,
           service: bookingData.service_type,
           price: bookingData.amount,
-          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString(),
-          status: 'pending', // Default to pending instead of completed
-          payment_status: 'unpaid', // Default to unpaid
-          created_by: currentUser.id
+          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
         });
 
       if (bookingError) {

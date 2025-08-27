@@ -80,10 +80,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           customer_name: newBooking.customer,
           service: newBooking.service,
           price: newBooking.amount,
-          date: new Date().toISOString(),
-          status: 'pending', // Default to pending
-          payment_status: 'unpaid', // Default to unpaid
-          created_by: currentUser.id
+          date: new Date().toISOString()
         });
 
       if (bookingError) {

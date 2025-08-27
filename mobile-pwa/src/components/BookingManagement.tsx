@@ -9,10 +9,8 @@ interface Booking {
   service: string;
   price: number;
   date: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled';
-  payment_status: 'unpaid' | 'paid' | 'refunded';
   user_id: string;
-  created_by: string;
+  customer_id: string;
   users?: {
     name: string;
   };
@@ -31,7 +29,7 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed' | 'today'>('all');
+  const [filter, setFilter] = useState<'all' | 'today'>('all');
 
   // Load bookings
   const loadBookings = async () => {
@@ -65,62 +63,31 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     loadBookings();
   }, [currentUser.id]);
 
-  // Update booking status
-  const updateBookingStatus = async (bookingId: string, status: string) => {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .update({ status })
-        .eq('id', bookingId);
-
-      if (error) throw error;
-
-      // Update the corresponding EarningsService transaction status too
-      const booking = bookings.find(b => b.id === bookingId);
-      if (booking) {
-        EarningsService.updateTransactionStatus(
-          currentUser.shop_name, 
-          booking.customer_name, 
-          booking.date, 
-          status as any
-        );
-      }
-
-      loadBookings();
-      alert('Booking status updated successfully!');
-    } catch (error) {
-      console.error('Error updating booking status:', error);
-      alert('Failed to update booking status');
+  // Delete booking
+  const deleteBooking = async (bookingId: string) => {
+    if (!confirm('Are you sure you want to delete this booking?')) {
+      return;
     }
-  };
 
-  // Update payment status
-  const updatePaymentStatus = async (bookingId: string, paymentStatus: string) => {
     try {
       const { error } = await supabase
         .from('bookings')
-        .update({ payment_status: paymentStatus })
+        .delete()
         .eq('id', bookingId);
 
       if (error) throw error;
 
-      // Note: Payment status doesn't directly affect EarningsService 
-      // since EarningsService tracks transactions regardless of payment status
-      // The booking status (pending/completed) is what matters for earnings counting
-
       loadBookings();
-      alert('Payment status updated successfully!');
+      alert('Booking deleted successfully!');
     } catch (error) {
-      console.error('Error updating payment status:', error);
-      alert('Failed to update payment status');
+      console.error('Error deleting booking:', error);
+      alert('Failed to delete booking');
     }
   };
 
   // Filter bookings
   const filteredBookings = bookings.filter(booking => {
     if (filter === 'all') return true;
-    if (filter === 'pending') return booking.status === 'pending';
-    if (filter === 'completed') return booking.status === 'completed';
     if (filter === 'today') {
       const today = new Date().toISOString().split('T')[0];
       return booking.date.split('T')[0] === today;
@@ -164,7 +131,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Filter buttons */}
       <div className="mb-6 flex space-x-2">
-        {['all', 'pending', 'completed', 'today'].map((filterOption) => (
+        {['all', 'today'].map((filterOption) => (
           <button
             key={filterOption}
             onClick={() => setFilter(filterOption as any)}
@@ -195,12 +162,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <h3 className="text-lg font-semibold text-gray-900">
                       {booking.customer_name}
                     </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
-                      {booking.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentColor(booking.payment_status)}`}>
-                      {booking.payment_status}
-                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
                     <div className="flex items-center">
@@ -223,32 +184,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 </div>
                 
                 <div className="flex flex-col space-y-2">
-                  {/* Status controls */}
-                  <div className="flex space-x-2">
-                    <select
-                      value={booking.status}
-                      onChange={(e) => updateBookingStatus(booking.id, e.target.value)}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm"
+                  {(currentUser.role === 'Owner' || currentUser.role === 'owner') && (
+                    <button
+                      onClick={() => deleteBooking(booking.id)}
+                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
                     >
-                      <option value="pending">Pending</option>
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  
-                  {/* Payment controls */}
-                  <div className="flex space-x-2">
-                    <select
-                      value={booking.payment_status}
-                      onChange={(e) => updatePaymentStatus(booking.id, e.target.value)}
-                      className="px-3 py-1 border border-gray-300 rounded text-sm"
-                    >
-                      <option value="unpaid">Unpaid</option>
-                      <option value="paid">Paid</option>
-                      <option value="refunded">Refunded</option>
-                    </select>
-                  </div>
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
