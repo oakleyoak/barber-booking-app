@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, Users, FileText, Settings, Save } from 'lucide-react';
 import { ShopSettings, ShopSettingsService } from '../services/shopSettings';
 import { EarningsService } from '../services/earningsService';
 import { DataCleanupService } from '../services/dataCleanupService';
 import { UserManagementService } from '../services/userManagementService';
+import { supabase } from '../lib/supabase';
 import UserManagement from './UserManagement';
 
 // Data Status Display Component
@@ -66,6 +67,34 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   const [shopSettings, setShopSettings] = useState<ShopSettings>(
     ShopSettingsService.getSettings(currentUser.shop_name)
   );
+  const [supabaseBookings, setSupabaseBookings] = useState<any[]>([]);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+
+  // Load bookings from Supabase
+  const loadSupabaseBookings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          users:user_id (name)
+        `)
+        .order('date', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      setSupabaseBookings(data || []);
+    } catch (error) {
+      console.error('Error loading Supabase bookings:', error);
+      setSupabaseBookings([]);
+    } finally {
+      setLoadingBookings(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSupabaseBookings();
+  }, []);
 
   // Calculate realistic payroll data based on actual earnings
   const calculatePayrollData = () => {
@@ -602,44 +631,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
           <div className="bg-white border border-gray-200 rounded-lg">
             <div className="p-6 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                Staff Bookings ({EarningsService.getWeeklyEarnings(currentUser.shop_name).bookingCount})
+                Recent Bookings ({supabaseBookings.length})
               </h3>
             </div>
             
             <div className="p-6">
-              {EarningsService.getRecentTransactions(currentUser.shop_name, undefined, 10).length === 0 ? (
+              {loadingBookings ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                </div>
+              ) : supabaseBookings.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500">No bookings found. Add your first booking to get started.</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {EarningsService.getRecentTransactions(currentUser.shop_name, undefined, 10).map((transaction, index) => (
-                    <div key={transaction.id || index} className="border border-gray-200 rounded-lg p-4">
+                  {supabaseBookings.map((booking) => (
+                    <div key={booking.id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h4 className="font-medium text-gray-900">{transaction.customer}</h4>
+                            <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              transaction.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              transaction.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              booking.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              booking.status === 'scheduled' ? 'bg-blue-100 text-blue-800' :
                               'bg-red-100 text-red-800'
                             }`}>
-                              {transaction.status}
+                              {booking.status}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-1">{transaction.service}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span>Staff: {transaction.barber}</span>
-                            <span>Date & Time: {new Date(transaction.date).toLocaleDateString()}</span>
+                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                            <span>Service: {booking.service}</span>
+                            <span>Price: ₺{booking.price}</span>
+                            <span>Date: {new Date(booking.date).toLocaleDateString()}</span>
+                            <span>Staff: {booking.users?.name || 'Unknown'}</span>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-lg font-semibold text-gray-900">₺{transaction.amount}</p>
-                          <button className="text-gray-400 hover:text-gray-600 mt-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                            </svg>
-                          </button>
                         </div>
                       </div>
                     </div>

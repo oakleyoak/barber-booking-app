@@ -26,10 +26,10 @@ export class SharedCustomerService {
         name: sc.name,
         phone: sc.phone || '',
         email: sc.email,
-        notes: sc.notes,
+        notes: '', // No notes field in new schema
         lastVisit: sc.last_visit,
-        totalVisits: sc.total_visits || 0,
-        totalSpent: sc.total_spent || 0,
+        totalVisits: 0, // Will be calculated from bookings
+        totalSpent: 0, // Will be calculated from bookings
         preferredBarber: '',
         shopName: shopName,
         createdAt: sc.created_at || new Date().toISOString(),
@@ -81,9 +81,6 @@ export class SharedCustomerService {
           name: customerData.name,
           email: customerData.email,
           phone: customerData.phone,
-          notes: customerData.notes,
-          total_visits: 0,
-          total_spent: 0,
           user_id: shopName // Use shop name as user identifier
         }])
         .select()
@@ -126,9 +123,6 @@ export class SharedCustomerService {
               name: customer.name,
               email: customer.email,
               phone: customer.phone,
-              notes: customer.notes,
-              total_visits: customer.totalVisits,
-              total_spent: customer.totalSpent,
               last_visit: customer.lastVisit,
               user_id: shopName
             }]);

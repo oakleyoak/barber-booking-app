@@ -45,11 +45,11 @@ export class CustomerService {
         name: customer.name,
         phone: customer.phone || '',
         email: customer.email,
-        notes: customer.notes,
+        notes: '', // No notes field in new schema
         lastVisit: customer.last_visit,
-        totalVisits: customer.total_visits || 0,
-        totalSpent: customer.total_spent || 0,
-        preferredBarber: customer.preferred_barber || '',
+        totalVisits: 0, // Will be calculated from bookings
+        totalSpent: 0, // Will be calculated from bookings
+        preferredBarber: '', // No preferred_barber field in new schema
         shopName: shopName,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at || customer.created_at
@@ -71,10 +71,6 @@ export class CustomerService {
           name: customerData.name,
           phone: customerData.phone,
           email: customerData.email,
-          notes: customerData.notes,
-          preferred_barber: customerData.preferredBarber,
-          total_visits: 0,
-          total_spent: 0,
           user_id: shopName
         }])
         .select()
@@ -90,11 +86,11 @@ export class CustomerService {
         name: data.name,
         phone: data.phone || '',
         email: data.email,
-        notes: data.notes,
+        notes: '', // No notes field in new schema
         lastVisit: data.last_visit,
-        totalVisits: data.total_visits || 0,
-        totalSpent: data.total_spent || 0,
-        preferredBarber: data.preferred_barber || '',
+        totalVisits: 0, // Will be calculated from bookings
+        totalSpent: 0, // Will be calculated from bookings
+        preferredBarber: '', // No preferred_barber field in new schema
         shopName: shopName,
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at
@@ -116,8 +112,6 @@ export class CustomerService {
           name: updates.name,
           phone: updates.phone,
           email: updates.email,
-          notes: updates.notes,
-          preferred_barber: updates.preferredBarber,
           updated_at: new Date().toISOString()
         })
         .eq('id', customerId)
@@ -134,11 +128,11 @@ export class CustomerService {
         name: data.name,
         phone: data.phone || '',
         email: data.email,
-        notes: data.notes,
+        notes: '', // No notes field in new schema
         lastVisit: data.last_visit,
-        totalVisits: data.total_visits || 0,
-        totalSpent: data.total_spent || 0,
-        preferredBarber: data.preferred_barber || '',
+        totalVisits: 0, // Will be calculated from bookings
+        totalSpent: 0, // Will be calculated from bookings
+        preferredBarber: '', // No preferred_barber field in new schema
         shopName: shopName,
         createdAt: data.created_at,
         updatedAt: data.updated_at
@@ -192,11 +186,11 @@ export class CustomerService {
         name: customer.name,
         phone: customer.phone || '',
         email: customer.email,
-        notes: customer.notes,
+        notes: '', // No notes field in new schema
         lastVisit: customer.last_visit,
-        totalVisits: customer.total_visits || 0,
-        totalSpent: customer.total_spent || 0,
-        preferredBarber: customer.preferred_barber || '',
+        totalVisits: 0, // Will be calculated from bookings
+        totalSpent: 0, // Will be calculated from bookings
+        preferredBarber: '', // No preferred_barber field in new schema
         shopName: shopName,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at || customer.created_at
@@ -209,34 +203,12 @@ export class CustomerService {
 
   /**
    * Get customers by preferred barber
+   * Note: New schema doesn't have preferred_barber field, so this returns all customers
    */
   static async getCustomersByBarber(shopName: string, barberName: string): Promise<Customer[]> {
     try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('*')
-        .eq('preferred_barber', barberName)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error getting customers by barber:', error);
-        return [];
-      }
-
-      return (data || []).map(customer => ({
-        id: customer.id,
-        name: customer.name,
-        phone: customer.phone || '',
-        email: customer.email,
-        notes: customer.notes,
-        lastVisit: customer.last_visit,
-        totalVisits: customer.total_visits || 0,
-        totalSpent: customer.total_spent || 0,
-        preferredBarber: customer.preferred_barber || '',
-        shopName: shopName,
-        createdAt: customer.created_at,
-        updatedAt: customer.updated_at || customer.created_at
-      }));
+      // Since new schema doesn't have preferred_barber, return all customers
+      return await this.getCustomers(shopName);
     } catch (error) {
       console.error('Error getting customers by barber:', error);
       return [];
@@ -244,15 +216,14 @@ export class CustomerService {
   }
 
   /**
-   * Update customer visit and spending data
+   * Update customer last visit date
+   * Note: New schema doesn't have total_visits/total_spent fields, only last_visit
    */
   static async recordVisit(shopName: string, customerId: string, amount: number): Promise<boolean> {
     try {
       const { error } = await supabase
         .from('customers')
         .update({
-          total_visits: supabase.rpc('increment_visits', { customer_id: customerId }),
-          total_spent: supabase.rpc('add_spending', { customer_id: customerId, amount: amount }),
           last_visit: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })

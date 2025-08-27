@@ -4,7 +4,7 @@ import { dbService } from './services/database';
 import { User as SupabaseUser } from './lib/supabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
-import CustomerManager from './components/CustomerManager';
+import { CustomerManager } from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
 import OwnerBooking from './components/OwnerBooking';
 import AccountingReports from './components/AccountingReports';

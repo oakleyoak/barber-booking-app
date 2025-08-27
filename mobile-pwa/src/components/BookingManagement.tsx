@@ -30,6 +30,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'today'>('all');
+  const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [editForm, setEditForm] = useState({
+    customer_name: '',
+    service: '',
+    price: 0,
+    date: '',
+    time: '',
+    status: 'scheduled'
+  });
 
   // Load bookings
   const loadBookings = async () => {
@@ -83,6 +92,58 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       console.error('Error deleting booking:', error);
       alert('Failed to delete booking');
     }
+  };
+
+  // Edit booking function
+  const startEdit = (booking: Booking) => {
+    setEditingBooking(booking);
+    setEditForm({
+      customer_name: booking.customer_name,
+      service: booking.service,
+      price: booking.price,
+      date: booking.date.split('T')[0],
+      time: booking.date.split('T')[1]?.slice(0, 5) || '09:00',
+      status: 'scheduled'
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editingBooking) return;
+    
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          customer_name: editForm.customer_name,
+          service: editForm.service,
+          price: editForm.price,
+          date: editForm.date,
+          time: editForm.time,
+          status: editForm.status
+        })
+        .eq('id', editingBooking.id);
+
+      if (error) throw error;
+
+      setEditingBooking(null);
+      loadBookings();
+      alert('Booking updated successfully!');
+    } catch (error) {
+      console.error('Error updating booking:', error);
+      alert('Failed to update booking');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingBooking(null);
+    setEditForm({
+      customer_name: '',
+      service: '',
+      price: 0,
+      date: '',
+      time: '',
+      status: 'scheduled'
+    });
   };
 
   // Filter bookings
@@ -184,12 +245,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 
                 <div className="flex flex-col space-y-2">
                   {(currentUser.role === 'Owner' || currentUser.role === 'owner') && (
-                    <button
-                      onClick={() => deleteBooking(booking.id)}
-                      className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
-                    >
-                      Delete
-                    </button>
+                    <>
+                      <button
+                        onClick={() => startEdit(booking)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 flex items-center"
+                      >
+                        <Edit2 className="h-3 w-3 mr-1" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => deleteBooking(booking.id)}
+                        className="px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -197,6 +267,99 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           ))
         )}
       </div>
+
+      {/* Edit Modal */}
+      {editingBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Edit Booking</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                <input
+                  type="text"
+                  value={editForm.customer_name}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, customer_name: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                <select
+                  value={editForm.service}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, service: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="Haircut">Haircut - ₺700 (45min)</option>
+                  <option value="Shave">Shave - ₺500 (30min)</option>
+                  <option value="Haircut + Shave">Haircut + Shave - ₺1000 (75min)</option>
+                  <option value="Beard Trim">Beard Trim - ₺300 (20min)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                <input
+                  type="date"
+                  value={editForm.date}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, date: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input
+                  type="time"
+                  value={editForm.time}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, time: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price (₺)</label>
+                <input
+                  type="number"
+                  value={editForm.price}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  <option value="scheduled">Scheduled</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={saveEdit}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={cancelEdit}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

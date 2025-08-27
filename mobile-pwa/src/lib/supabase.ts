@@ -17,14 +17,11 @@ export interface User {
 
 export interface Customer {
   id: string;
+  user_id?: string;
   name: string;
-  email: string;
+  email?: string;
   phone?: string;
-  notes?: string;
-  total_visits: number;
-  total_spent: number;
   last_visit?: string;
-  user_id: string;
   created_at?: string;
   updated_at?: string;
 }
