@@ -88,12 +88,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   // Recalculate when settings change
   const payrollData = React.useMemo(() => calculatePayrollData(), [shopSettings]);
 
-  // Real staff data from database with realistic calculations based on actual earnings
+  // Real staff data directly from Supabase users table
   const [realStaffMembers, setRealStaffMembers] = React.useState<any[]>([]);
 
-  // Load staff members from database
+  // Load staff members directly from Supabase users table
   React.useEffect(() => {
     const loadStaffMembers = async () => {
+      // First sync any staff from Default Shop to current shop
+      await UserManagementService.syncStaffToCurrentShop(currentUser.shop_name);
+      // Then load staff for current shop
       const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
       setRealStaffMembers(staff);
     };
@@ -101,22 +104,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   }, [currentUser.shop_name]);
 
   const staffMembers = React.useMemo(() => {
-    // Always include Ismail as he's a real staff member
-    const realStaff = [
-      { name: 'Ismail Hassan Azimkar', role: 'barber' },
-      ...realStaffMembers
-    ];
-
-    // Remove duplicates if Ismail is already in database
-    const uniqueStaff = realStaff.filter((staff, index, self) => 
-      index === self.findIndex(s => s.name === staff.name)
-    );
-
-    return uniqueStaff.map(staff => {
+    // Use ONLY real staff from Supabase database - no hybrid, no fallbacks
+    return realStaffMembers.map(staff => {
       const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name, staff.name);
       const commissionRate = staff.role === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
       
-      // Calculate based on actual data only - no fallback dummy values
+      // Calculate based on actual data only
       const weeklyEarnings = memberEarnings.totalAmount || 0;
       const grossPay = weeklyEarnings * (commissionRate / 100);
       const socialInsurance = grossPay * (shopSettings.socialInsuranceRate / 100);

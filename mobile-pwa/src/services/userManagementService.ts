@@ -50,6 +50,22 @@ export class UserManagementService {
   }
 
   /**
+   * Migrate staff from "Default Shop" to current shop (one-time sync)
+   */
+  static async syncStaffToCurrentShop(currentShopName: string): Promise<void> {
+    try {
+      // Update any staff members in "Default Shop" to current shop
+      await supabase
+        .from('users')
+        .update({ shop_name: currentShopName })
+        .eq('shop_name', 'Default Shop')
+        .neq('role', 'owner');
+    } catch (error) {
+      console.error('Error syncing staff to current shop:', error);
+    }
+  }
+
+  /**
    * Add a new staff member
    */
   static async addStaffMember(shopName: string, userData: UserCreate): Promise<User | null> {
