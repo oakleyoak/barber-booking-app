@@ -88,11 +88,58 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     setLoading(true);
     
     try {
-      // Add to earnings service (same as BookingCalendar)
+      // First, check if customer exists in customers table
+      let customerId = null;
+      const { data: existingCustomers } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('name', bookingData.customer_name)
+        .single();
+
+      if (existingCustomers) {
+        customerId = existingCustomers.id;
+      } else {
+        // Create new customer if not exists
+        const { data: newCustomer } = await supabase
+          .from('customers')
+          .insert({
+            name: bookingData.customer_name,
+            phone: '', // We don't have phone in this form
+            email: ''  // We don't have email in this form
+          })
+          .select('id')
+          .single();
+        
+        if (newCustomer) {
+          customerId = newCustomer.id;
+        }
+      }
+
+      // Get staff member user_id
+      const staffMember = staffMembers.find(staff => staff.name === bookingData.staff_member);
+      const userId = staffMember?.id || currentUser.id;
+
+      // Save booking to Supabase bookings table
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          user_id: userId,
+          customer_id: customerId,
+          customer_name: bookingData.customer_name,
+          service: bookingData.service_type,
+          price: bookingData.amount,
+          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
+        });
+
+      if (bookingError) {
+        throw bookingError;
+      }
+
+      // Also add to earnings service for local tracking
       EarningsService.addTransaction(currentUser.shop_name, {
         service: `${bookingData.service_type} - ${bookingData.customer_name}`,
         customer: bookingData.customer_name,
-        date: new Date().toISOString(),
+        date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString(),
         amount: bookingData.amount,
         barber: bookingData.staff_member,
         commission: 60, // Default commission

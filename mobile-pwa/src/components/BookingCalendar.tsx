@@ -3,6 +3,7 @@ import { Calendar, Clock, Plus, User } from 'lucide-react';
 import { CustomerService } from '../services/customerService';
 import { EarningsService } from '../services/earningsService';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
+import { supabase } from '../lib/supabase';
 
 interface BookingCalendarProps {
   currentUser: {
@@ -36,29 +37,83 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'
   ];
 
-  const handleAddBooking = () => {
-    // Add to earnings
-    EarningsService.addTransaction(currentUser.shop_name, {
-      service: `${newBooking.service} - ${newBooking.customer}`,
-      customer: newBooking.customer,
-      date: new Date().toISOString(),
-      amount: newBooking.amount,
-      barber: currentUser.name,
-      commission: 60, // Default commission
-      status: 'completed'
-    });
+  const handleAddBooking = async () => {
+    if (!newBooking.customer.trim()) {
+      alert('Please enter customer name');
+      return;
+    }
 
-    // Reset form
-    setNewBooking({
-      customer: '',
-      service: 'Haircut',
-      amount: 700,
-      time: '9am'
-    });
-    setShowAddBooking(false);
-    
-    // Show success message
-    alert('Booking added successfully!');
+    try {
+      // First, check if customer exists in customers table
+      let customerId = null;
+      const { data: existingCustomers } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('name', newBooking.customer)
+        .single();
+
+      if (existingCustomers) {
+        customerId = existingCustomers.id;
+      } else {
+        // Create new customer if not exists
+        const { data: newCustomer } = await supabase
+          .from('customers')
+          .insert({
+            name: newBooking.customer,
+            phone: '', // We don't have phone in this form
+            email: ''  // We don't have email in this form
+          })
+          .select('id')
+          .single();
+        
+        if (newCustomer) {
+          customerId = newCustomer.id;
+        }
+      }
+
+      // Save booking to Supabase bookings table
+      const { error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          user_id: currentUser.id,
+          customer_id: customerId,
+          customer_name: newBooking.customer,
+          service: newBooking.service,
+          price: newBooking.amount,
+          date: new Date().toISOString()
+        });
+
+      if (bookingError) {
+        throw bookingError;
+      }
+
+      // Also add to earnings service for local tracking
+      EarningsService.addTransaction(currentUser.shop_name, {
+        service: `${newBooking.service} - ${newBooking.customer}`,
+        customer: newBooking.customer,
+        date: new Date().toISOString(),
+        amount: newBooking.amount,
+        barber: currentUser.name,
+        commission: 60, // Default commission
+        status: 'completed'
+      });
+
+      // Reset form
+      setNewBooking({
+        customer: '',
+        service: 'Haircut',
+        amount: 700,
+        time: '9am'
+      });
+      setShowAddBooking(false);
+      
+      // Show success message
+      alert('Booking added successfully!');
+      
+    } catch (error) {
+      console.error('Error adding booking:', error);
+      alert('Failed to add booking. Please try again.');
+    }
   };
 
   const serviceOptions = SERVICES;
