@@ -94,7 +94,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           service: newBooking.service,
           price: newBooking.amount,
           date: bookingDate,
-          time: timeIn24Hour
+          time: timeIn24Hour,
+          status: 'scheduled'
         });
 
       if (bookingError) {

@@ -157,7 +157,8 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           service: bookingData.service_type,
           price: bookingData.amount,
           date: bookingData.booking_date,
-          time: bookingData.booking_time
+          time: bookingData.booking_time,
+          status: 'scheduled'
         })
         .select('*')
         .single();
