@@ -79,15 +79,15 @@ const BookingModal: React.FC<BookingModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
+      <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl border border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b bg-edge-primary">
+          <h2 className="text-lg font-serif font-bold flex items-center gap-2 text-white">
             <Calendar className="w-5 h-5" />
             {mode === 'create' ? 'Create Booking' : 'Edit Booking'}
           </h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded"
+            className="p-1 hover:bg-edge-secondary rounded text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -102,7 +102,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             </label>
             <input
               {...register('client_name', { required: 'Client name is required' })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
               placeholder="Enter client name"
             />
             {errors.client_name && (
@@ -119,7 +119,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             <input
               {...register('start_time', { required: 'Start time is required' })}
               type="datetime-local"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
             />
             {errors.start_time && (
               <p className="text-red-500 text-sm mt-1">{errors.start_time.message}</p>
@@ -135,7 +135,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             <input
               {...register('end_time', { required: 'End time is required' })}
               type="datetime-local"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
             />
             {errors.end_time && (
               <p className="text-red-500 text-sm mt-1">{errors.end_time.message}</p>
@@ -155,7 +155,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
               })}
               type="number"
               step="0.01"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
               placeholder="0.00"
             />
             {errors.price && (
@@ -171,7 +171,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             </label>
             <input
               {...register('location')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
               placeholder="Enter location"
             />
           </div>
@@ -183,7 +183,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             </label>
             <select
               {...register('status')}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
             >
               <option value="confirmed">Confirmed</option>
               <option value="pending">Pending</option>
@@ -200,7 +200,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             <textarea
               {...register('notes')}
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-edge-primary focus:border-edge-primary"
               placeholder="Additional notes..."
             />
           </div>
@@ -217,7 +217,7 @@ const BookingModal: React.FC<BookingModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="flex-1 px-4 py-2 bg-edge-primary text-white rounded-md hover:bg-edge-secondary disabled:opacity-50 transition-colors font-medium"
             >
               {isSubmitting ? 'Saving...' : (mode === 'create' ? 'Create' : 'Update')}
             </button>

@@ -43,13 +43,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   const getEventColor = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return '#22c55e'; // green
+        return '#1e293b'; // Edge primary (dark slate)
       case 'pending':
-        return '#f59e0b'; // amber
+        return '#d97706'; // Edge gold
       case 'cancelled':
-        return '#ef4444'; // red
+        return '#dc2626'; // Edge red
       default:
-        return '#6b7280'; // gray
+        return '#64748b'; // Neutral gray
     }
   };
 
@@ -91,7 +91,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
   }, [onEventDrop, refreshBookings]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
         headerToolbar={{

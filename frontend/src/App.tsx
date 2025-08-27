@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import BookingCalendar from './components/BookingCalendar';
 import BookingModal from './components/BookingModal';
 import EarningsDashboard from './components/EarningsDashboard';
 import { Booking, BookingCreate, BookingUpdate, EarningsSummary, WeeklyEarnings } from './types';
 import { bookingService, earningsService } from './services/api';
 import { useBookings } from './hooks/useBookings';
-import { Calendar, Plus, BarChart3 } from 'lucide-react';
+import { Plus, BarChart3 } from 'lucide-react';
 import './App.css';
 
 function App() {
@@ -114,16 +114,25 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-edge-cream via-edge-light to-gray-100">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-edge-primary shadow-lg border-b border-edge-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <Calendar className="w-8 h-8 text-blue-600 mr-3" />
-              <h1 className="text-xl font-semibold text-gray-900">
-                Booking Management
-              </h1>
+              <img 
+                src="/edge-co-logo.svg" 
+                alt="Edge & Co." 
+                className="w-10 h-10 mr-3"
+              />
+              <div>
+                <h1 className="text-xl font-serif font-bold text-white">
+                  Edge & Co.
+                </h1>
+                <p className="text-sm text-edge-cream opacity-90">
+                  Booking Management
+                </p>
+              </div>
             </div>
             
             <div className="flex items-center space-x-4">
@@ -131,8 +140,8 @@ function App() {
                 onClick={() => setShowDashboard(!showDashboard)}
                 className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   showDashboard
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-edge-secondary text-white'
+                    : 'text-edge-cream hover:text-white hover:bg-edge-secondary/20'
                 }`}
               >
                 <BarChart3 className="w-4 h-4 mr-2" />
@@ -141,7 +150,7 @@ function App() {
               
               <button
                 onClick={handleCreateBooking}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                className="flex items-center px-4 py-2 bg-edge-secondary text-white rounded-md hover:bg-red-700 transition-colors font-medium"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 New Booking
@@ -197,7 +206,7 @@ function App() {
         onSubmit={handleModalSubmit}
         initialData={getModalInitialData()}
         mode={modalMode}
-        selectedDate={selectedDate}
+        selectedDate={selectedDate || undefined}
       />
     </div>
   );
