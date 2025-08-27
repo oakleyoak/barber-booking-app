@@ -142,10 +142,14 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
       });
 
+      // Generate a UUID for the booking ID
+      const bookingId = crypto.randomUUID();
+
       // Save booking to Supabase bookings table
       const { data: bookingResult, error: bookingError } = await supabase
         .from('bookings')
         .insert({
+          id: bookingId,
           user_id: userId,
           customer_id: customerId,
           customer_name: bookingData.customer_name,
@@ -153,7 +157,8 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           price: bookingData.amount,
           date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
         })
-        .select();
+        .select('*')
+        .single();
 
       if (bookingError) {
         console.error('Booking insertion error:', bookingError);

@@ -71,10 +71,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         }
       }
 
+      // Generate a UUID for the booking ID
+      const bookingId = crypto.randomUUID();
+
       // Save booking to Supabase bookings table
       const { error: bookingError } = await supabase
         .from('bookings')
         .insert({
+          id: bookingId,
           user_id: currentUser.id,
           customer_id: customerId,
           customer_name: newBooking.customer,
