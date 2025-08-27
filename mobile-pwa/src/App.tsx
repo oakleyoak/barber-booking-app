@@ -9,7 +9,6 @@ import AdminPanel from './components/AdminPanel';
 import OwnerBooking from './components/OwnerBooking';
 import AccountingReports from './components/AccountingReports';
 import BookingManagement from './components/BookingManagement';
-import { DataCleanupService } from './services/dataCleanupService';
 
 interface UserType {
   id?: string;
@@ -42,8 +41,6 @@ function App() {
         try {
           const user = JSON.parse(savedUser);
           setCurrentUser(user);
-          // Clean dummy data on app startup
-          await DataCleanupService.clearAllDummyData(user.shop_name);
         } catch (err) {
           localStorage.removeItem('current_barber_user');
         }
@@ -82,9 +79,6 @@ function App() {
           };
           setCurrentUser(userSession);
           localStorage.setItem('current_barber_user', JSON.stringify(userSession));
-          
-          // Clean dummy data on login
-          await DataCleanupService.clearAllDummyData(userSession.shop_name);
         } else {
           setError('Invalid email or password');
         }
@@ -127,8 +121,6 @@ function App() {
           setCurrentUser(userSession);
           localStorage.setItem('current_barber_user', JSON.stringify(userSession));
           
-          // Clean dummy data on registration
-          await DataCleanupService.clearAllDummyData(userSession.shop_name);
         }
       }
     } catch (err: any) {

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Phone, Mail, Plus, Search, Edit, Trash2, Calendar, CreditCard } from 'lucide-react';
 import { CustomerService, Customer, CustomerCreate } from '../services/supabaseCustomerService';
-import { DataCleanupService } from '../services/dataCleanupService';
 
 interface CustomerManagerProps {
   currentUser: {
@@ -29,12 +28,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
   // Load customers on component mount
   useEffect(() => {
-    // Clean dummy data on component mount and load customers
-    const initializeData = async () => {
-      await DataCleanupService.clearAllDummyData(currentUser.shop_name);
-      await loadCustomers();
-    };
-    initializeData();
+    loadCustomers();
   }, [currentUser.shop_name]);
 
   const loadCustomers = async () => {
