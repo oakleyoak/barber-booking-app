@@ -33,16 +33,30 @@ export class UserManagementService {
    */
   static async getStaffMembers(shopName: string): Promise<User[]> {
     try {
+      console.log('Fetching staff for shop:', shopName);
+      
+      // Query for staff members, making is_active optional since it might not exist
       const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('shop_name', shopName)
         .neq('role', 'owner')
-        .eq('is_active', true)
         .order('created_at', { ascending: true });
 
-      if (error) throw error;
-      return data || [];
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+      
+      console.log('Raw staff data from Supabase:', data);
+      
+      // Filter out inactive users if is_active field exists, otherwise include all
+      const activeStaff = (data || []).filter(user => 
+        user.is_active === undefined || user.is_active === true
+      );
+      
+      console.log('Filtered active staff:', activeStaff);
+      return activeStaff;
     } catch (error) {
       console.error('Error fetching staff members:', error);
       return [];
@@ -54,12 +68,36 @@ export class UserManagementService {
    */
   static async syncStaffToCurrentShop(currentShopName: string): Promise<void> {
     try {
-      // Update any staff members in "Default Shop" to current shop
-      await supabase
+      console.log('Syncing staff to current shop:', currentShopName);
+      
+      // First check what's in Default Shop
+      const { data: defaultStaff, error: checkError } = await supabase
         .from('users')
-        .update({ shop_name: currentShopName })
+        .select('*')
         .eq('shop_name', 'Default Shop')
         .neq('role', 'owner');
+        
+      console.log('Staff in Default Shop:', defaultStaff);
+      
+      if (checkError) {
+        console.error('Error checking Default Shop staff:', checkError);
+        return;
+      }
+      
+      if (defaultStaff && defaultStaff.length > 0) {
+        // Update any staff members in "Default Shop" to current shop
+        const { data, error } = await supabase
+          .from('users')
+          .update({ shop_name: currentShopName })
+          .eq('shop_name', 'Default Shop')
+          .neq('role', 'owner')
+          .select();
+          
+        console.log('Updated staff records:', data);
+        if (error) {
+          console.error('Error updating staff shop names:', error);
+        }
+      }
     } catch (error) {
       console.error('Error syncing staff to current shop:', error);
     }

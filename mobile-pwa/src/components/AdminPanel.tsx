@@ -94,10 +94,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   // Load staff members directly from Supabase users table
   React.useEffect(() => {
     const loadStaffMembers = async () => {
+      console.log('AdminPanel loading staff for shop:', currentUser.shop_name);
+      
       // First sync any staff from Default Shop to current shop
       await UserManagementService.syncStaffToCurrentShop(currentUser.shop_name);
+      
       // Then load staff for current shop
       const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
+      console.log('Loaded staff members:', staff);
+      
       setRealStaffMembers(staff);
     };
     loadStaffMembers();
