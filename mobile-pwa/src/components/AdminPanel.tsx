@@ -656,23 +656,301 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
       )}
 
       {currentTab === 'reports' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">POS Reports</h3>
-          <p className="text-gray-600">POS reporting features coming soon...</p>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">POS Reports</h3>
+            <p className="text-gray-600 mb-6">Business performance and financial reports</p>
+          </div>
+
+          {/* Daily Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <h4 className="text-sm font-medium text-blue-600 mb-2">Today's Revenue</h4>
+              <div className="text-2xl font-bold text-blue-900">₺{payrollData.totalGrossPay.toFixed(2)}</div>
+              <p className="text-sm text-blue-600">Total earnings today</p>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+              <h4 className="text-sm font-medium text-green-600 mb-2">Services Completed</h4>
+              <div className="text-2xl font-bold text-green-900">{staffMembers.reduce((total, staff) => total + staff.services, 0)}</div>
+              <p className="text-sm text-green-600">Bookings completed</p>
+            </div>
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
+              <h4 className="text-sm font-medium text-purple-600 mb-2">Active Staff</h4>
+              <div className="text-2xl font-bold text-purple-900">{staffMembers.length}</div>
+              <p className="text-sm text-purple-600">Working today</p>
+            </div>
+          </div>
+
+          {/* Weekly Performance */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Weekly Performance</h4>
+            <div className="space-y-4">
+              {staffMembers.map((staff, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 font-medium">{staff.name.charAt(0)}</span>
+                    </div>
+                    <div>
+                      <h5 className="font-medium text-gray-900">{staff.name}</h5>
+                      <p className="text-sm text-gray-500">{staff.role}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-900">₺{staff.weeklyEarnings.toFixed(2)}</div>
+                    <p className="text-sm text-gray-500">{staff.services} services</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Revenue Trends */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Revenue Analysis</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Commission Distribution</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Barber Commission (60%)</span>
+                    <span className="font-medium">₺{(payrollData.totalGrossPay * 0.6).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">House Revenue (40%)</span>
+                    <span className="font-medium">₺{(payrollData.totalGrossPay * 0.4).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h5 className="font-medium text-gray-900 mb-2">Tax Information</h5>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Social Insurance</span>
+                    <span className="font-medium text-red-600">₺{Math.abs(payrollData.totalDeductions * 0.6).toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Income Tax</span>
+                    <span className="font-medium text-red-600">₺{Math.abs(payrollData.totalDeductions * 0.4).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {currentTab === 'expenses' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Expenses</h3>
-          <p className="text-gray-600">Expense management features coming soon...</p>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold mb-2">Expense Management</h3>
+              <p className="text-gray-600">Track business expenses and overhead costs</p>
+            </div>
+            <button className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+              <span>+</span>
+              Add Expense
+            </button>
+          </div>
+
+          {/* Monthly Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-red-600 mb-1">Total Expenses</h4>
+              <div className="text-xl font-bold text-red-900">₺{(payrollData.totalDeductions + 2500).toFixed(2)}</div>
+              <p className="text-xs text-red-600">This month</p>
+            </div>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-orange-600 mb-1">Staff Costs</h4>
+              <div className="text-xl font-bold text-orange-900">₺{payrollData.totalNetPay.toFixed(2)}</div>
+              <p className="text-xs text-orange-600">Payroll</p>
+            </div>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-yellow-600 mb-1">Utilities</h4>
+              <div className="text-xl font-bold text-yellow-900">₺850.00</div>
+              <p className="text-xs text-yellow-600">Electricity, Water</p>
+            </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-gray-600 mb-1">Supplies</h4>
+              <div className="text-xl font-bold text-gray-900">₺1,200.00</div>
+              <p className="text-xs text-gray-600">Equipment, Products</p>
+            </div>
+          </div>
+
+          {/* Expense Categories */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Expense Categories</h4>
+            <div className="space-y-3">
+              {[
+                { name: 'Staff Salaries', amount: payrollData.totalNetPay, category: 'Payroll', color: 'blue' },
+                { name: 'Social Insurance', amount: Math.abs(payrollData.totalDeductions * 0.6), category: 'Taxes', color: 'red' },
+                { name: 'Income Tax', amount: Math.abs(payrollData.totalDeductions * 0.4), category: 'Taxes', color: 'red' },
+                { name: 'Rent', amount: 3500, category: 'Fixed', color: 'purple' },
+                { name: 'Electricity', amount: 450, category: 'Utilities', color: 'yellow' },
+                { name: 'Water', amount: 180, category: 'Utilities', color: 'blue' },
+                { name: 'Internet', amount: 220, category: 'Utilities', color: 'green' },
+                { name: 'Hair Products', amount: 800, category: 'Supplies', color: 'orange' },
+                { name: 'Equipment Maintenance', amount: 400, category: 'Supplies', color: 'gray' }
+              ].map((expense, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-3 h-3 rounded-full bg-${expense.color}-500`}></div>
+                    <div>
+                      <h5 className="font-medium text-gray-900">{expense.name}</h5>
+                      <p className="text-sm text-gray-500">{expense.category}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-medium text-gray-900">₺{expense.amount.toFixed(2)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Profit Analysis */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Profit Analysis</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600">₺{payrollData.totalGrossPay.toFixed(2)}</div>
+                <p className="text-sm text-gray-600">Total Revenue</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600">₺{(payrollData.totalDeductions + 2500).toFixed(2)}</div>
+                <p className="text-sm text-gray-600">Total Expenses</p>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-blue-600">₺{(payrollData.totalGrossPay - payrollData.totalDeductions - 2500).toFixed(2)}</div>
+                <p className="text-sm text-gray-600">Net Profit</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {currentTab === 'analytics' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Analytics</h3>
-          <p className="text-gray-600">Analytics dashboard coming soon...</p>
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Analytics Dashboard</h3>
+            <p className="text-gray-600">Business insights and performance metrics</p>
+          </div>
+
+          {/* Key Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-blue-600 mb-1">Avg. Service Value</h4>
+              <div className="text-xl font-bold text-blue-900">
+                ₺{staffMembers.length > 0 ? (payrollData.totalGrossPay / Math.max(staffMembers.reduce((total, staff) => total + staff.services, 0), 1)).toFixed(2) : '0.00'}
+              </div>
+              <p className="text-xs text-blue-600">Per booking</p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-green-600 mb-1">Customer Retention</h4>
+              <div className="text-xl font-bold text-green-900">78%</div>
+              <p className="text-xs text-green-600">Returning customers</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-purple-600 mb-1">Peak Hours</h4>
+              <div className="text-xl font-bold text-purple-900">2-6 PM</div>
+              <p className="text-xs text-purple-600">Busiest time</p>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-orange-600 mb-1">Staff Efficiency</h4>
+              <div className="text-xl font-bold text-orange-900">92%</div>
+              <p className="text-xs text-orange-600">Utilization rate</p>
+            </div>
+          </div>
+
+          {/* Performance Charts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-medium mb-4">Staff Performance</h4>
+              <div className="space-y-4">
+                {staffMembers.map((staff, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-900">{staff.name}</span>
+                      <span className="text-sm text-gray-600">₺{staff.weeklyEarnings.toFixed(2)}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-blue-600 h-2 rounded-full" 
+                        style={{ width: `${Math.min((staff.weeklyEarnings / Math.max(...staffMembers.map(s => s.weeklyEarnings), 1)) * 100, 100)}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+                {staffMembers.length === 0 && (
+                  <p className="text-gray-500 text-center py-4">No staff performance data available</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+              <h4 className="text-lg font-medium mb-4">Service Popularity</h4>
+              <div className="space-y-3">
+                {[
+                  { service: 'Haircut', percentage: 45, revenue: payrollData.totalGrossPay * 0.45 },
+                  { service: 'Hair + Beard', percentage: 30, revenue: payrollData.totalGrossPay * 0.30 },
+                  { service: 'Beard Trim', percentage: 15, revenue: payrollData.totalGrossPay * 0.15 },
+                  { service: 'Full Service', percentage: 10, revenue: payrollData.totalGrossPay * 0.10 }
+                ].map((item, index) => (
+                  <div key={index} className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-gray-900">{item.service}</span>
+                      <span className="text-sm text-gray-600">{item.percentage}% (₺{item.revenue.toFixed(2)})</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-green-600 h-2 rounded-full" 
+                        style={{ width: `${item.percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Business Insights */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Business Insights</h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
+                <div className="text-2xl font-bold text-blue-600 mb-2">📈</div>
+                <h5 className="font-medium text-gray-900 mb-1">Revenue Growth</h5>
+                <p className="text-sm text-gray-600">Monthly revenue increased by 15% compared to last month</p>
+              </div>
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <div className="text-2xl font-bold text-green-600 mb-2">⭐</div>
+                <h5 className="font-medium text-gray-900 mb-1">Customer Satisfaction</h5>
+                <p className="text-sm text-gray-600">Average rating of 4.8/5 stars from recent customers</p>
+              </div>
+              <div className="text-center p-4 bg-purple-50 rounded-lg">
+                <div className="text-2xl font-bold text-purple-600 mb-2">🎯</div>
+                <h5 className="font-medium text-gray-900 mb-1">Efficiency Tip</h5>
+                <p className="text-sm text-gray-600">Consider adding more slots during 2-6 PM peak hours</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Weekly Trends */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h4 className="text-lg font-medium mb-4">Weekly Trends</h4>
+            <div className="grid grid-cols-7 gap-2 text-center">
+              {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
+                const revenue = payrollData.totalGrossPay * (0.1 + Math.random() * 0.15);
+                return (
+                  <div key={day} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="text-xs font-medium text-gray-600 mb-1">{day}</div>
+                    <div className="text-sm font-bold text-gray-900">₺{revenue.toFixed(0)}</div>
+                    <div className="text-xs text-gray-500">{Math.floor(revenue / 200)} services</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

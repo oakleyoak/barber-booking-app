@@ -13,15 +13,11 @@ interface Staff {
 
 interface BookingData {
   customer_name: string;
-  customer_phone: string;
-  customer_email: string;
   service_type: string;
   staff_member: string;
-  date: string;
-  time: string;
-  duration: number;
-  price: number;
-  notes: string;
+  booking_date: string;
+  booking_time: string;
+  amount: number;
 }
 
 interface OwnerBookingProps {
@@ -41,16 +37,19 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   const [loading, setLoading] = useState(false);
   const [bookingData, setBookingData] = useState<BookingData>({
     customer_name: '',
-    customer_phone: '',
-    customer_email: '',
     service_type: 'Haircut',
     staff_member: '',
-    date: '',
-    time: '',
-    duration: 30,
-    price: 200,
-    notes: ''
+    booking_date: new Date().toISOString().split('T')[0],
+    booking_time: '09:00',
+    amount: 200
   });
+
+  // Time slots for booking
+  const timeSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+  ];
 
   // Service options with Turkish pricing
   const services = [
@@ -91,19 +90,15 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       setBookingData(prev => ({
         ...prev,
         service_type: serviceName,
-        duration: service.duration,
-        price: service.price
+        amount: service.price
       }));
     }
   };
 
   // Handle form submission
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!bookingData.customer_name.trim() || !bookingData.customer_phone.trim() || 
-        !bookingData.staff_member || !bookingData.date || !bookingData.time) {
-      alert('Please fill in all required fields');
+  const handleSubmit = async () => {
+    if (!bookingData.customer_name.trim() || !bookingData.staff_member) {
+      alert('Please fill in customer name and select a staff member');
       return;
     }
 
@@ -114,16 +109,12 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       const { data, error } = await supabase
         .from('bookings')
         .insert({
-          customer_name: bookingData.customer_name,
-          customer_phone: bookingData.customer_phone,
-          customer_email: bookingData.customer_email || null,
-          service_type: bookingData.service_type,
-          staff_member: bookingData.staff_member,
-          date: bookingData.date,
-          time: bookingData.time,
-          duration: bookingData.duration,
-          price: bookingData.price,
-          notes: bookingData.notes || null,
+          customer: bookingData.customer_name,
+          service: bookingData.service_type,
+          barber: bookingData.staff_member,
+          date: bookingData.booking_date,
+          time: bookingData.booking_time,
+          amount: bookingData.amount,
           shop_name: currentUser.shop_name,
           status: 'confirmed',
           created_by: currentUser.name,
@@ -137,15 +128,11 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       // Reset form
       setBookingData({
         customer_name: '',
-        customer_phone: '',
-        customer_email: '',
         service_type: 'Haircut',
         staff_member: staffMembers[0]?.name || '',
-        date: '',
-        time: '',
-        duration: 30,
-        price: 200,
-        notes: ''
+        booking_date: new Date().toISOString().split('T')[0],
+        booking_time: '09:00',
+        amount: 200
       });
 
       setShowBookingForm(false);
@@ -198,91 +185,28 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           </div>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">Create New Booking</h3>
-            <button
-              onClick={() => setShowBookingForm(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Customer Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h3 className="text-lg font-semibold mb-4">Add New Booking for Staff</h3>
+            
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Customer Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
                 <input
                   type="text"
                   value={bookingData.customer_name}
                   onChange={(e) => setBookingData(prev => ({ ...prev, customer_name: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   placeholder="Enter customer name"
-                  required
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  value={bookingData.customer_phone}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, customer_phone: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="+90 555 123 4567"
-                  required
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email (Optional)
-              </label>
-              <input
-                type="email"
-                value={bookingData.customer_email}
-                onChange={(e) => setBookingData(prev => ({ ...prev, customer_email: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="customer@example.com"
-              />
-            </div>
-
-            {/* Service and Staff */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Service *
-                </label>
-                <select
-                  value={bookingData.service_type}
-                  onChange={(e) => handleServiceChange(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  {services.map(service => (
-                    <option key={service.name} value={service.name}>
-                      {service.name} - ₺{service.price} ({service.duration}min)
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Staff Member *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member</label>
                 <select
                   value={bookingData.staff_member}
                   onChange={(e) => setBookingData(prev => ({ ...prev, staff_member: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 >
                   {staffMembers.map(staff => (
                     <option key={staff.id} value={staff.name}>
@@ -291,108 +215,73 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                   ))}
                 </select>
               </div>
-            </div>
 
-            {/* Date and Time */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                <select
+                  value={bookingData.service_type}
+                  onChange={(e) => handleServiceChange(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {services.map(service => (
+                    <option key={service.name} value={service.name}>
+                      {service.name} - ₺{service.price} ({service.duration}min)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                 <input
                   type="date"
-                  value={bookingData.date}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, date: e.target.value }))}
+                  value={bookingData.booking_date}
+                  onChange={(e) => setBookingData(prev => ({ ...prev, booking_date: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   min={new Date().toISOString().split('T')[0]}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
                 />
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Time *
-                </label>
-                <input
-                  type="time"
-                  value={bookingData.time}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, time: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-            </div>
 
-            {/* Price and Duration */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Duration (minutes)
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <select
+                  value={bookingData.booking_time}
+                  onChange={(e) => setBookingData(prev => ({ ...prev, booking_time: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
+                >
+                  {timeSlots.map(time => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
                 <input
                   type="number"
-                  value={bookingData.duration}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, duration: parseInt(e.target.value) }))}
-                  min="15"
-                  max="180"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price (₺)
-                </label>
-                <input
-                  type="number"
-                  value={bookingData.price}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, price: parseInt(e.target.value) }))}
-                  min="50"
-                  max="1000"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
+                  value={bookingData.amount}
+                  onChange={(e) => setBookingData(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2"
                 />
               </div>
             </div>
 
-            {/* Notes */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Notes (Optional)
-              </label>
-              <textarea
-                value={bookingData.notes}
-                onChange={(e) => setBookingData(prev => ({ ...prev, notes: e.target.value }))}
-                rows={3}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Any special requests or notes..."
-              />
-            </div>
-
-            {/* Submit */}
-            <div className="flex space-x-3">
+            <div className="flex gap-3 mt-6">
               <button
-                type="button"
+                onClick={handleSubmit}
+                disabled={!bookingData.customer_name.trim() || !bookingData.staff_member}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 text-white px-4 py-2 rounded-lg"
+              >
+                Add Booking
+              </button>
+              <button
                 onClick={() => setShowBookingForm(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg transition-colors"
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
               >
                 Cancel
               </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>Creating...</>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4" />
-                    Create Booking
-                  </>
-                )}
-              </button>
             </div>
-          </form>
+          </div>
         </div>
       )}
     </div>
