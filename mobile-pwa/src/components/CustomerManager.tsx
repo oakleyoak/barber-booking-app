@@ -179,8 +179,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-6">
+      {/* Search Bar - Enhanced for mobile */}
+      <div className="mb-6 sticky top-0 z-10 bg-white border-b border-gray-200 pb-4">
         <div className="relative">
           <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
           <input
@@ -188,9 +188,14 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
             placeholder="Search customers by name, phone, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
           />
         </div>
+        {searchQuery && (
+          <div className="mt-2 text-sm text-gray-600">
+            Found {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Customer Stats */}
@@ -219,7 +224,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         </div>
       </div>
 
-      {/* Customer List */}
+      {/* Customer List - Mobile Responsive */}
       <div className="bg-white border border-gray-200 rounded-lg">
         {filteredCustomers.length === 0 ? (
           <div className="text-center py-8">
@@ -232,92 +237,189 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Contact</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-600">Preferred Barber</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-600">Visits</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-600">Total Spent</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-600">Last Visit</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="py-3 px-4">
-                      <div>
-                        <div className="font-medium text-gray-900">{customer.name}</div>
-                        {customer.notes && (
-                          <div className="text-sm text-gray-500">{customer.notes}</div>
-                        )}
+          <>
+            {/* Mobile Card Layout */}
+            <div className="block md:hidden">
+              {filteredCustomers.map((customer) => (
+                <div key={customer.id} className="border-b border-gray-100 p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 text-lg">{customer.name}</h3>
+                      {customer.notes && (
+                        <p className="text-sm text-gray-500 mt-1">{customer.notes}</p>
+                      )}
+                    </div>
+                    <div className="flex space-x-2 ml-4">
+                      <button
+                        onClick={() => handleBookAppointment(customer)}
+                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                        title="Book appointment"
+                      >
+                        <CalendarDays className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => setEditingCustomer(customer)}
+                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"
+                        title="Edit customer"
+                      >
+                        <Edit className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCustomer(customer)}
+                        className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                        title="Delete customer"
+                      >
+                        <Trash2 className="h-5 w-5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <Phone className="h-4 w-4 mr-2" />
+                        <span className="font-medium">Phone:</span>
                       </div>
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center text-sm">
-                          <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                          {customer.phone}
+                      <div className="text-gray-900 ml-6">{customer.phone || 'Not provided'}</div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <Mail className="h-4 w-4 mr-2" />
+                        <span className="font-medium">Email:</span>
+                      </div>
+                      <div className="text-gray-900 ml-6">{customer.email || 'Not provided'}</div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <Users className="h-4 w-4 mr-2" />
+                        <span className="font-medium">Preferred Barber:</span>
+                      </div>
+                      <div className="text-gray-900 ml-6">{customer.preferredBarber || 'Not specified'}</div>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center text-gray-600 mb-2">
+                        <Calendar className="h-4 w-4 mr-2" />
+                        <span className="font-medium">Last Visit:</span>
+                      </div>
+                      <div className="text-gray-900 ml-6">
+                        {customer.lastVisit ? formatDate(customer.lastVisit) : 'Never'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
+                    <div className="flex items-center space-x-4">
+                      <div className="text-center">
+                        <div className="flex items-center text-blue-600">
+                          <Calendar className="h-4 w-4 mr-1" />
+                          <span className="font-medium">{customer.totalVisits}</span>
                         </div>
-                        {customer.email && (
-                          <div className="flex items-center text-sm">
-                            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-                            {customer.email}
-                          </div>
-                        )}
+                        <div className="text-xs text-gray-500">Visits</div>
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-sm">
-                      {customer.preferredBarber || '-'}
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <Calendar className="h-4 w-4 mr-1 text-blue-500" />
-                        {customer.totalVisits}
+                      <div className="text-center">
+                        <div className="flex items-center text-green-600 font-medium">
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          <span>₺{customer.totalSpent.toFixed(0)}</span>
+                        </div>
+                        <div className="text-xs text-gray-500">Total Spent</div>
                       </div>
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center text-green-600 font-medium">
-                        <CreditCard className="h-4 w-4 mr-1" />
-                        ₺{customer.totalSpent.toFixed(0)}
-                      </div>
-                    </td>
-                    <td className="py-3 px-4 text-center text-sm text-gray-500">
-                      {customer.lastVisit ? formatDate(customer.lastVisit) : 'Never'}
-                    </td>
-                    <td className="py-3 px-4">
-                      <div className="flex justify-center space-x-2">
-                        <button
-                          onClick={() => handleBookAppointment(customer)}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                          title="Book appointment"
-                        >
-                          <CalendarDays className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setEditingCustomer(customer)}
-                          className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                          title="Edit customer"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteCustomer(customer)}
-                          className="p-1 text-red-600 hover:bg-red-100 rounded"
-                          title="Delete customer"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop Table Layout */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Contact</th>
+                    <th className="text-left py-3 px-4 font-medium text-gray-600">Preferred Barber</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-600">Visits</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-600">Total Spent</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-600">Last Visit</th>
+                    <th className="text-center py-3 px-4 font-medium text-gray-600">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredCustomers.map((customer) => (
+                    <tr key={customer.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          {customer.notes && (
+                            <div className="text-sm text-gray-500">{customer.notes}</div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center text-sm">
+                            <Phone className="h-4 w-4 mr-2 text-gray-400" />
+                            {customer.phone}
+                          </div>
+                          {customer.email && (
+                            <div className="flex items-center text-sm">
+                              <Mail className="h-4 w-4 mr-2 text-gray-400" />
+                              {customer.email}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        {customer.preferredBarber || '-'}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center">
+                          <Calendar className="h-4 w-4 mr-1 text-blue-500" />
+                          {customer.totalVisits}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center text-green-600 font-medium">
+                          <CreditCard className="h-4 w-4 mr-1" />
+                          ₺{customer.totalSpent.toFixed(0)}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center text-sm text-gray-500">
+                        {customer.lastVisit ? formatDate(customer.lastVisit) : 'Never'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex justify-center space-x-2">
+                          <button
+                            onClick={() => handleBookAppointment(customer)}
+                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                            title="Book appointment"
+                          >
+                            <CalendarDays className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => setEditingCustomer(customer)}
+                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                            title="Edit customer"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCustomer(customer)}
+                            className="p-1 text-red-600 hover:bg-red-100 rounded"
+                            title="Delete customer"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
