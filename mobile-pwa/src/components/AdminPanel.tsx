@@ -101,7 +101,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   }, [currentUser.shop_name]);
 
   const staffMembers = React.useMemo(() => {
-    return realStaffMembers.map(staff => {
+    // Always include Ismail as he's a real staff member
+    const realStaff = [
+      { name: 'Ismail Hassan Azimkar', role: 'barber' },
+      ...realStaffMembers
+    ];
+
+    // Remove duplicates if Ismail is already in database
+    const uniqueStaff = realStaff.filter((staff, index, self) => 
+      index === self.findIndex(s => s.name === staff.name)
+    );
+
+    return uniqueStaff.map(staff => {
       const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name, staff.name);
       const commissionRate = staff.role === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
       
