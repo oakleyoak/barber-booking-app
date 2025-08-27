@@ -74,6 +74,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       // Generate a UUID for the booking ID
       const bookingId = crypto.randomUUID();
 
+      // Convert time format (9am -> 09:00)
+      const timeIn24Hour = newBooking.time.includes('am') 
+        ? newBooking.time.replace('am', '').padStart(2, '0') + ':00'
+        : newBooking.time.includes('pm') 
+          ? (parseInt(newBooking.time.replace('pm', '')) === 12 ? '12' : (parseInt(newBooking.time.replace('pm', '')) + 12).toString()) + ':00'
+          : newBooking.time;
+
+      const bookingDate = selectedDate.toISOString().split('T')[0];
+
       // Save booking to Supabase bookings table
       const { error: bookingError } = await supabase
         .from('bookings')
@@ -84,7 +93,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           customer_name: newBooking.customer,
           service: newBooking.service,
           price: newBooking.amount,
-          date: new Date().toISOString()
+          date: bookingDate,
+          time: timeIn24Hour
         });
 
       if (bookingError) {
@@ -95,7 +105,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       EarningsService.addTransaction(currentUser.shop_name, {
         service: `${newBooking.service} - ${newBooking.customer}`,
         customer: newBooking.customer,
-        date: new Date().toISOString(),
+        date: `${bookingDate}T${timeIn24Hour}:00`,
         amount: newBooking.amount,
         barber: currentUser.name,
         commission: 60, // Default commission

@@ -139,13 +139,14 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         customer_name: bookingData.customer_name,
         service: bookingData.service_type,
         price: bookingData.amount,
-        date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
+        date: bookingData.booking_date,
+        time: bookingData.booking_time
       });
 
       // Generate a UUID for the booking ID
       const bookingId = crypto.randomUUID();
 
-      // Save booking to Supabase bookings table
+      // Save booking to Supabase bookings table with separate date and time
       const { data: bookingResult, error: bookingError } = await supabase
         .from('bookings')
         .insert({
@@ -155,7 +156,8 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           customer_name: bookingData.customer_name,
           service: bookingData.service_type,
           price: bookingData.amount,
-          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
+          date: bookingData.booking_date,
+          time: bookingData.booking_time
         })
         .select('*')
         .single();
@@ -171,7 +173,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       EarningsService.addTransaction(currentUser.shop_name, {
         service: `${bookingData.service_type} - ${bookingData.customer_name}`,
         customer: bookingData.customer_name,
-        date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString(),
+        date: `${bookingData.booking_date}T${bookingData.booking_time}:00`,
         amount: bookingData.amount,
         barber: bookingData.staff_member,
         commission: 60, // Default commission
