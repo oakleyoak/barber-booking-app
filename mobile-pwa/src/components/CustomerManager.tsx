@@ -179,25 +179,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         </button>
       </div>
 
-      {/* Search Bar - Enhanced for mobile */}
-      <div className="mb-6 sticky top-0 z-10 bg-white border-b border-gray-200 pb-4">
-        <div className="relative">
-          <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search customers by name, phone, or email..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-          />
-        </div>
-        {searchQuery && (
-          <div className="mt-2 text-sm text-gray-600">
-            Found {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
-          </div>
-        )}
-      </div>
-
       {/* Customer Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -222,6 +203,25 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
           </div>
           <div className="text-sm text-orange-600">Avg per Customer</div>
         </div>
+      </div>
+
+      {/* Search Bar - Enhanced for mobile */}
+      <div className="mb-6 sticky top-0 z-10 bg-white border-b border-gray-200 pb-4">
+        <div className="relative">
+          <Search className="h-5 w-5 absolute left-3 top-3 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search customers by name, phone, or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+          />
+        </div>
+        {searchQuery && (
+          <div className="mt-2 text-sm text-gray-600">
+            Found {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''}
+          </div>
+        )}
       </div>
 
       {/* Customer List - Mobile Responsive */}
