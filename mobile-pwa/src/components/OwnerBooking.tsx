@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserPlus, Calendar, Clock, User, Phone, Mail, Save, X } from 'lucide-react';
 import { UserManagementService } from '../services/userManagementService';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
+import { EarningsService } from '../services/earningsService';
 import { supabase } from '../lib/supabase';
 
 interface Staff {
@@ -87,25 +88,16 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     setLoading(true);
     
     try {
-      // Create booking in Supabase
-      const { data, error } = await supabase
-        .from('bookings')
-        .insert({
-          customer: bookingData.customer_name,
-          service: bookingData.service_type,
-          barber: bookingData.staff_member,
-          date: bookingData.booking_date,
-          time: bookingData.booking_time,
-          amount: bookingData.amount,
-          shop_name: currentUser.shop_name,
-          status: 'confirmed',
-          created_by: currentUser.name,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
+      // Add to earnings service (same as BookingCalendar)
+      EarningsService.addTransaction(currentUser.shop_name, {
+        service: `${bookingData.service_type} - ${bookingData.customer_name}`,
+        customer: bookingData.customer_name,
+        date: new Date().toISOString(),
+        amount: bookingData.amount,
+        barber: bookingData.staff_member,
+        commission: 60, // Default commission
+        status: 'completed'
+      });
 
       // Reset form
       setBookingData({
