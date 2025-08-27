@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Edge & Co Custom Styling */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@400;500;600&display=swap');
+
+/* Custom FullCalendar styles with Edge & Co branding */
+.fc {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+.fc-event {
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.fc-daygrid-event {
+  padding: 4px 6px;
+}
+
+.fc-timegrid-event {
+  padding: 2px 4px;
+}
+
+.fc-event-title {
+  font-weight: 600;
+}
+
+.fc-button-primary {
+  background-color: #1e293b;
+  border-color: #1e293b;
+  font-weight: 500;
+}
+
+.fc-button-primary:hover {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.fc-button-primary:focus {
+  box-shadow: 0 0 0 0.2rem rgba(30, 41, 59, 0.25);
+}
+
+.fc-button-primary:disabled {
+  background-color: #64748b;
+  border-color: #64748b;
+}
+
+/* Confirmed bookings - Edge primary color */
+.fc-event[data-status="confirmed"] {
+  background-color: #1e293b;
+  border-color: #1e293b;
+}
+
+/* Pending bookings - Edge gold */
+.fc-event[data-status="pending"] {
+  background-color: #d97706;
+  border-color: #d97706;
+}
+
+/* Cancelled bookings - Edge red */
+.fc-event[data-status="cancelled"] {
+  background-color: #dc2626;
+  border-color: #dc2626;
+  opacity: 0.7;
+}
+
+/* Header styling */
+.fc-header-toolbar {
+  margin-bottom: 1.5rem;
+}
+
+.fc-toolbar-title {
+  font-family: 'Playfair Display', serif;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* Custom scrollbar for modal */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Loading spinner animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Edge & Co specific styling */
+.edge-gradient {
+  background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%);
+}
+
+.edge-pattern {
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 2px,
+      rgba(220, 38, 38, 0.1) 2px,
+      rgba(220, 38, 38, 0.1) 4px
+    );
+}
+
+/* Barber pole animation for loading states */
+@keyframes barber-pole {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 30px 0;
+  }
+}
+
+.barber-pole {
+  background: repeating-linear-gradient(
+    45deg,
+    #dc2626,
+    #dc2626 10px,
+    #ffffff 10px,
+    #ffffff 20px,
+    #1e40af 20px,
+    #1e40af 30px
+  );
+  animation: barber-pole 1s linear infinite;
+}
