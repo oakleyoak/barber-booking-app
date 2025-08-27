@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, DollarSign, CheckCircle, XCircle, Edit2, Search, Filter, Phone, Mail, CheckSquare, X, AlertTriangle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
+import { CustomerService } from '../services/supabaseCustomerService';
 
 interface Booking {
   id: string;
@@ -158,12 +159,31 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
   const updateBookingStatus = async (bookingId: string, status: string) => {
     try {
+      // First get the booking details to know which customer to refresh
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('customer_id, user_id')
+        .eq('id', bookingId)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching booking details:', fetchError);
+        throw fetchError;
+      }
+
+      // Update the booking status
       const { error } = await supabase
         .from('bookings')
         .update({ status })
         .eq('id', bookingId);
 
       if (error) throw error;
+
+      // If the booking was completed, refresh the customer's stats
+      if (status === 'completed' && booking) {
+        await CustomerService.refreshCustomerStats(currentUser.shop_name, booking.customer_id);
+      }
+
       loadBookings();
     } catch (error) {
       console.error('Error updating booking status:', error);

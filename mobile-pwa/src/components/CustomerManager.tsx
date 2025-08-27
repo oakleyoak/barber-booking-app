@@ -149,6 +149,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         return;
       }
 
+      // Refresh customer stats after booking creation
+      await CustomerService.refreshCustomerStats(currentUser.shop_name, customerToBook.id);
+
       setShowBookingModal(false);
       setCustomerToBook(null);
       setBookingData({
@@ -157,6 +160,10 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         time: '09:00',
         price: 700
       });
+
+      // Reload customers to show updated stats
+      await loadCustomers();
+
       alert('Appointment booked successfully!');
     } catch (error) {
       console.error('Error creating booking:', error);
