@@ -112,7 +112,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
     // Use ONLY real staff from Supabase database - no hybrid, no fallbacks
     return realStaffMembers.map(staff => {
       const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name, staff.name);
-      const commissionRate = staff.role === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
+      
+      // Handle both "Barber"/"barber" and "Apprentice"/"apprentice" role formats
+      const normalizedRole = staff.role?.toLowerCase();
+      const commissionRate = normalizedRole === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
       
       // Calculate based on actual data only
       const weeklyEarnings = memberEarnings.totalAmount || 0;
