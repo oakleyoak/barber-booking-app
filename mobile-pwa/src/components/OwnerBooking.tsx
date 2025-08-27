@@ -219,6 +219,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                   onChange={(e) => setBookingData(prev => ({ ...prev, customer_name: e.target.value }))}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2"
                   placeholder="Enter customer name"
+                  autoFocus
                 />
               </div>
 
