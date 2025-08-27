@@ -87,6 +87,10 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
 
     setLoading(true);
     
+    console.log('Current user:', currentUser);
+    console.log('Staff members:', staffMembers);
+    console.log('Booking data:', bookingData);
+    
     try {
       // First, check if customer exists in customers table
       let customerId = null;
@@ -115,12 +119,31 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         }
       }
 
+      // Make sure we have a valid customer ID
+      if (!customerId) {
+        throw new Error('Failed to create or find customer');
+      }
+
       // Get staff member user_id
       const staffMember = staffMembers.find(staff => staff.name === bookingData.staff_member);
       const userId = staffMember?.id || currentUser.id;
 
+      // Make sure we have a valid user ID
+      if (!userId) {
+        throw new Error('No valid user ID found for booking');
+      }
+
+      console.log('Booking data:', {
+        userId,
+        customerId,
+        customer_name: bookingData.customer_name,
+        service: bookingData.service_type,
+        price: bookingData.amount,
+        date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
+      });
+
       // Save booking to Supabase bookings table
-      const { error: bookingError } = await supabase
+      const { data: bookingResult, error: bookingError } = await supabase
         .from('bookings')
         .insert({
           user_id: userId,
@@ -129,11 +152,15 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           service: bookingData.service_type,
           price: bookingData.amount,
           date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
-        });
+        })
+        .select();
 
       if (bookingError) {
+        console.error('Booking insertion error:', bookingError);
         throw bookingError;
       }
+
+      console.log('Booking created successfully:', bookingResult);
 
       // ALSO add to earnings service for immediate display and local tracking
       EarningsService.addTransaction(currentUser.shop_name, {
