@@ -80,23 +80,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           customer_name: newBooking.customer,
           service: newBooking.service,
           price: newBooking.amount,
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          status: 'pending', // Default to pending
+          payment_status: 'unpaid', // Default to unpaid
+          created_by: currentUser.id
         });
 
       if (bookingError) {
         throw bookingError;
       }
 
-      // Also add to earnings service for local tracking
-      EarningsService.addTransaction(currentUser.shop_name, {
-        service: `${newBooking.service} - ${newBooking.customer}`,
-        customer: newBooking.customer,
-        date: new Date().toISOString(),
-        amount: newBooking.amount,
-        barber: currentUser.name,
-        commission: 60, // Default commission
-        status: 'completed'
-      });
+      // DON'T add to earnings service until booking is completed and paid
 
       // Reset form
       setNewBooking({

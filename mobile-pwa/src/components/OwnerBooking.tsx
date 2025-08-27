@@ -128,23 +128,18 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           customer_name: bookingData.customer_name,
           service: bookingData.service_type,
           price: bookingData.amount,
-          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString()
+          date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString(),
+          status: 'pending', // Default to pending instead of completed
+          payment_status: 'unpaid', // Default to unpaid
+          created_by: currentUser.id
         });
 
       if (bookingError) {
         throw bookingError;
       }
 
-      // Also add to earnings service for local tracking
-      EarningsService.addTransaction(currentUser.shop_name, {
-        service: `${bookingData.service_type} - ${bookingData.customer_name}`,
-        customer: bookingData.customer_name,
-        date: new Date(`${bookingData.booking_date}T${bookingData.booking_time}`).toISOString(),
-        amount: bookingData.amount,
-        barber: bookingData.staff_member,
-        commission: 60, // Default commission
-        status: 'completed'
-      });
+      // DON'T add to earnings service until booking is completed and paid
+      // EarningsService should only track completed, paid bookings
 
       // Reset form
       setBookingData({

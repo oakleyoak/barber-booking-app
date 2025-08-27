@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, UserPlus, FileText } from 'lucide-react';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, UserPlus, FileText, CheckSquare } from 'lucide-react';
 import { dbService } from './services/database';
 import { User as SupabaseUser } from './lib/supabase';
 import BookingCalendar from './components/BookingCalendar';
@@ -8,6 +8,7 @@ import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
 import OwnerBooking from './components/OwnerBooking';
 import AccountingReports from './components/AccountingReports';
+import BookingManagement from './components/BookingManagement';
 import { DataCleanupService } from './services/dataCleanupService';
 
 interface UserType {
@@ -212,6 +213,18 @@ function App() {
               <span className="hidden sm:inline">Customers</span>
               <span className="sm:hidden text-center leading-tight">Customers</span>
             </button>
+            <button
+              onClick={() => setCurrentView('bookings')}
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+                currentView === 'bookings'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <CheckSquare className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="hidden sm:inline">Bookings</span>
+              <span className="sm:hidden text-center leading-tight">Bookings</span>
+            </button>
             
             {/* Owner-only features */}
             {currentUser?.role === 'Owner' && (
@@ -268,6 +281,10 @@ function App() {
 
             {currentView === 'customers' && (
               <CustomerManager currentUser={currentUser} />
+            )}
+
+            {currentView === 'bookings' && (
+              <BookingManagement currentUser={currentUser} />
             )}
 
             {currentView === 'owner-booking' && currentUser?.role === 'Owner' && (
