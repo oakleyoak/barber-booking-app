@@ -94,17 +94,19 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     try {
       // First, check if customer exists in customers table
       let customerId = null;
-      const { data: existingCustomers } = await supabase
+      const { data: existingCustomers, error: customerError } = await supabase
         .from('customers')
         .select('id')
         .eq('name', bookingData.customer_name)
-        .single();
+        .maybeSingle();
 
-      if (existingCustomers) {
+      if (existingCustomers && !customerError) {
         customerId = existingCustomers.id;
+        console.log('Found existing customer:', customerId);
       } else {
+        console.log('Customer not found, creating new customer...');
         // Create new customer if not exists
-        const { data: newCustomer } = await supabase
+        const { data: newCustomer, error: createError } = await supabase
           .from('customers')
           .insert({
             name: bookingData.customer_name,
@@ -114,8 +116,11 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           .select('id')
           .single();
         
-        if (newCustomer) {
+        if (newCustomer && !createError) {
           customerId = newCustomer.id;
+          console.log('Created new customer:', customerId);
+        } else {
+          console.error('Error creating customer:', createError);
         }
       }
 

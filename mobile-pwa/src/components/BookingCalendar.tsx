@@ -46,17 +46,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     try {
       // First, check if customer exists in customers table
       let customerId = null;
-      const { data: existingCustomers } = await supabase
+      const { data: existingCustomers, error: customerError } = await supabase
         .from('customers')
         .select('id')
         .eq('name', newBooking.customer)
-        .single();
+        .maybeSingle();
 
-      if (existingCustomers) {
+      if (existingCustomers && !customerError) {
         customerId = existingCustomers.id;
       } else {
         // Create new customer if not exists
-        const { data: newCustomer } = await supabase
+        const { data: newCustomer, error: createError } = await supabase
           .from('customers')
           .insert({
             name: newBooking.customer,
@@ -66,7 +66,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           .select('id')
           .single();
         
-        if (newCustomer) {
+        if (newCustomer && !createError) {
           customerId = newCustomer.id;
         }
       }
