@@ -8,6 +8,7 @@ import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
 import OwnerBooking from './components/OwnerBooking';
 import AccountingReports from './components/AccountingReports';
+import { DataCleanupService } from './services/dataCleanupService';
 
 interface UserType {
   id?: string;
@@ -34,14 +35,20 @@ function App() {
 
   // Check for saved user session on load
   useEffect(() => {
-    const savedUser = localStorage.getItem('current_barber_user');
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch (err) {
-        localStorage.removeItem('current_barber_user');
+    const initializeApp = async () => {
+      const savedUser = localStorage.getItem('current_barber_user');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser);
+          setCurrentUser(user);
+          // Clean dummy data on app startup
+          await DataCleanupService.clearAllDummyData(user.shop_name);
+        } catch (err) {
+          localStorage.removeItem('current_barber_user');
+        }
       }
-    }
+    };
+    initializeApp();
   }, []);
 
   // Authentication handler
@@ -74,6 +81,9 @@ function App() {
           };
           setCurrentUser(userSession);
           localStorage.setItem('current_barber_user', JSON.stringify(userSession));
+          
+          // Clean dummy data on login
+          await DataCleanupService.clearAllDummyData(userSession.shop_name);
         } else {
           setError('Invalid email or password');
         }
@@ -115,6 +125,9 @@ function App() {
           };
           setCurrentUser(userSession);
           localStorage.setItem('current_barber_user', JSON.stringify(userSession));
+          
+          // Clean dummy data on registration
+          await DataCleanupService.clearAllDummyData(userSession.shop_name);
         }
       }
     } catch (err: any) {

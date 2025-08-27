@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Printer } from 'lucide-react';
+import { EarningsService } from '../services/earningsService';
 
 interface AccountingReportsProps {
   currentUser: {
@@ -14,25 +15,53 @@ interface AccountingReportsProps {
 const AccountingReports: React.FC<AccountingReportsProps> = ({ currentUser }) => {
   const [reportType, setReportType] = useState('Profit & Loss Statement');
   const [period, setPeriod] = useState('Current Month');
-
-  const reportData = {
+  const [reportData, setReportData] = useState({
     revenue: {
-      services: 500.00,
-      products: 0.00,
-      otherIncome: 0.00,
-      total: 500.00
+      services: 0,
+      products: 0,
+      otherIncome: 0,
+      total: 0
     },
     expenses: {
-      staffCommissions: 300.00,
+      staffCommissions: 0,
       rent: 2500.00,
       utilities: 300.00,
       supplies: 450.00,
       marketing: 200.00,
       insurance: 150.00,
       other: 100.00,
-      total: 4000.00
+      total: 0
     }
-  };
+  });
+
+  useEffect(() => {
+    // Load actual earnings data
+    const monthlyEarnings = EarningsService.getMonthlyEarnings(currentUser.shop_name);
+    const revenue = monthlyEarnings.totalAmount;
+    const commissions = monthlyEarnings.totalCommission;
+    
+    const fixedExpenses = 2500 + 300 + 450 + 200 + 150 + 100; // rent + utilities + supplies + marketing + insurance + other
+    const totalExpenses = commissions + fixedExpenses;
+
+    setReportData({
+      revenue: {
+        services: revenue,
+        products: 0,
+        otherIncome: 0,
+        total: revenue
+      },
+      expenses: {
+        staffCommissions: commissions,
+        rent: 2500.00,
+        utilities: 300.00,
+        supplies: 450.00,
+        marketing: 200.00,
+        insurance: 150.00,
+        other: 100.00,
+        total: totalExpenses
+      }
+    });
+  }, [currentUser.shop_name]);
 
   const grossProfit = reportData.revenue.total - reportData.expenses.total;
   const netProfit = grossProfit;
@@ -101,19 +130,19 @@ const AccountingReports: React.FC<AccountingReportsProps> = ({ currentUser }) =>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Services</span>
-                <span>${reportData.revenue.services.toFixed(2)}</span>
+                <span>₺{reportData.revenue.services.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Products</span>
-                <span>${reportData.revenue.products.toFixed(2)}</span>
+                <span>₺{reportData.revenue.products.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Other Income</span>
-                <span>${reportData.revenue.otherIncome.toFixed(2)}</span>
+                <span>₺{reportData.revenue.otherIncome.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-bold border-t pt-2">
                 <span>Total Revenue</span>
-                <span>${reportData.revenue.total.toFixed(2)}</span>
+                <span>₺{reportData.revenue.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -124,35 +153,35 @@ const AccountingReports: React.FC<AccountingReportsProps> = ({ currentUser }) =>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Staff Commissions</span>
-                <span>${reportData.expenses.staffCommissions.toFixed(2)}</span>
+                <span>₺{reportData.expenses.staffCommissions.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Rent</span>
-                <span>${reportData.expenses.rent.toFixed(2)}</span>
+                <span>₺{reportData.expenses.rent.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Utilities</span>
-                <span>${reportData.expenses.utilities.toFixed(2)}</span>
+                <span>₺{reportData.expenses.utilities.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Supplies</span>
-                <span>${reportData.expenses.supplies.toFixed(2)}</span>
+                <span>₺{reportData.expenses.supplies.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Marketing</span>
-                <span>${reportData.expenses.marketing.toFixed(2)}</span>
+                <span>₺{reportData.expenses.marketing.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Insurance</span>
-                <span>${reportData.expenses.insurance.toFixed(2)}</span>
+                <span>₺{reportData.expenses.insurance.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Other</span>
-                <span>${reportData.expenses.other.toFixed(2)}</span>
+                <span>₺{reportData.expenses.other.toFixed(2)}</span>
               </div>
               <div className="flex justify-between font-bold border-t pt-2">
                 <span>Total Expenses</span>
-                <span>${reportData.expenses.total.toFixed(2)}</span>
+                <span>₺{reportData.expenses.total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -163,11 +192,11 @@ const AccountingReports: React.FC<AccountingReportsProps> = ({ currentUser }) =>
           <h4 className="text-lg font-semibold mb-4">PROFIT ANALYSIS</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="text-center bg-blue-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-blue-900">${Math.abs(grossProfit).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-blue-900">₺{Math.abs(grossProfit).toFixed(2)}</div>
               <div className="text-sm text-blue-600">Gross Profit</div>
             </div>
             <div className="text-center bg-green-50 p-4 rounded-lg">
-              <div className="text-2xl font-bold text-green-900">${netProfit < 0 ? '-' : ''}${Math.abs(netProfit).toFixed(2)}</div>
+              <div className="text-2xl font-bold text-green-900">{netProfit < 0 ? '-' : ''}₺{Math.abs(netProfit).toFixed(2)}</div>
               <div className="text-sm text-green-600">Net Profit</div>
             </div>
             <div className="text-center bg-purple-50 p-4 rounded-lg">
