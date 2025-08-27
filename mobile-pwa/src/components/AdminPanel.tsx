@@ -3,6 +3,8 @@ import { DollarSign, Users, FileText, Settings, Save } from 'lucide-react';
 import { ShopSettings, ShopSettingsService } from '../services/shopSettings';
 import { EarningsService } from '../services/earningsService';
 import { DataCleanupService } from '../services/dataCleanupService';
+import { UserManagementService } from '../services/userManagementService';
+import UserManagement from './UserManagement';
 
 // Data Status Display Component
 const DataStatusDisplay: React.FC<{ shopName: string }> = ({ shopName }) => {
@@ -86,18 +88,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   // Recalculate when settings change
   const payrollData = React.useMemo(() => calculatePayrollData(), [shopSettings]);
 
-  // Sample staff data with realistic calculations based on actual earnings
-  const staffMembers = React.useMemo(() => {
-    // Get actual earnings for each staff member
-    const staffData = [
-      { name: 'Ismail Hassan Azimkar', role: 'Barber' },
-      { name: 'Mehmet Yılmaz', role: 'Barber' },
-      { name: 'Ali Demir', role: 'Apprentice' }
-    ];
+  // Real staff data from database with realistic calculations based on actual earnings
+  const [realStaffMembers, setRealStaffMembers] = React.useState<any[]>([]);
 
-    return staffData.map(staff => {
+  // Load staff members from database
+  React.useEffect(() => {
+    const loadStaffMembers = async () => {
+      const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
+      setRealStaffMembers(staff);
+    };
+    loadStaffMembers();
+  }, [currentUser.shop_name]);
+
+  const staffMembers = React.useMemo(() => {
+    return realStaffMembers.map(staff => {
       const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name, staff.name);
-      const commissionRate = staff.role === 'Apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
+      const commissionRate = staff.role === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
       
       // Calculate based on actual data only - no fallback dummy values
       const weeklyEarnings = memberEarnings.totalAmount || 0;
@@ -120,7 +126,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
         netPay
       };
     });
-  }, [shopSettings, currentUser.shop_name]);
+  }, [realStaffMembers, shopSettings, currentUser.shop_name]);
 
   const handleTabChange = (tabName: string) => {
     setCurrentTab(tabName);
@@ -634,10 +640,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
       )}
 
       {currentTab === 'users' && (
-        <div className="bg-white border border-gray-200 rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">User Management</h3>
-          <p className="text-gray-600">User management features coming soon...</p>
-        </div>
+        <UserManagement currentUser={currentUser} />
       )}
 
       {currentTab === 'reports' && (
