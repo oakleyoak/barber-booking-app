@@ -319,11 +319,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                     <label key={day} className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={shopSettings.closed_days.includes(day)}
+                        checked={shopSettings.closed_days?.includes(day) || false}
                         onChange={(e) => {
                           const updatedDays = e.target.checked
-                            ? [...shopSettings.closed_days, day]
-                            : shopSettings.closed_days.filter(d => d !== day);
+                            ? [...(shopSettings.closed_days || []), day]
+                            : (shopSettings.closed_days || []).filter(d => d !== day);
                           setShopSettings(prev => prev ? {...prev, closed_days: updatedDays} : null);
                         }}
                         className="mr-2"

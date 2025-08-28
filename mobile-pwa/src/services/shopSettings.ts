@@ -15,10 +15,10 @@ export const defaultShopSettings: ShopSettings = {
   opening_time: '09:00:00',
   closing_time: '20:00:00',
   closed_days: ['Thursday', 'Sunday'],
-  sunday_opening_time: '10:00:00', // Added default value
-  sunday_closing_time: '18:00:00', // Added default value
-  services: [], // Added default value
-  default_commission_rate: 50 // Added default value
+  sunday_opening_time: '10:00:00',
+  sunday_closing_time: '18:00:00',
+  services: [],
+  default_commission_rate: 50
 };
 
 // Fix TypeScript errors by ensuring default values for optional properties
@@ -54,15 +54,15 @@ export class ShopSettingsService {
       const settings = await this.getSettings(shopName);
       switch (role.toLowerCase()) {
         case 'barber':
-          return settings.barber_commission ?? defaultShopSettings.barber_commission;
+          return settings.barber_commission ?? defaultShopSettings.barber_commission ?? 60;
         case 'apprentice':
-          return settings.apprentice_commission ?? defaultShopSettings.apprentice_commission;
+          return settings.apprentice_commission ?? defaultShopSettings.apprentice_commission ?? 40;
         default:
-          return defaultShopSettings.barber_commission;
+          return defaultShopSettings.barber_commission ?? 60;
       }
     } catch (error) {
       console.error('Error getting commission rate:', error);
-      return defaultShopSettings.barber_commission;
+      return defaultShopSettings.barber_commission ?? 60;
     }
   }
 

@@ -16,16 +16,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password?: string; // Optional for frontend use (never sent to client)
+  password: string;
   role: string;
   shop_name: string;
   shop_settings?: string;
   created_at?: string;
   updated_at?: string;
-  // Legacy fields for backwards compatibility (not in database)
-  commission_rate?: number;
-  target_weekly?: number;
-  target_monthly?: number;
 }
 
 export interface Customer {
@@ -107,26 +103,25 @@ export interface Transaction {
   updated_at?: string;
 }
 
-// Additional interfaces for ShopSettings (existing table)
+// Additional interfaces for ShopSettings (table needs to be created)
 export interface ShopSettings {
   id?: string;
-  user_id?: string;
+  user_id: string;
   shop_name: string;
-  opening_time?: string;
-  closing_time?: string;
-  sunday_opening_time?: string;
-  sunday_closing_time?: string;
-  closed_days?: string[];
-  services?: ServicePricing[];
+  opening_time: string;
+  closing_time: string;
+  sunday_opening_time: string;
+  sunday_closing_time: string;
+  closed_days: string[];
   daily_target: number;
   weekly_target: number;
   monthly_target: number;
-  default_commission_rate?: number;
-  barber_commission?: number;
-  apprentice_commission?: number;
-  social_insurance_rate?: number;
-  income_tax_rate?: number;
-  income_tax_threshold?: number;
+  default_commission_rate: number;
+  barber_commission: number;
+  apprentice_commission: number;
+  social_insurance_rate: number;
+  income_tax_rate: number;
+  income_tax_threshold: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -6,7 +6,7 @@ class ShopSettingsService {
     try {
       const { data, error } = await supabase
         .from('shop_settings')
-        .select('id, shop_name, opening_time, closing_time, closed_days, daily_target, weekly_target, monthly_target, barber_commission, apprentice_commission, social_insurance_rate, income_tax_rate, income_tax_threshold')
+        .select('*')
         .single();
 
       if (error) {
@@ -23,11 +23,14 @@ class ShopSettingsService {
         return this.getDefaultSettings();
       }
 
-      // Map database fields to expected ShopSettings interface
+      // Map database fields to expected ShopSettings interface with defaults for missing fields
       return {
         ...data,
-        sunday_opening_time: '12:00',
-        sunday_closing_time: '18:00',
+        opening_time: data.opening_time || '09:00',
+        closing_time: data.closing_time || '18:00',
+        sunday_opening_time: data.sunday_opening_time || '12:00',
+        sunday_closing_time: data.sunday_closing_time || '18:00',
+        closed_days: data.closed_days || [],
         services: [
           { name: 'Haircut', price: 700, duration: 45 },
           { name: 'Beard trim', price: 300, duration: 15 },
