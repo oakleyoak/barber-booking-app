@@ -109,6 +109,24 @@ function App() {
     }
   };
 
+  const handleTestConnection = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const isConnected = await dbService.testSupabaseConnection();
+      if (isConnected) {
+        setError('✅ Supabase connection successful!');
+      } else {
+        setError('❌ Supabase connection failed. Check console for details.');
+      }
+    } catch (err: any) {
+      setError(`❌ Connection error: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleCreateTestUser = async () => {
     setError('');
     setIsLoading(true);
@@ -446,7 +464,16 @@ function App() {
           </div>
 
           {isLogin && (
-            <div className="text-center">
+            <div className="text-center space-y-2">
+              <button
+                type="button"
+                onClick={handleTestConnection}
+                disabled={isLoading}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+              >
+                🔍 Test Supabase Connection
+              </button>
+              <br />
               <button
                 type="button"
                 onClick={handleCreateTestUser}

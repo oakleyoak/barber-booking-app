@@ -55,38 +55,56 @@ export const dbService = {
 
   async login(email: string, password: string): Promise<User | null> {
     try {
-      console.log('Logging in user:', email);
+      console.log('🔐 Starting login process for:', email);
 
+      // Step 1: Authenticate with Supabase Auth
+      console.log('📡 Attempting Supabase auth...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
 
       if (error) {
-        console.error('Login error:', error);
-        throw new Error('Invalid credentials');
+        console.error('❌ Supabase auth error:', error);
+        throw new Error(`Authentication failed: ${error.message}`);
       }
 
-      if (data.user) {
-        // Get user profile from users table
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          throw new Error('User profile not found');
-        }
-
-        console.log('User logged in successfully:', profile);
-        return profile;
+      if (!data.user) {
+        console.error('❌ No user data returned from auth');
+        throw new Error('Authentication failed: No user data');
       }
 
-      return null;
+      console.log('✅ Supabase auth successful, user ID:', data.user.id);
+
+      // Step 2: Get user profile from users table
+      console.log('📋 Fetching user profile from users table...');
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('❌ Profile fetch error:', profileError);
+        console.error('❌ Profile error details:', {
+          message: profileError.message,
+          details: profileError.details,
+          hint: profileError.hint,
+          code: profileError.code
+        });
+        throw new Error(`Profile fetch failed: ${profileError.message}`);
+      }
+
+      if (!profile) {
+        console.error('❌ No profile found in users table');
+        throw new Error('User profile not found in database');
+      }
+
+      console.log('✅ User profile fetched successfully:', profile);
+      console.log('🎉 Login process completed successfully');
+      return profile;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('💥 Login error:', error);
       return null;
     }
   },
@@ -156,20 +174,6 @@ export const dbService = {
     }
   },
 
-  async logout(): Promise<void> {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Logout error:', error);
-        throw error;
-      }
-      console.log('User logged out successfully');
-    } catch (error) {
-      console.error('Logout error:', error);
-      throw error;
-    }
-  },
-
   async getCurrentUser(): Promise<User | null> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -193,6 +197,67 @@ export const dbService = {
     } catch (error) {
       console.error('Get current user error:', error);
       return null;
+    }
+  },
+
+  async logout(): Promise<void> {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
+      console.log('User logged out successfully');
+    } catch (error) {
+      console.error('Logout error:', error);
+      throw error;
+    }
+  },
+
+  async testSupabaseConnection(): Promise<boolean> {
+    try {
+      console.log('🔍 Testing Supabase connection...');
+
+      // Test 1: Basic connection to users table
+      console.log('📡 Testing users table access...');
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1);
+
+      if (usersError) {
+        console.error('❌ Users table access failed:', usersError);
+        console.error('❌ Error details:', {
+          message: usersError.message,
+          details: usersError.details,
+          hint: usersError.hint,
+          code: usersError.code
+        });
+        return false;
+      }
+
+      console.log('✅ Users table access successful');
+
+      // Test 2: Check auth status
+      console.log('🔐 Testing auth status...');
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+
+      if (authError) {
+        console.error('❌ Auth status check failed:', authError);
+        return false;
+      }
+
+      if (user) {
+        console.log('✅ User is authenticated:', user.email);
+      } else {
+        console.log('ℹ️  No user currently authenticated');
+      }
+
+      console.log('🎉 All Supabase tests passed!');
+      return true;
+    } catch (error) {
+      console.error('💥 Supabase connection test error:', error);
+      return false;
     }
   },
 
