@@ -25,7 +25,6 @@ function App() {
   // Check for saved user session on load
   useEffect(() => {
     const initializeApp = async () => {
-      // For demo purposes, create a test user if none exists
       const savedUser = localStorage.getItem('currentUser');
       if (savedUser) {
         try {
@@ -62,7 +61,7 @@ function App() {
           id: crypto.randomUUID(),
           name: formData.email.split('@')[0] || 'User',
           email: formData.email,
-          role: 'Owner', // Default role for demo
+          role: 'Owner',
           shop_name: 'Edge & Co Barber Shop',
           commission_rate: 0.4,
           target_weekly: 800,
@@ -130,40 +129,6 @@ function App() {
       } else {
         setError(err.message || '❌ Something went wrong. Please try again.');
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleCreateTestUser = async () => {
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const testUser: SupabaseUser = {
-        id: 'demo-user-123',
-        name: 'Demo User',
-        email: 'demo@example.com',
-        role: 'Owner',
-        shop_name: 'Edge & Co Barber Shop',
-        commission_rate: 0.4,
-        target_weekly: 3000,
-        target_monthly: 12000,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      localStorage.setItem('currentUser', JSON.stringify(testUser));
-      setCurrentUser(testUser);
-      setFormData({ 
-        email: 'demo@example.com', 
-        password: 'demo123', 
-        name: '', 
-        role: 'Owner', 
-        shopName: '' 
-      });
-    } catch (err: any) {
-      setError(err.message || 'Failed to create test user');
     } finally {
       setIsLoading(false);
     }
@@ -417,11 +382,6 @@ function App() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-600 text-sm">{error}</p>
-              {error.includes('Invalid login credentials') && (
-                <p className="text-red-500 text-xs mt-1">
-                  Try registering first or use the test account below.
-                </p>
-              )}
             </div>
           )}
 
@@ -442,19 +402,6 @@ function App() {
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
-
-          {isLogin && (
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={handleCreateTestUser}
-                disabled={isLoading}
-                className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50"
-              >
-                Create Test Account (test@example.com / test123)
-              </button>
-            </div>
-          )}
         </form>
       </div>
     </div>
