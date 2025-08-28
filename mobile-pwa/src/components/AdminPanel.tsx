@@ -48,6 +48,8 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
       ]);
 
       const totalBookings = await bookingService.getAllBookings();
+      console.log('AdminPanel - Total bookings found:', totalBookings.length);
+      console.log('AdminPanel - All bookings data:', totalBookings);
 
       setStats({
         totalBookings: totalBookings.length,
@@ -185,11 +187,11 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
               </div>
               <div className="bg-purple-50 p-3 sm:p-6 rounded-lg">
                 <h3 className="text-xs sm:text-sm font-medium text-purple-600 mb-1 sm:mb-2">Daily Revenue</h3>
-                <p className="text-xl sm:text-3xl font-bold text-purple-900">R{stats.dailyRevenue}</p>
+                <p className="text-xl sm:text-3xl font-bold text-purple-900">₺{stats.dailyRevenue}</p>
               </div>
               <div className="bg-orange-50 p-3 sm:p-6 rounded-lg">
                 <h3 className="text-xs sm:text-sm font-medium text-orange-600 mb-1 sm:mb-2">Monthly Revenue</h3>
-                <p className="text-xl sm:text-3xl font-bold text-orange-900">R{stats.monthlyRevenue}</p>
+                <p className="text-xl sm:text-3xl font-bold text-orange-900">₺{stats.monthlyRevenue}</p>
               </div>
             </div>
 
@@ -406,15 +408,15 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>Today:</span>
-                    <span className="font-semibold">R{stats.dailyRevenue}</span>
+                    <span className="font-semibold">₺{stats.dailyRevenue}</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>This Week:</span>
-                    <span className="font-semibold">R{stats.weeklyRevenue}</span>
+                    <span className="font-semibold">₺{stats.weeklyRevenue}</span>
                   </div>
                   <div className="flex justify-between text-sm sm:text-base">
                     <span>This Month:</span>
-                    <span className="font-semibold">R{stats.monthlyRevenue}</span>
+                    <span className="font-semibold">₺{stats.monthlyRevenue}</span>
                   </div>
                 </div>
               </div>

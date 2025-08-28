@@ -57,7 +57,7 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>('upcoming');
+  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>('all');
   const [filter, setFilter] = useState<'all' | 'today' | 'upcoming' | 'completed' | 'cancelled'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({
@@ -97,7 +97,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         `);
 
       // If not owner, only show own bookings
-      if (currentUser.role !== 'owner' && currentUser.role !== 'Owner') {
+      if (currentUser.role?.toLowerCase() !== 'owner') {
         query = query.eq('user_id', currentUser.id);
       }
 
@@ -118,6 +118,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       const { data, error } = await query;
 
       if (error) throw error;
+      console.log('BookingManagement - Loaded bookings:', data?.length || 0, 'bookings');
+      console.log('BookingManagement - Current view:', currentView);
+      console.log('BookingManagement - User role:', currentUser.role);
+      console.log('BookingManagement - User ID:', currentUser.id);
+      console.log('BookingManagement - All booking data:', data);
       setBookings(data || []);
     } catch (error) {
       console.error('Error loading bookings:', error);
