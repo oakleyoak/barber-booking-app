@@ -28,16 +28,86 @@ export interface Customer {
 
 export interface Booking {
   id: string;
-  customer_name: string;
-  customer_email: string;
-  service: string;
-  date: string;
-  start_time: string;
-  end_time: string;
-  price: number;
-  notes?: string;
-  user_id: string;
+  user_id?: string;
   customer_id?: string;
+  customer_name: string;
+  service: string;
+  price: number;
+  date: string;
+  time: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Transaction {
+  id: string;
+  booking_id?: string;
+  user_id: string;
+  customer_name: string;
+  service: string;
+  amount: number;
+  commission: number;
+  commission_amount: number;
+  date: string;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ShopSettings {
+  id: string;
+  shop_name: string;
+  daily_target: number;
+  weekly_target: number;
+  monthly_target: number;
+  barber_commission: number;
+  apprentice_commission: number;
+  social_insurance_rate: number;
+  income_tax_rate: number;
+  income_tax_threshold: number;
+  opening_time: string;
+  closing_time: string;
+  closed_days: string[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Expense {
+  id: string;
+  user_id: string;
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Payroll {
+  id: string;
+  user_id: string;
+  staff_name: string;
+  period_start: string;
+  period_end: string;
+  base_salary: number;
+  commission_earned: number;
+  total_earnings: number;
+  deductions: number;
+  net_pay: number;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StaffTarget {
+  id: string;
+  user_id: string;
+  staff_name: string;
+  target_type: 'daily' | 'weekly' | 'monthly';
+  target_amount: number;
+  period_start: string;
+  period_end: string;
   created_at?: string;
   updated_at?: string;
 }

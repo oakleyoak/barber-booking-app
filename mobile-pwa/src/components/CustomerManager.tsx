@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Phone, Mail, Plus, Search, Edit, Trash2, Calendar, CreditCard, CalendarDays } from 'lucide-react';
-import { CustomerService, Customer, CustomerCreate } from '../services/supabaseCustomerService';
+import { CustomerService, CustomerCreate } from '../services/customerService';
+import { Customer } from '../lib/supabase';
+import { dbService } from '../services/database';
 import { supabase } from '../lib/supabase';
 
 interface CustomerManagerProps {
@@ -35,9 +37,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const [newCustomer, setNewCustomer] = useState<CustomerCreate>({
     name: '',
     phone: '',
-    email: '',
-    notes: '',
-    preferredBarber: ''
+    email: ''
   });
   const [bookingData, setBookingData] = useState({
     service: 'Haircut',
@@ -49,26 +49,36 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   // Load customers on component mount
   useEffect(() => {
     loadCustomers();
-  }, [currentUser.shop_name]);
+  }, [currentUser.id]);
 
   const loadCustomers = async () => {
-    const shopCustomers = await CustomerService.getCustomers(currentUser.shop_name);
-    setCustomers(shopCustomers);
-    setFilteredCustomers(shopCustomers);
+    if (currentUser.id) {
+      try {
+        const shopCustomers = await CustomerService.getCustomers(currentUser.id);
+        setCustomers(shopCustomers);
+        setFilteredCustomers(shopCustomers);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+      }
+    }
   };
 
   // Handle search
   useEffect(() => {
     const performSearch = async () => {
-      if (searchQuery.trim()) {
-        const searchResults = await CustomerService.searchCustomers(currentUser.shop_name, searchQuery);
-        setFilteredCustomers(searchResults);
+      if (searchQuery.trim() && currentUser.id) {
+        try {
+          const searchResults = await CustomerService.searchCustomers(searchQuery, currentUser.id);
+          setFilteredCustomers(searchResults);
+        } catch (error) {
+          console.error('Error searching customers:', error);
+        }
       } else {
         setFilteredCustomers(customers);
       }
     };
     performSearch();
-  }, [searchQuery, customers]);
+  }, [searchQuery, customers, currentUser.id]);
 
   const handleAddCustomer = async () => {
     if (!newCustomer.name.trim()) {
@@ -77,10 +87,12 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     }
 
     try {
-      await CustomerService.addCustomer(currentUser.shop_name, newCustomer);
-      await loadCustomers();
-      setShowAddModal(false);
-      setNewCustomer({ name: '', phone: '', email: '', notes: '', preferredBarber: '' });
+      if (currentUser.id) {
+        await CustomerService.addCustomer(currentUser.id, newCustomer);
+        await loadCustomers();
+        setShowAddModal(false);
+        setNewCustomer({ name: '', phone: '', email: '' });
+      }
     } catch (error) {
       alert('Failed to add customer');
     }
@@ -90,7 +102,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     if (!editingCustomer) return;
 
     try {
-      await CustomerService.updateCustomer(currentUser.shop_name, editingCustomer.id, editingCustomer);
+      await CustomerService.updateCustomer(editingCustomer.id, editingCustomer);
       await loadCustomers();
       setEditingCustomer(null);
     } catch (error) {
@@ -107,7 +119,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     if (!customerToDelete) return;
 
     try {
-      await CustomerService.deleteCustomer(currentUser.shop_name, customerToDelete.id);
+      await CustomerService.deleteCustomer(customerToDelete.id);
       await loadCustomers();
       setShowDeleteModal(false);
       setCustomerToDelete(null);
@@ -149,8 +161,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         return;
       }
 
-      // Refresh customer stats after booking creation
-      await CustomerService.refreshCustomerStats(currentUser.shop_name, customerToBook.id);
+      // Record the visit in customer data
+      await CustomerService.recordVisit(customerToBook.id, bookingData.date);
 
       setShowBookingModal(false);
       setCustomerToBook(null);
@@ -161,7 +173,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         price: 700
       });
 
-      // Reload customers to show updated stats
+      // Reload customers to show updated last visit
       await loadCustomers();
 
       alert('Appointment booked successfully!');
@@ -194,21 +206,27 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         </div>
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-green-900">
-            {customers.reduce((sum, c) => sum + c.totalVisits, 0)}
+            {customers.filter(c => c.last_visit).length}
           </div>
-          <div className="text-sm text-green-600">Total Visits</div>
+          <div className="text-sm text-green-600">Active Customers</div>
         </div>
         <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-purple-900">
-            ₺{customers.reduce((sum, c) => sum + c.totalSpent, 0).toFixed(0)}
+            {customers.filter(c => {
+              if (!c.last_visit) return false;
+              const lastVisit = new Date(c.last_visit);
+              const weekAgo = new Date();
+              weekAgo.setDate(weekAgo.getDate() - 7);
+              return lastVisit >= weekAgo;
+            }).length}
           </div>
-          <div className="text-sm text-purple-600">Total Revenue</div>
+          <div className="text-sm text-purple-600">Recent Visits</div>
         </div>
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
           <div className="text-2xl font-bold text-orange-900">
-            ₺{customers.length > 0 ? (customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length).toFixed(0) : '0'}
+            {customers.filter(c => c.email).length}
           </div>
-          <div className="text-sm text-orange-600">Avg per Customer</div>
+          <div className="text-sm text-orange-600">With Email</div>
         </div>
       </div>
 
@@ -252,9 +270,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900 text-lg">{customer.name}</h3>
-                      {customer.notes && (
-                        <p className="text-sm text-gray-500 mt-1">{customer.notes}</p>
-                      )}
                     </div>
                     <div className="flex space-x-2 ml-4">
                       <button
@@ -300,39 +315,24 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
                     <div>
                       <div className="flex items-center text-gray-600 mb-2">
-                        <Users className="h-4 w-4 mr-2" />
-                        <span className="font-medium">Preferred Barber:</span>
-                      </div>
-                      <div className="text-gray-900 ml-6">{customer.preferredBarber || 'Not specified'}</div>
-                    </div>
-
-                    <div>
-                      <div className="flex items-center text-gray-600 mb-2">
                         <Calendar className="h-4 w-4 mr-2" />
                         <span className="font-medium">Last Visit:</span>
                       </div>
                       <div className="text-gray-900 ml-6">
-                        {customer.lastVisit ? formatDate(customer.lastVisit) : 'Never'}
+                        {customer.last_visit ? formatDate(customer.last_visit) : 'Never'}
                       </div>
                     </div>
                   </div>
 
                   <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
-                    <div className="flex items-center space-x-4">
-                      <div className="text-center">
-                        <div className="flex items-center text-blue-600">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          <span className="font-medium">{customer.totalVisits}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">Visits</div>
+                    <div className="text-center">
+                      <div className="flex items-center text-blue-600">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        <span className="font-medium">
+                          {customer.last_visit ? '1' : '0'}
+                        </span>
                       </div>
-                      <div className="text-center">
-                        <div className="flex items-center text-green-600 font-medium">
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          <span>₺{customer.totalSpent.toFixed(0)}</span>
-                        </div>
-                        <div className="text-xs text-gray-500">Total Spent</div>
-                      </div>
+                      <div className="text-xs text-gray-500">Visits</div>
                     </div>
                   </div>
                 </div>
@@ -346,9 +346,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                   <tr className="border-b border-gray-200 bg-gray-50">
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-600">Contact</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-600">Preferred Barber</th>
                     <th className="text-center py-3 px-4 font-medium text-gray-600">Visits</th>
-                    <th className="text-center py-3 px-4 font-medium text-gray-600">Total Spent</th>
                     <th className="text-center py-3 px-4 font-medium text-gray-600">Last Visit</th>
                     <th className="text-center py-3 px-4 font-medium text-gray-600">Actions</th>
                   </tr>
@@ -359,9 +357,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                       <td className="py-3 px-4">
                         <div>
                           <div className="font-medium text-gray-900">{customer.name}</div>
-                          {customer.notes && (
-                            <div className="text-sm text-gray-500">{customer.notes}</div>
-                          )}
                         </div>
                       </td>
                       <td className="py-3 px-4">
@@ -378,23 +373,14 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-sm">
-                        {customer.preferredBarber || '-'}
-                      </td>
                       <td className="py-3 px-4 text-center">
                         <div className="flex items-center justify-center">
                           <Calendar className="h-4 w-4 mr-1 text-blue-500" />
-                          {customer.totalVisits}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center text-green-600 font-medium">
-                          <CreditCard className="h-4 w-4 mr-1" />
-                          ₺{customer.totalSpent.toFixed(0)}
+                          {customer.last_visit ? '1' : '0'}
                         </div>
                       </td>
                       <td className="py-3 px-4 text-center text-sm text-gray-500">
-                        {customer.lastVisit ? formatDate(customer.lastVisit) : 'Never'}
+                        {customer.last_visit ? formatDate(customer.last_visit) : 'Never'}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex justify-center space-x-2">
@@ -457,20 +443,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                 onChange={(e) => setNewCustomer({...newCustomer, email: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <input
-                type="text"
-                placeholder="Preferred Barber (optional)"
-                value={newCustomer.preferredBarber}
-                onChange={(e) => setNewCustomer({...newCustomer, preferredBarber: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                value={newCustomer.notes}
-                onChange={(e) => setNewCustomer({...newCustomer, notes: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
-              />
             </div>
             <div className="flex justify-end space-x-3 mt-6">
               <button
@@ -516,20 +488,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                 value={editingCustomer.email || ''}
                 onChange={(e) => setEditingCustomer({...editingCustomer, email: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Preferred Barber (optional)"
-                value={editingCustomer.preferredBarber || ''}
-                onChange={(e) => setEditingCustomer({...editingCustomer, preferredBarber: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <textarea
-                placeholder="Notes (optional)"
-                value={editingCustomer.notes || ''}
-                onChange={(e) => setEditingCustomer({...editingCustomer, notes: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                rows={3}
               />
             </div>
             <div className="flex justify-end space-x-3 mt-6">

@@ -1,250 +1,149 @@
-import { SERVICES } from './servicePricing';
+import { dbService } from './database';
+import { Transaction } from '../lib/supabase';
 
-export interface Transaction {
-  id: string;
+export interface TransactionData {
+  customer_name: string;
   service: string;
-  customer: string;
-  date: string;
   amount: number;
-  barber: string;
   commission: number;
-  status: 'completed' | 'pending' | 'cancelled';
+  booking_id?: string;
 }
 
-export interface DailyEarnings {
-  date: string;
-  transactions: Transaction[];
+export interface EarningsData {
   totalAmount: number;
-  totalCommission: number;
   bookingCount: number;
+  transactions: Transaction[];
 }
 
 export class EarningsService {
-  private static getStorageKey(shopName: string): string {
-    return `earnings_${shopName.replace(/\s+/g, '_').toLowerCase()}`;
-  }
-
-  static getEarnings(shopName: string): DailyEarnings[] {
-    const stored = localStorage.getItem(this.getStorageKey(shopName));
-    if (stored) {
-      return JSON.parse(stored);
-    }
-    
-    // Initialize with current date and empty earnings
-    const today = new Date().toISOString().split('T')[0];
-    return [{
-      date: today,
-      transactions: [],
-      totalAmount: 0,
-      totalCommission: 0,
-      bookingCount: 0
-    }];
-  }
-
-  static addTransaction(shopName: string, transaction: Omit<Transaction, 'id'>): void {
-    const earnings = this.getEarnings(shopName);
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Find or create today's earnings
-    let todayEarnings = earnings.find(e => e.date === today);
-    if (!todayEarnings) {
-      todayEarnings = {
-        date: today,
-        transactions: [],
-        totalAmount: 0,
-        totalCommission: 0,
-        bookingCount: 0
+  static async addTransaction(userId: string, transactionData: TransactionData): Promise<boolean> {
+    try {
+      const transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at'> = {
+        user_id: userId,
+        customer_name: transactionData.customer_name,
+        service: transactionData.service,
+        amount: transactionData.amount,
+        commission: transactionData.commission,
+        commission_amount: transactionData.amount * (transactionData.commission / 100),
+        date: new Date().toISOString().split('T')[0],
+        status: 'completed',
+        booking_id: transactionData.booking_id || undefined
       };
-      earnings.push(todayEarnings);
+
+      const result = await dbService.createTransaction(transaction);
+      return result !== null;
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+      return false;
     }
-
-    // Add transaction with unique ID
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
-    };
-
-    todayEarnings.transactions.push(newTransaction);
-    todayEarnings.totalAmount += transaction.amount;
-    todayEarnings.totalCommission += (transaction.amount * transaction.commission / 100);
-    todayEarnings.bookingCount += 1;
-
-    this.saveEarnings(shopName, earnings);
   }
 
-  static getTodayEarnings(shopName: string, barberName?: string): DailyEarnings {
-    const earnings = this.getEarnings(shopName);
-    const today = new Date().toISOString().split('T')[0];
-    
-    let todayEarnings = earnings.find(e => e.date === today);
-    if (!todayEarnings) {
-      return {
-        date: today,
-        transactions: [],
-        totalAmount: 0,
-        totalCommission: 0,
-        bookingCount: 0
-      };
-    }
+  static async getTodayEarnings(userId: string): Promise<EarningsData> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const transactions = await dbService.getTransactions(userId);
+      const todayTransactions = transactions.filter(t => t.date === today);
 
-    // Filter by barber if specified
-    if (barberName) {
-      const barberTransactions = todayEarnings.transactions.filter(t => t.barber === barberName);
-      const totalAmount = barberTransactions.reduce((sum, t) => sum + t.amount, 0);
-      const totalCommission = barberTransactions.reduce((sum, t) => sum + (t.amount * t.commission / 100), 0);
-      
+      const totalAmount = todayTransactions.reduce((sum: number, t) => sum + t.amount, 0);
+      const bookingCount = todayTransactions.length;
+
       return {
-        date: today,
-        transactions: barberTransactions,
         totalAmount,
-        totalCommission,
-        bookingCount: barberTransactions.length
+        bookingCount,
+        transactions: todayTransactions
+      };
+    } catch (error) {
+      console.error('Error getting today earnings:', error);
+      return {
+        totalAmount: 0,
+        bookingCount: 0,
+        transactions: []
       };
     }
-
-    return todayEarnings;
   }
 
-  static getWeeklyEarnings(shopName: string, barberName?: string): { 
-    totalAmount: number; 
-    totalCommission: number; 
-    bookingCount: number;
-    dailyAverage: number;
-  } {
-    const earnings = this.getEarnings(shopName);
-    const weekStart = new Date();
-    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Start of week (Sunday)
-    
-    let totalAmount = 0;
-    let totalCommission = 0;
-    let bookingCount = 0;
+  static async getWeeklyEarnings(userId: string, staffName?: string): Promise<EarningsData> {
+    try {
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
 
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(weekStart);
-      date.setDate(weekStart.getDate() + i);
-      const dateStr = date.toISOString().split('T')[0];
-      
-      const dayEarnings = earnings.find(e => e.date === dateStr);
-      if (dayEarnings) {
-        const transactions = barberName 
-          ? dayEarnings.transactions.filter(t => t.barber === barberName)
-          : dayEarnings.transactions;
-        
-        totalAmount += transactions.reduce((sum, t) => sum + t.amount, 0);
-        totalCommission += transactions.reduce((sum, t) => sum + (t.amount * t.commission / 100), 0);
-        bookingCount += transactions.length;
-      }
+      const weekAgoStr = weekAgo.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
+
+      const transactions = await dbService.getTransactions(userId);
+      const weekTransactions = transactions.filter(t => t.date >= weekAgoStr && t.date <= todayStr);
+
+      const filteredTransactions = staffName
+        ? weekTransactions.filter((t: Transaction) => t.customer_name.includes(staffName))
+        : weekTransactions;
+
+      const totalAmount = filteredTransactions.reduce((sum: number, t) => sum + t.amount, 0);
+      const bookingCount = filteredTransactions.length;
+
+      return {
+        totalAmount,
+        bookingCount,
+        transactions: filteredTransactions
+      };
+    } catch (error) {
+      console.error('Error getting weekly earnings:', error);
+      return {
+        totalAmount: 0,
+        bookingCount: 0,
+        transactions: []
+      };
     }
-
-    return {
-      totalAmount,
-      totalCommission,
-      bookingCount,
-      dailyAverage: totalAmount / 7
-    };
   }
 
-  static getMonthlyEarnings(shopName: string, barberName?: string): {
-    totalAmount: number;
-    totalCommission: number;
-    bookingCount: number;
-    dailyAverage: number;
-  } {
-    const earnings = this.getEarnings(shopName);
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
-    let totalAmount = 0;
-    let totalCommission = 0;
-    let bookingCount = 0;
+  static async getMonthlyEarnings(userId: string): Promise<EarningsData> {
+    try {
+      const today = new Date();
+      const monthAgo = new Date(today);
+      monthAgo.setMonth(today.getMonth() - 1);
 
-    for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      const dayEarnings = earnings.find(e => e.date === dateStr);
-      
-      if (dayEarnings) {
-        const transactions = barberName 
-          ? dayEarnings.transactions.filter(t => t.barber === barberName)
-          : dayEarnings.transactions;
-        
-        totalAmount += transactions.reduce((sum, t) => sum + t.amount, 0);
-        totalCommission += transactions.reduce((sum, t) => sum + (t.amount * t.commission / 100), 0);
-        bookingCount += transactions.length;
-      }
+      const monthAgoStr = monthAgo.toISOString().split('T')[0];
+      const todayStr = today.toISOString().split('T')[0];
+
+      const transactions = await dbService.getTransactions(userId);
+      const monthTransactions = transactions.filter(t => t.date >= monthAgoStr && t.date <= todayStr);
+
+      const totalAmount = monthTransactions.reduce((sum: number, t) => sum + t.amount, 0);
+      const bookingCount = monthTransactions.length;
+
+      return {
+        totalAmount,
+        bookingCount,
+        transactions: monthTransactions
+      };
+    } catch (error) {
+      console.error('Error getting monthly earnings:', error);
+      return {
+        totalAmount: 0,
+        bookingCount: 0,
+        transactions: []
+      };
     }
-
-    const daysInMonth = monthEnd.getDate();
-    return {
-      totalAmount,
-      totalCommission,
-      bookingCount,
-      dailyAverage: totalAmount / daysInMonth
-    };
   }
 
-  static getRecentTransactions(shopName: string, barberName?: string, limit: number = 10): Transaction[] {
-    const earnings = this.getEarnings(shopName);
-    const allTransactions: Transaction[] = [];
-    
-    // Get all transactions from all days, sorted by date (newest first)
-    earnings.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    for (const dayEarnings of earnings) {
-      const transactions = barberName 
-        ? dayEarnings.transactions.filter(t => t.barber === barberName)
-        : dayEarnings.transactions;
-      
-      allTransactions.push(...transactions);
-    }
+  static async getEarnings(userId: string): Promise<EarningsData> {
+    try {
+      const transactions = await dbService.getTransactions(userId);
+      const totalAmount = transactions.reduce((sum, t) => sum + t.amount, 0);
+      const bookingCount = transactions.length;
 
-    // Sort by date and limit results
-    return allTransactions
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, limit);
-  }
-
-  private static saveEarnings(shopName: string, earnings: DailyEarnings[]): void {
-    localStorage.setItem(this.getStorageKey(shopName), JSON.stringify(earnings));
-  }
-
-  // Initialize with empty data for production use
-  static initializeSampleData(shopName: string, barberName: string): void {
-    // Don't create any data - let users start fresh
-    return;
-  }
-
-  // Clear all earnings data for fresh start
-  static clearAllEarnings(shopName: string): void {
-    localStorage.removeItem(this.getStorageKey(shopName));
-  }
-
-  // Update transaction status
-  static updateTransactionStatus(shopName: string, customerName: string, date: string, newStatus: 'completed' | 'pending' | 'cancelled'): void {
-    const earnings = this.getEarnings(shopName);
-    const transactionDate = new Date(date).toISOString().split('T')[0];
-    
-    // Find the day with the transaction
-    const dayEarnings = earnings.find(e => e.date === transactionDate);
-    if (dayEarnings) {
-      // Find and update the transaction
-      const transaction = dayEarnings.transactions.find(t => 
-        t.customer === customerName && 
-        new Date(t.date).toISOString().split('T')[0] === transactionDate
-      );
-      
-      if (transaction) {
-        transaction.status = newStatus;
-        
-        // Recalculate day totals
-        dayEarnings.totalAmount = dayEarnings.transactions.reduce((sum, t) => sum + t.amount, 0);
-        dayEarnings.totalCommission = dayEarnings.transactions.reduce((sum, t) => 
-          sum + (t.amount * t.commission / 100), 0
-        );
-        dayEarnings.bookingCount = dayEarnings.transactions.filter(t => t.status === 'completed').length;
-        
-        this.saveEarnings(shopName, earnings);
-      }
+      return {
+        totalAmount,
+        bookingCount,
+        transactions
+      };
+    } catch (error) {
+      console.error('Error getting earnings:', error);
+      return {
+        totalAmount: 0,
+        bookingCount: 0,
+        transactions: []
+      };
     }
   }
 }

@@ -1,164 +1,82 @@
-export interface Customer {
-  id: string;
-  name: string;
-  phone: string;
-  email?: string;
-  notes?: string;
-  lastVisit?: string;
-  totalVisits: number;
-  totalSpent: number;
-  preferredBarber?: string;
-  shopName: string;
-  createdAt: string;
-  updatedAt: string;
-}
+import { dbService } from './database';
+import { Customer } from '../lib/supabase';
 
 export interface CustomerCreate {
   name: string;
   phone: string;
   email?: string;
-  notes?: string;
-  preferredBarber?: string;
 }
 
 export class CustomerService {
-  private static getStorageKey(shopName: string): string {
-    return `customers_${shopName}`;
-  }
-
-  static getCustomers(shopName: string): Customer[] {
+  static async getCustomers(userId?: string): Promise<Customer[]> {
     try {
-      const saved = localStorage.getItem(this.getStorageKey(shopName));
-      if (saved) {
-        return JSON.parse(saved);
-      }
+      return await dbService.getCustomers(userId);
     } catch (error) {
-      console.error('Error loading customers:', error);
-    }
-    return [];
-  }
-
-  static saveCustomers(shopName: string, customers: Customer[]): void {
-    try {
-      localStorage.setItem(this.getStorageKey(shopName), JSON.stringify(customers));
-    } catch (error) {
-      console.error('Error saving customers:', error);
-      throw new Error('Failed to save customers');
+      console.error('Error fetching customers:', error);
+      return [];
     }
   }
 
-  static addCustomer(shopName: string, customerData: CustomerCreate): Customer {
-    const customers = this.getCustomers(shopName);
-    const newCustomer: Customer = {
-      id: Date.now().toString(),
-      ...customerData,
-      totalVisits: 0,
-      totalSpent: 0,
-      shopName,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  static async addCustomer(userId: string, customerData: CustomerCreate): Promise<Customer | null> {
+    try {
+      const customer: Omit<Customer, 'id' | 'created_at' | 'updated_at'> = {
+        user_id: userId,
+        name: customerData.name,
+        phone: customerData.phone,
+        email: customerData.email || undefined,
+        last_visit: undefined
+      };
 
-    customers.push(newCustomer);
-    this.saveCustomers(shopName, customers);
-    return newCustomer;
-  }
-
-  static updateCustomer(shopName: string, customerId: string, updates: Partial<Customer>): Customer | null {
-    const customers = this.getCustomers(shopName);
-    const customerIndex = customers.findIndex(c => c.id === customerId);
-    
-    if (customerIndex === -1) {
+      return await dbService.createCustomer(customer);
+    } catch (error) {
+      console.error('Error adding customer:', error);
       return null;
     }
-
-    customers[customerIndex] = {
-      ...customers[customerIndex],
-      ...updates,
-      updatedAt: new Date().toISOString()
-    };
-
-    this.saveCustomers(shopName, customers);
-    return customers[customerIndex];
   }
 
-  static deleteCustomer(shopName: string, customerId: string): boolean {
-    const customers = this.getCustomers(shopName);
-    const filteredCustomers = customers.filter(c => c.id !== customerId);
-    
-    if (filteredCustomers.length === customers.length) {
-      return false; // Customer not found
+  static async updateCustomer(customerId: string, updates: Partial<Customer>): Promise<Customer | null> {
+    try {
+      return await dbService.updateCustomer(customerId, updates);
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      return null;
     }
-
-    this.saveCustomers(shopName, filteredCustomers);
-    return true;
   }
 
-  static recordVisit(shopName: string, customerId: string, amount: number, barberName?: string): boolean {
-    const customer = this.getCustomers(shopName).find(c => c.id === customerId);
-    if (!customer) {
+  static async deleteCustomer(customerId: string): Promise<boolean> {
+    try {
+      return await dbService.deleteCustomer(customerId);
+    } catch (error) {
+      console.error('Error deleting customer:', error);
       return false;
     }
-
-    const updates = {
-      lastVisit: new Date().toISOString(),
-      totalVisits: customer.totalVisits + 1,
-      totalSpent: customer.totalSpent + amount,
-      ...(barberName && { preferredBarber: barberName })
-    };
-
-    return this.updateCustomer(shopName, customerId, updates) !== null;
   }
 
-  static searchCustomers(shopName: string, query: string): Customer[] {
-    const customers = this.getCustomers(shopName);
-    const lowercaseQuery = query.toLowerCase();
-    
-    return customers.filter(customer =>
-      customer.name.toLowerCase().includes(lowercaseQuery) ||
-      customer.phone.includes(query) ||
-      (customer.email && customer.email.toLowerCase().includes(lowercaseQuery))
-    );
+  static async recordVisit(customerId: string, visitDate: string): Promise<boolean> {
+    try {
+      const updates: Partial<Customer> = {
+        last_visit: visitDate
+      };
+      const updatedCustomer = await dbService.updateCustomer(customerId, updates);
+      return updatedCustomer !== null;
+    } catch (error) {
+      console.error('Error recording visit:', error);
+      return false;
+    }
   }
 
-  static getCustomersByBarber(shopName: string, barberName: string): Customer[] {
-    const customers = this.getCustomers(shopName);
-    return customers.filter(customer => customer.preferredBarber === barberName);
-  }
-
-  // Clear all customer data for fresh start (DANGEROUS - removes real customers)
-  static clearAllCustomers(shopName: string): void {
-    localStorage.removeItem(this.getStorageKey(shopName));
-  }
-
-  // Clear only dummy/test customers (safe - keeps real customers)
-  static clearDummyCustomers(shopName: string): void {
-    const customers = this.getCustomers(shopName);
-    
-    // List of dummy/test customer indicators
-    const dummyIndicators = [
-      'test', 'demo', 'sample', 'example', 'dummy', 'fake',
-      'john doe', 'jane doe', 'test customer', 'demo customer',
-      'ahmet test', 'mehmet demo', 'ali sample'
-    ];
-    
-    // Keep only real customers (filter out dummy ones)
-    const realCustomers = customers.filter(customer => {
-      const nameCheck = customer.name.toLowerCase();
-      const emailCheck = customer.email?.toLowerCase() || '';
-      const phoneCheck = customer.phone || '';
-      
-      // Remove if name, email, or phone contains dummy indicators
-      const isDummy = dummyIndicators.some(indicator => 
-        nameCheck.includes(indicator) || 
-        emailCheck.includes(indicator) ||
-        phoneCheck.includes('555-0') // Common test phone pattern
+  static async searchCustomers(query: string, userId?: string): Promise<Customer[]> {
+    try {
+      const customers = await this.getCustomers(userId);
+      const lowerQuery = query.toLowerCase();
+      return customers.filter(customer =>
+        customer.name.toLowerCase().includes(lowerQuery) ||
+        customer.email?.toLowerCase().includes(lowerQuery) ||
+        customer.phone?.includes(query)
       );
-      
-      return !isDummy; // Keep if NOT dummy
-    });
-    
-    // Save the filtered list (keeping real customers)
-    this.saveCustomers(shopName, realCustomers);
+    } catch (error) {
+      console.error('Error searching customers:', error);
+      return [];
+    }
   }
 }

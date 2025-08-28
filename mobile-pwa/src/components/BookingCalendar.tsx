@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, Plus, User } from 'lucide-react';
 import { CustomerService } from '../services/customerService';
 import { EarningsService } from '../services/earningsService';
+import { ShopSettingsService } from '../services/shopSettings';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
+import { dbService } from '../services/database';
 import { supabase } from '../lib/supabase';
 
 interface BookingCalendarProps {
@@ -29,9 +31,20 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   // Load customer count
   useEffect(() => {
-    const customers = CustomerService.getCustomers(currentUser.shop_name);
-    setTotalCustomers(customers.length);
-  }, [currentUser.shop_name]);
+    const loadCustomerCount = async () => {
+      try {
+        const customers = await CustomerService.getCustomers(currentUser.id);
+        setTotalCustomers(customers.length);
+      } catch (error) {
+        console.error('Error loading customers:', error);
+        setTotalCustomers(0);
+      }
+    };
+
+    if (currentUser.id) {
+      loadCustomerCount();
+    }
+  }, [currentUser.id]);
 
   const timeSlots = [
     '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'
@@ -84,34 +97,40 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const bookingDate = selectedDate.toISOString().split('T')[0];
 
       // Save booking to Supabase bookings table
-      const { error: bookingError } = await supabase
-        .from('bookings')
-        .insert({
-          id: bookingId,
-          user_id: currentUser.id,
-          customer_id: customerId,
-          customer_name: newBooking.customer,
-          service: newBooking.service,
-          price: newBooking.amount,
-          date: bookingDate,
-          time: timeIn24Hour,
-          status: 'scheduled'
-        });
+      const bookingData = {
+        user_id: currentUser.id!,
+        customer_id: customerId,
+        customer_name: newBooking.customer,
+        service: newBooking.service,
+        price: newBooking.amount,
+        date: bookingDate,
+        time: timeIn24Hour,
+        status: 'scheduled' as const
+      };
 
-      if (bookingError) {
-        throw bookingError;
+      const booking = await dbService.createBooking(bookingData);
+
+      if (!booking) {
+        throw new Error('Failed to create booking');
       }
 
-      // ALSO add to earnings service for immediate display and local tracking
-      EarningsService.addTransaction(currentUser.shop_name, {
-        service: `${newBooking.service} - ${newBooking.customer}`,
-        customer: newBooking.customer,
-        date: `${bookingDate}T${timeIn24Hour}:00`,
+      // Create transaction for earnings tracking
+      const commissionRate = await ShopSettingsService.getCommissionRate(currentUser.role, currentUser.shop_name);
+      const commissionAmount = (newBooking.amount * commissionRate) / 100;
+
+      const transactionData = {
+        booking_id: booking.id,
+        user_id: currentUser.id!,
+        customer_name: newBooking.customer,
+        service: newBooking.service,
         amount: newBooking.amount,
-        barber: currentUser.name,
-        commission: 60, // Default commission
-        status: 'pending' // Start as pending, not completed
-      });
+        commission: commissionRate,
+        commission_amount: commissionAmount,
+        date: bookingDate,
+        status: 'completed' as const
+      };
+
+      await EarningsService.addTransaction(currentUser.id!, transactionData);
 
       // Reset form
       setNewBooking({
@@ -121,10 +140,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         time: '9am'
       });
       setShowAddBooking(false);
-      
+
       // Show success message
       alert('Booking added successfully!');
-      
+
     } catch (error) {
       console.error('Error adding booking:', error);
       alert('Failed to add booking. Please try again.');

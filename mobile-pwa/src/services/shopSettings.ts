@@ -1,69 +1,94 @@
-export interface ShopSettings {
-  dailyTarget: number;
-  weeklyTarget: number;
-  monthlyTarget: number;
-  barberCommission: number;
-  apprenticeCommission: number;
-  socialInsuranceRate: number;
-  incomeTaxRate: number;
-  incomeTaxThreshold: number;
-}
+import { dbService } from './database';
+import { ShopSettings } from '../lib/supabase';
 
 export const defaultShopSettings: ShopSettings = {
-  dailyTarget: 1500,     // Turkish Lira values
-  weeklyTarget: 9000,    // Turkish Lira values  
-  monthlyTarget: 45000,  // Turkish Lira values
-  barberCommission: 60,
-  apprenticeCommission: 40,
-  socialInsuranceRate: 20,
-  incomeTaxRate: 15,
-  incomeTaxThreshold: 3000  // Turkish Lira threshold
+  id: '',
+  shop_name: '',
+  daily_target: 1500,
+  weekly_target: 9000,
+  monthly_target: 45000,
+  barber_commission: 60,
+  apprentice_commission: 40,
+  social_insurance_rate: 20,
+  income_tax_rate: 15,
+  income_tax_threshold: 3000,
+  opening_time: '09:00:00',
+  closing_time: '20:00:00',
+  closed_days: ['Thursday', 'Sunday']
 };
 
 export class ShopSettingsService {
-  private static getStorageKey(shopName: string): string {
-    return `shop_settings_${shopName}`;
-  }
-
-  static getSettings(shopName: string): ShopSettings {
+  static async getSettings(shopName: string): Promise<ShopSettings> {
     try {
-      const saved = localStorage.getItem(this.getStorageKey(shopName));
-      if (saved) {
-        return { ...defaultShopSettings, ...JSON.parse(saved) };
+      const settings = await dbService.getShopSettings(shopName);
+      if (settings) {
+        return settings;
       }
+      // Return default settings if none exist
+      return { ...defaultShopSettings, shop_name: shopName };
     } catch (error) {
       console.error('Error loading shop settings:', error);
+      return { ...defaultShopSettings, shop_name: shopName };
     }
-    return defaultShopSettings;
   }
 
-  static saveSettings(shopName: string, settings: ShopSettings): void {
+  static async saveSettings(shopName: string, settings: Omit<ShopSettings, 'id' | 'created_at' | 'updated_at'>): Promise<void> {
     try {
-      localStorage.setItem(this.getStorageKey(shopName), JSON.stringify(settings));
+      await dbService.createOrUpdateShopSettings(settings);
     } catch (error) {
       console.error('Error saving shop settings:', error);
       throw new Error('Failed to save settings');
     }
   }
 
-  static getCommissionRate(role: string, shopName: string): number {
-    const settings = this.getSettings(shopName);
-    switch (role.toLowerCase()) {
-      case 'barber':
-        return settings.barberCommission;
-      case 'apprentice':
-        return settings.apprenticeCommission;
-      default:
-        return settings.barberCommission;
+  static async getCommissionRate(role: string, shopName: string): Promise<number> {
+    try {
+      const settings = await this.getSettings(shopName);
+      switch (role.toLowerCase()) {
+        case 'barber':
+          return settings.barber_commission;
+        case 'apprentice':
+          return settings.apprentice_commission;
+        default:
+          return settings.barber_commission;
+      }
+    } catch (error) {
+      console.error('Error getting commission rate:', error);
+      return defaultShopSettings.barber_commission;
     }
   }
 
-  static getTargets(shopName: string): { daily: number; weekly: number; monthly: number } {
-    const settings = this.getSettings(shopName);
-    return {
-      daily: settings.dailyTarget,
-      weekly: settings.weeklyTarget,
-      monthly: settings.monthlyTarget
-    };
+  static async getTargets(shopName: string): Promise<{ daily: number; weekly: number; monthly: number }> {
+    try {
+      const settings = await this.getSettings(shopName);
+      return {
+        daily: settings.daily_target,
+        weekly: settings.weekly_target,
+        monthly: settings.monthly_target
+      };
+    } catch (error) {
+      console.error('Error getting targets:', error);
+      return {
+        daily: defaultShopSettings.daily_target,
+        weekly: defaultShopSettings.weekly_target,
+        monthly: defaultShopSettings.monthly_target
+      };
+    }
+  }
+
+  static async updateOpeningHours(shopName: string, openingTime: string, closingTime: string, closedDays: string[]): Promise<void> {
+    try {
+      const currentSettings = await this.getSettings(shopName);
+      const updatedSettings: Omit<ShopSettings, 'id' | 'created_at' | 'updated_at'> = {
+        ...currentSettings,
+        opening_time: openingTime,
+        closing_time: closingTime,
+        closed_days: closedDays
+      };
+      await this.saveSettings(shopName, updatedSettings);
+    } catch (error) {
+      console.error('Error updating opening hours:', error);
+      throw new Error('Failed to update opening hours');
+    }
   }
 }

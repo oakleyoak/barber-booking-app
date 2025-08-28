@@ -98,11 +98,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
 
   // Calculate realistic payroll data based on actual earnings
   const calculatePayrollData = () => {
-    const weeklyEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name);
+    const weeklyEarnings = EarningsService.getWeeklyEarnings(currentUser.id!);
     const totalCommissions = weeklyEarnings.totalCommission;
-    const socialInsuranceDeductions = totalCommissions * (shopSettings.socialInsuranceRate / 100);
-    const incomeTaxDeductions = totalCommissions > shopSettings.incomeTaxThreshold 
-      ? (totalCommissions - shopSettings.incomeTaxThreshold) * (shopSettings.incomeTaxRate / 100)
+    const socialInsuranceDeductions = totalCommissions * (shopSettings.social_insurance_rate / 100);
+    const incomeTaxDeductions = totalCommissions > shopSettings.income_tax_threshold
+      ? (totalCommissions - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
       : 0;
     const totalDeductions = socialInsuranceDeductions + incomeTaxDeductions;
     const netPay = totalCommissions - totalDeductions;
@@ -140,18 +140,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   const staffMembers = React.useMemo(() => {
     // Use ONLY real staff from Supabase database - no hybrid, no fallbacks
     return realStaffMembers.map(staff => {
-      const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.shop_name, staff.name);
+      const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.id!, staff.name);
       
       // Handle both "Barber"/"barber" and "Apprentice"/"apprentice" role formats
       const normalizedRole = staff.role?.toLowerCase();
-      const commissionRate = normalizedRole === 'apprentice' ? shopSettings.apprenticeCommission : shopSettings.barberCommission;
+      const commissionRate = normalizedRole === 'apprentice' ? shopSettings.apprentice_commission : shopSettings.barber_commission;
       
       // Calculate based on actual data only
       const weeklyEarnings = memberEarnings.totalAmount || 0;
       const grossPay = weeklyEarnings * (commissionRate / 100);
-      const socialInsurance = grossPay * (shopSettings.socialInsuranceRate / 100);
-      const incomeTax = grossPay > shopSettings.incomeTaxThreshold 
-        ? (grossPay - shopSettings.incomeTaxThreshold) * (shopSettings.incomeTaxRate / 100)
+      const socialInsurance = grossPay * (shopSettings.social_insurance_rate / 100);
+      const incomeTax = grossPay > shopSettings.income_tax_threshold
+        ? (grossPay - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
         : 0;
       const netPay = grossPay - socialInsurance - incomeTax;
 
@@ -513,7 +513,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Total Bookings</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {EarningsService.getWeeklyEarnings(currentUser.shop_name).bookingCount}
+                    {EarningsService.getWeeklyEarnings(currentUser.id!).bookingCount}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -530,7 +530,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Today's Bookings</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {EarningsService.getTodayEarnings(currentUser.shop_name).bookingCount}
+                    {EarningsService.getTodayEarnings(currentUser.id!).bookingCount}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -563,7 +563,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
               <div>
                 <p className="text-gray-600 text-sm font-medium mb-1">Total Earnings</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₺{EarningsService.getWeeklyEarnings(currentUser.shop_name).totalAmount.toFixed(2)}
+                  ₺{EarningsService.getWeeklyEarnings(currentUser.id!).totalAmount.toFixed(2)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">

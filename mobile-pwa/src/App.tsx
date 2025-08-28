@@ -36,14 +36,9 @@ function App() {
   // Check for saved user session on load
   useEffect(() => {
     const initializeApp = async () => {
-      const savedUser = localStorage.getItem('current_barber_user');
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser);
-          setCurrentUser(user);
-        } catch (err) {
-          localStorage.removeItem('current_barber_user');
-        }
+      const user = await dbService.getCurrentUser();
+      if (user) {
+        setCurrentUser(user);
       }
     };
     initializeApp();
@@ -70,15 +65,7 @@ function App() {
         const user = await dbService.login(formData.email, formData.password);
         
         if (user) {
-          const userSession = {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            shop_name: user.shop_name
-          };
-          setCurrentUser(userSession);
-          localStorage.setItem('current_barber_user', JSON.stringify(userSession));
+          setCurrentUser(user);
         } else {
           setError('Invalid email or password');
         }
@@ -104,6 +91,7 @@ function App() {
         const userData = {
           name: formData.name,
           email: formData.email,
+          password: formData.password,
           role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Default Shop'
         };
@@ -111,16 +99,7 @@ function App() {
         const newUser = await dbService.register(userData);
         
         if (newUser) {
-          const userSession = {
-            id: newUser.id,
-            name: newUser.name,
-            email: newUser.email,
-            role: newUser.role,
-            shop_name: newUser.shop_name
-          };
-          setCurrentUser(userSession);
-          localStorage.setItem('current_barber_user', JSON.stringify(userSession));
-          
+          setCurrentUser(newUser);
         }
       }
     } catch (err: any) {
@@ -130,10 +109,17 @@ function App() {
     }
   };
 
-  const handleSignOut = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('current_barber_user');
-    setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
+  const handleSignOut = async () => {
+    try {
+      await dbService.logout();
+      setCurrentUser(null);
+      setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
+    } catch (error) {
+      console.error('Sign out error:', error);
+      // Still clear the local state even if logout fails
+      setCurrentUser(null);
+      setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
+    }
   };
 
   // If user is logged in, show main app
