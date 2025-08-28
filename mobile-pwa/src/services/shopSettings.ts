@@ -14,15 +14,23 @@ export const defaultShopSettings: ShopSettings = {
   income_tax_threshold: 3000,
   opening_time: '09:00:00',
   closing_time: '20:00:00',
-  closed_days: ['Thursday', 'Sunday']
+  closed_days: ['Thursday', 'Sunday'],
+  sunday_opening_time: '10:00:00', // Added default value
+  sunday_closing_time: '18:00:00', // Added default value
+  services: [], // Added default value
+  default_commission_rate: 50 // Added default value
 };
 
+// Fix TypeScript errors by ensuring default values for optional properties
 export class ShopSettingsService {
   static async getSettings(shopName: string): Promise<ShopSettings> {
     try {
       const settings = await dbService.getShopSettings(shopName);
       if (settings) {
-        return settings;
+        return {
+          ...defaultShopSettings,
+          ...settings // Merge with defaults to ensure all properties are defined
+        };
       }
       // Return default settings if none exist
       return { ...defaultShopSettings, shop_name: shopName };
@@ -46,11 +54,11 @@ export class ShopSettingsService {
       const settings = await this.getSettings(shopName);
       switch (role.toLowerCase()) {
         case 'barber':
-          return settings.barber_commission;
+          return settings.barber_commission ?? defaultShopSettings.barber_commission;
         case 'apprentice':
-          return settings.apprentice_commission;
+          return settings.apprentice_commission ?? defaultShopSettings.apprentice_commission;
         default:
-          return settings.barber_commission;
+          return defaultShopSettings.barber_commission;
       }
     } catch (error) {
       console.error('Error getting commission rate:', error);
@@ -62,9 +70,9 @@ export class ShopSettingsService {
     try {
       const settings = await this.getSettings(shopName);
       return {
-        daily: settings.daily_target,
-        weekly: settings.weekly_target,
-        monthly: settings.monthly_target
+        daily: settings.daily_target ?? defaultShopSettings.daily_target,
+        weekly: settings.weekly_target ?? defaultShopSettings.weekly_target,
+        monthly: settings.monthly_target ?? defaultShopSettings.monthly_target
       };
     } catch (error) {
       console.error('Error getting targets:', error);

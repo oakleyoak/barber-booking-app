@@ -70,15 +70,15 @@ export interface ShopSettings {
   sunday_closing_time: string;
   closed_days: string[];
   services: ServicePricing[];
-  daily_target?: number;
-  weekly_target?: number;
-  monthly_target?: number;
-  default_commission_rate?: number;
-  barber_commission?: number;
-  apprentice_commission?: number;
-  social_insurance_rate?: number;
-  income_tax_rate?: number;
-  income_tax_threshold?: number;
+  daily_target: number; // Made mandatory
+  weekly_target: number; // Made mandatory
+  monthly_target: number; // Made mandatory
+  default_commission_rate: number; // Made mandatory
+  barber_commission: number; // Made mandatory
+  apprentice_commission: number; // Made mandatory
+  social_insurance_rate: number; // Made mandatory
+  income_tax_rate: number; // Made mandatory
+  income_tax_threshold: number; // Made mandatory
   created_at?: string;
   updated_at?: string;
 }
