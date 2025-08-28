@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3 } from 'lucide-react';
 import { bookingService, customerService } from '../services/supabaseServices';
 import type { Booking, Customer, User as UserType } from '../lib/supabase';
 
@@ -10,7 +10,7 @@ interface BookingCalendarProps {
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [view, setView] = useState<'calendar' | 'day'>('calendar');
+  const [view, setView] = useState<'calendar' | 'day' | 'list'>('calendar');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [monthlyBookings, setMonthlyBookings] = useState<Booking[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -44,21 +44,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load bookings for selected date
+      console.log('Loading calendar data for date:', selectedDate);
+
+      // Load bookings for selected date with proper user filtering
       const dayBookings = await bookingService.getBookingsByDate(
-        selectedDate, 
+        selectedDate,
         currentUser.role === 'Barber' ? currentUser.id : undefined
       );
-      
-      // Load customers
+
+      // Load customers for the current user
       const allCustomers = await customerService.getAllCustomers(
         currentUser.role === 'Barber' ? currentUser.id : undefined
       );
-      
+
+      console.log('Loaded bookings:', dayBookings.length, 'customers:', allCustomers.length);
       setBookings(dayBookings);
       setCustomers(allCustomers);
     } catch (error) {
       console.error('Error loading calendar data:', error);
+      setBookings([]);
+      setCustomers([]);
     } finally {
       setIsLoading(false);
     }
@@ -68,22 +73,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     try {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
-      
+
+      console.log('Loading monthly bookings from', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
+
       const monthBookings = await bookingService.getBookingsByDateRange(
         startDate.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],
         currentUser.role === 'Barber' ? currentUser.id : undefined
       );
-      
+
+      console.log('Loaded monthly bookings:', monthBookings.length);
       setMonthlyBookings(monthBookings);
     } catch (error) {
       console.error('Error loading monthly bookings:', error);
+      setMonthlyBookings([]);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       const bookingData = {
         customer_name: formData.customer_name,
@@ -95,29 +104,40 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         user_id: currentUser.id
       };
 
+      console.log('Saving booking:', bookingData);
+
       if (editingBooking) {
         // Update existing booking
         const updated = await bookingService.updateBooking(editingBooking.id, bookingData);
         if (updated) {
+          console.log('Booking updated successfully');
           setBookings(prev => prev.map(b => b.id === editingBooking.id ? updated : b));
+          setMonthlyBookings(prev => prev.map(b => b.id === editingBooking.id ? updated : b));
         }
       } else {
         // Create new booking
         const newBooking = await bookingService.createBooking(bookingData);
         if (newBooking) {
+          console.log('New booking created successfully');
           setBookings(prev => [...prev, newBooking]);
-          
+          setMonthlyBookings(prev => [...prev, newBooking]);
+
           // Update customer's last visit
           const customer = customers.find(c => c.name === formData.customer_name);
           if (customer) {
             await customerService.updateCustomer(customer.id, { last_visit: selectedDate });
+            console.log('Customer last visit updated');
           } else {
             // Create new customer if they don't exist
-            await customerService.createCustomer({
+            const newCustomer = await customerService.createCustomer({
               name: formData.customer_name,
               last_visit: selectedDate,
               user_id: currentUser.id
             });
+            if (newCustomer) {
+              console.log('New customer created');
+              setCustomers(prev => [...prev, newCustomer]);
+            }
           }
         }
       }
@@ -132,11 +152,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       });
       setEditingBooking(null);
       setShowModal(false);
-      
-      // Reload data to get updated customers list
+
+      // Reload data to ensure consistency
       await loadData();
+      await loadMonthlyBookings();
     } catch (error) {
       console.error('Error saving booking:', error);
+      alert('Failed to save booking. Please try again.');
     }
   };
 
@@ -154,17 +176,31 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
-      const success = await bookingService.deleteBooking(id);
-      if (success) {
-        setBookings(prev => prev.filter(b => b.id !== id));
+      try {
+        const success = await bookingService.deleteBooking(id);
+        if (success) {
+          console.log('Booking deleted successfully');
+          setBookings(prev => prev.filter(b => b.id !== id));
+          setMonthlyBookings(prev => prev.filter(b => b.id !== id));
+        }
+      } catch (error) {
+        console.error('Error deleting booking:', error);
+        alert('Failed to delete booking. Please try again.');
       }
     }
   };
 
   const handleStatusUpdate = async (id: string, status: 'completed' | 'cancelled') => {
-    const updated = await bookingService.updateBooking(id, { status });
-    if (updated) {
-      setBookings(prev => prev.map(b => b.id === id ? updated : b));
+    try {
+      const updated = await bookingService.updateBooking(id, { status });
+      if (updated) {
+        console.log('Booking status updated successfully');
+        setBookings(prev => prev.map(b => b.id === id ? updated : b));
+        setMonthlyBookings(prev => prev.map(b => b.id === id ? updated : b));
+      }
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+      alert('Failed to update booking status. Please try again.');
     }
   };
 
@@ -191,15 +227,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
     startDate.setDate(startDate.getDate() - firstDay.getDay());
-    
+
     const days = [];
     const currentDate = new Date(startDate);
-    
+
     while (currentDate <= lastDay || currentDate.getDay() !== 0) {
       days.push(new Date(currentDate));
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return days;
   };
 
@@ -222,6 +258,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     setCurrentMonth(newMonth);
   };
 
+  const selectDate = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    setSelectedDate(dateStr);
+    setView('day');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -231,54 +273,312 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   }
 
   return (
-    <div className="p-4 sm:p-6 md:p-8">
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Appointments</h2>
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-md font-medium text-gray-800">All Appointments</h3>
-          <button
-            onClick={() => setShowModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            + New Booking
-          </button>
-        </div>
-        <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-          {bookings.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-              <p className="text-sm">No appointments available</p>
+    <div className="p-2 sm:p-4 md:p-6 lg:p-8">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4 md:p-6 lg:p-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
+          <div>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Calendar</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {view === 'calendar' ? 'Monthly view' : view === 'day' ? 'Daily appointments' : 'All appointments'}
+            </p>
+          </div>
+
+          {/* View Toggle */}
+          <div className="flex items-center gap-2">
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setView('calendar')}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition ${
+                  view === 'calendar'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <Grid3X3 className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Calendar</span>
+              </button>
+              <button
+                onClick={() => setView('day')}
+                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition ${
+                  view === 'day'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <List className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">Day</span>
+              </button>
             </div>
-          ) : (
-            bookings.map((booking) => (
-              <div key={booking.id} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h4 className="text-md font-semibold">{booking.customer_name}</h4>
-                    <p className="text-sm text-gray-600">{booking.service} - {booking.time}</p>
-                  </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleEdit(booking)}
-                      className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                      title="Edit"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(booking.id)}
-                      className="p-1 text-red-600 hover:bg-red-100 rounded"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
+
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">New Booking</span>
+              <span className="sm:hidden">+</span>
+            </button>
+          </div>
         </div>
-      </div>
+
+        {/* Calendar View */}
+        {view === 'calendar' && (
+          <div className="space-y-4">
+            {/* Month Navigation */}
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => navigateMonth('prev')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <h3 className="text-lg font-semibold text-gray-900">
+                {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h3>
+              <button
+                onClick={() => navigateMonth('next')}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {/* Day Headers */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">
+                  {day}
+                </div>
+              ))}
+
+              {/* Calendar Days */}
+              {getDaysInMonth(currentMonth).map((date, index) => {
+                const dayBookings = getBookingsForDate(date);
+                const isToday = date.toDateString() === new Date().toDateString();
+                const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
+                const isSelected = date.toISOString().split('T')[0] === selectedDate;
+
+                return (
+                  <button
+                    key={index}
+                    onClick={() => selectDate(date)}
+                    className={`min-h-[60px] sm:min-h-[80px] p-1 sm:p-2 border rounded-lg text-left transition ${
+                      isCurrentMonth
+                        ? isSelected
+                          ? 'bg-blue-100 border-blue-300'
+                          : isToday
+                            ? 'bg-yellow-50 border-yellow-200'
+                            : 'bg-white border-gray-200 hover:bg-gray-50'
+                        : 'bg-gray-50 border-gray-100 text-gray-400'
+                    }`}
+                  >
+                    <div className="text-xs sm:text-sm font-medium mb-1">
+                      {date.getDate()}
+                    </div>
+                    <div className="space-y-1">
+                      {dayBookings.slice(0, 2).map((booking, idx) => (
+                        <div
+                          key={idx}
+                          className={`text-xs p-1 rounded truncate ${
+                            booking.status === 'completed'
+                              ? 'bg-green-100 text-green-800'
+                              : booking.status === 'cancelled'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-blue-100 text-blue-800'
+                          }`}
+                        >
+                          {booking.customer_name}
+                        </div>
+                      ))}
+                      {dayBookings.length > 2 && (
+                        <div className="text-xs text-gray-500">
+                          +{dayBookings.length - 2} more
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Day View */}
+        {view === 'day' && (
+          <div className="space-y-4">
+            {/* Date Navigation */}
+            <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+              <button
+                onClick={() => {
+                  const prevDate = new Date(selectedDate);
+                  prevDate.setDate(prevDate.getDate() - 1);
+                  setSelectedDate(prevDate.toISOString().split('T')[0]);
+                }}
+                className="p-2 hover:bg-gray-200 rounded-lg transition"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {new Date(selectedDate).toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </h3>
+                <p className="text-sm text-gray-600">
+                  {bookings.length} appointment{bookings.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  const nextDate = new Date(selectedDate);
+                  nextDate.setDate(nextDate.getDate() + 1);
+                  setSelectedDate(nextDate.toISOString().split('T')[0]);
+                }}
+                className="p-2 hover:bg-gray-200 rounded-lg transition"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Time Slots */}
+            <div className="space-y-2">
+              {timeSlots.map(time => {
+                const slotBookings = bookings.filter(b => b.time === time);
+
+                return (
+                  <div key={time} className="flex items-center p-3 border rounded-lg bg-gray-50">
+                    <div className="w-16 text-sm font-medium text-gray-600">
+                      {time}
+                    </div>
+
+                    <div className="flex-1 ml-4">
+                      {slotBookings.length > 0 ? (
+                        <div className="space-y-2">
+                          {slotBookings.map(booking => (
+                            <div key={booking.id} className="bg-white p-3 rounded-lg border">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
+                                  <p className="text-sm text-gray-600">{booking.service}</p>
+                                  <p className="text-sm font-medium text-gray-900">{formatCurrency(booking.price)}</p>
+                                </div>
+
+                                <div className="flex items-center gap-2 ml-4">
+                                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                    {booking.status}
+                                  </span>
+
+                                  <div className="flex gap-1">
+                                    {booking.status === 'scheduled' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleStatusUpdate(booking.id, 'completed')}
+                                          className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                          title="Mark as completed"
+                                        >
+                                          <Check className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleStatusUpdate(booking.id, 'cancelled')}
+                                          className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                          title="Mark as cancelled"
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </button>
+                                      </>
+                                    )}
+
+                                    <button
+                                      onClick={() => handleEdit(booking)}
+                                      className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                      title="Edit booking"
+                                    >
+                                      <Edit2 className="h-4 w-4" />
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleDelete(booking.id)}
+                                      className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                      title="Delete booking"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-gray-400 italic">
+                          No appointment
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* List View */}
+        {view === 'list' && (
+          <div className="space-y-4">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">All Appointments</h3>
+
+              {bookings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                  <p className="text-gray-500">No appointments for this date</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {bookings.map(booking => (
+                    <div key={booking.id} className="bg-white p-4 rounded-lg border">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
+                          <p className="text-sm text-gray-600">{booking.service} at {booking.time}</p>
+                          <p className="text-sm font-medium text-gray-900">{formatCurrency(booking.price)}</p>
+                        </div>
+
+                        <div className="flex items-center gap-2 ml-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
+                            {booking.status}
+                          </span>
+
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleEdit(booking)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded"
+                            >
+                              <Edit2 className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(booking.id)}
+                              className="p-2 text-red-600 hover:bg-red-100 rounded"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       {/* Booking Modal */}
       {showModal && (
@@ -330,8 +630,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (
-                      ₺)
+                      Price (₺)
                     </label>
                     <input
                       type="number"
@@ -407,7 +706,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
