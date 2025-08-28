@@ -17,6 +17,9 @@ export interface User {
   email: string;
   role: string;
   shop_name: string;
+  target_weekly?: number;
+  target_monthly?: number;
+  commission_rate?: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -41,7 +44,61 @@ export interface Booking {
   price: number;
   date: string;
   time: string;
-  status: string;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Expense {
+  id: string;
+  user_id?: string;
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  receipt_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ShopSettings {
+  id?: string;
+  shop_name: string;
+  opening_time: string;
+  closing_time: string;
+  sunday_opening_time: string;
+  sunday_closing_time: string;
+  closed_days: string[];
+  services: ServicePricing[];
+  daily_target?: number;
+  weekly_target?: number;
+  monthly_target?: number;
+  default_commission_rate?: number;
+  barber_commission?: number;
+  apprentice_commission?: number;
+  social_insurance_rate?: number;
+  income_tax_rate?: number;
+  income_tax_threshold?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ServicePricing {
+  name: string;
+  price: number;
+  duration: number;
+}
+
+export interface PayrollEntry {
+  id?: string;
+  user_id?: string;
+  period_start: string;
+  period_end: string;
+  base_salary?: number;
+  commission_earned: number;
+  bonus?: number;
+  deductions?: number;
+  total_pay: number;
   created_at?: string;
   updated_at?: string;
 }
@@ -57,63 +114,6 @@ export interface Transaction {
   commission_amount: number;
   date: string;
   status: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ShopSettings {
-  id: string;
-  shop_name: string;
-  daily_target: number;
-  weekly_target: number;
-  monthly_target: number;
-  barber_commission: number;
-  apprentice_commission: number;
-  social_insurance_rate: number;
-  income_tax_rate: number;
-  income_tax_threshold: number;
-  opening_time: string;
-  closing_time: string;
-  closed_days: string[];
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Expense {
-  id: string;
-  user_id: string;
-  category: string;
-  description: string;
-  amount: number;
-  date: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Payroll {
-  id: string;
-  user_id: string;
-  staff_name: string;
-  period_start: string;
-  period_end: string;
-  base_salary: number;
-  commission_earned: number;
-  total_earnings: number;
-  deductions: number;
-  net_pay: number;
-  status: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface StaffTarget {
-  id: string;
-  user_id: string;
-  staff_name: string;
-  target_type: 'daily' | 'weekly' | 'monthly';
-  target_amount: number;
-  period_start: string;
-  period_end: string;
   created_at?: string;
   updated_at?: string;
 }

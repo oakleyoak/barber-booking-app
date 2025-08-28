@@ -56,18 +56,9 @@ export const dbService = {
   async login(email: string, password: string): Promise<User | null> {
     try {
       console.log('🔐 Starting login process for:', email);
-      
-      // Quick connection test
-      console.log('🌐 Testing Supabase connection...');
-      const { data: connectionTest } = await supabase
-        .from('users')
-        .select('count')
-        .limit(1);
-      
-      console.log('✅ Supabase connection verified');
 
       // Step 1: Authenticate with Supabase Auth
-      console.log('📡 Attempting Supabase auth...');
+      console.log('� Attempting Supabase auth...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -75,10 +66,6 @@ export const dbService = {
 
       if (error) {
         console.error('❌ Supabase auth error:', error);
-        console.error('❌ Error details:', {
-          message: error.message,
-          status: error.status
-        });
         throw new Error(`Authentication failed: ${error.message}`);
       }
 
@@ -90,21 +77,15 @@ export const dbService = {
       console.log('✅ Supabase auth successful, user ID:', data.user.id);
 
       // Step 2: Get user profile from users table
-      console.log('📋 Fetching user profile from users table...');
+      console.log('� Fetching user profile from users table...');
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', data.user.id)
+        .eq('email', email)
         .single();
 
       if (profileError) {
         console.error('❌ Profile fetch error:', profileError);
-        console.error('❌ Profile error details:', {
-          message: profileError.message,
-          details: profileError.details,
-          hint: profileError.hint,
-          code: profileError.code
-        });
         throw new Error(`Profile fetch failed: ${profileError.message}`);
       }
 
@@ -118,14 +99,69 @@ export const dbService = {
       return profile;
     } catch (error: any) {
       console.error('💥 Login error:', error);
-      
-      // If it's a network error, provide specific guidance
-      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
-        console.error('🌐 Network connectivity issue detected');
-        throw new Error('Network connection error. Please check your internet connection.');
-      }
-      
       return null;
+    }
+  },
+
+  async createUserAccount(email: string, password: string, name: string, role: string = 'Owner'): Promise<User | null> {
+    try {
+      console.log('🆕 Creating user account for:', email);
+
+      const userData = {
+        name: name || 'User',
+        email: email,
+        password: password,
+        role: role,
+        shop_name: role === 'Owner' ? (name || 'My Shop') : 'Default Shop'
+      };
+
+      const { data, error } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            shop_name: userData.shop_name
+          }
+        }
+      });
+
+      if (error) {
+        console.error('❌ Account creation error:', error);
+        if (error.message.includes('already registered')) {
+          throw new Error('Account already exists. Please try logging in instead.');
+        }
+        throw error;
+      }
+
+      if (data.user) {
+        // Create user profile in users table
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role,
+            shop_name: userData.shop_name
+          }])
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('❌ Profile creation error:', profileError);
+          throw profileError;
+        }
+
+        console.log('✅ User account created successfully:', profile);
+        return profile;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('💥 Account creation error:', error);
+      throw error;
     }
   },
 

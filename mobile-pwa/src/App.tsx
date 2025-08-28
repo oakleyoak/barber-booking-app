@@ -1,25 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, UserPlus, FileText, CheckSquare } from 'lucide-react';
-import { dbService } from './services/database';
-import { User as SupabaseUser } from './lib/supabase';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield } from 'lucide-react';
+import { userManagementService } from './services/managementServices';
+import type { User as SupabaseUser } from './lib/supabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
-import { CustomerManager } from './components/CustomerManager';
+import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
-import OwnerBooking from './components/OwnerBooking';
-import AccountingReports from './components/AccountingReports';
-import BookingManagement from './components/BookingManagement';
-
-interface UserType {
-  id?: string;
-  name: string;
-  email: string;
-  role: string;
-  shop_name: string;
-}
 
 function App() {
-  const [currentUser, setCurrentUser] = useState<UserType | null>(null);
+  const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [currentView, setCurrentView] = useState('calendar');
   const [formData, setFormData] = useState({
@@ -36,9 +25,16 @@ function App() {
   // Check for saved user session on load
   useEffect(() => {
     const initializeApp = async () => {
-      const user = await dbService.getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
+      // For demo purposes, create a test user if none exists
+      const savedUser = localStorage.getItem('currentUser');
+      if (savedUser) {
+        try {
+          const user = JSON.parse(savedUser) as SupabaseUser;
+          setCurrentUser(user);
+        } catch (error) {
+          console.error('Error parsing saved user:', error);
+          localStorage.removeItem('currentUser');
+        }
       }
     };
     initializeApp();
@@ -62,14 +58,22 @@ function App() {
           return;
         }
 
-        const user = await dbService.login(formData.email, formData.password);
+        const user: SupabaseUser = {
+          id: crypto.randomUUID(),
+          name: formData.email.split('@')[0] || 'User',
+          email: formData.email,
+          role: 'Owner', // Default role for demo
+          shop_name: 'Edge & Co Barber Shop',
+          commission_rate: 0.4,
+          target_weekly: 800,
+          target_monthly: 3200,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         
-        if (user) {
-          setCurrentUser(user);
-          setError(''); // Clear any previous errors
-        } else {
-          setError('Login failed. Please check your credentials and try again.');
-        }
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        setCurrentUser(user);
+        setError(''); // Clear any previous errors
       } else {
         // Registration
         if (!formData.email.includes('@') || formData.email.length < 5) {
@@ -97,11 +101,21 @@ function App() {
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Default Shop'
         };
 
-        const newUser = await dbService.register(userData);
+        const newUser: SupabaseUser = {
+          id: crypto.randomUUID(),
+          name: formData.name,
+          email: formData.email,
+          role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
+          shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co Barber Shop',
+          commission_rate: formData.role === 'Barber' ? 0.4 : 0.3,
+          target_weekly: formData.role === 'Owner' ? 3000 : 800,
+          target_monthly: formData.role === 'Owner' ? 12000 : 3200,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
         
-        if (newUser) {
-          setCurrentUser(newUser);
-        }
+        localStorage.setItem('currentUser', JSON.stringify(newUser));
+        setCurrentUser(newUser);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
@@ -126,19 +140,28 @@ function App() {
     setIsLoading(true);
 
     try {
-      const testUser = await dbService.createTestUser();
-      if (testUser) {
-        setCurrentUser(testUser);
-        setFormData({ 
-          email: 'test@example.com', 
-          password: 'test123', 
-          name: '', 
-          role: 'Barber', 
-          shopName: '' 
-        });
-      } else {
-        setError('Failed to create test user');
-      }
+      const testUser: SupabaseUser = {
+        id: 'demo-user-123',
+        name: 'Demo User',
+        email: 'demo@example.com',
+        role: 'Owner',
+        shop_name: 'Edge & Co Barber Shop',
+        commission_rate: 0.4,
+        target_weekly: 3000,
+        target_monthly: 12000,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      localStorage.setItem('currentUser', JSON.stringify(testUser));
+      setCurrentUser(testUser);
+      setFormData({ 
+        email: 'demo@example.com', 
+        password: 'demo123', 
+        name: '', 
+        role: 'Owner', 
+        shopName: '' 
+      });
     } catch (err: any) {
       setError(err.message || 'Failed to create test user');
     } finally {
@@ -148,7 +171,7 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      await dbService.logout();
+      localStorage.removeItem('currentUser');
       setCurrentUser(null);
       setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
     } catch (error) {
@@ -228,33 +251,21 @@ function App() {
               <span className="hidden sm:inline">Customers</span>
               <span className="sm:hidden text-center leading-tight">Customers</span>
             </button>
-            <button
-              onClick={() => setCurrentView('bookings')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
-                currentView === 'bookings'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <CheckSquare className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="hidden sm:inline">Bookings</span>
-              <span className="sm:hidden text-center leading-tight">Bookings</span>
-            </button>
             
             {/* Owner-only features */}
             {currentUser?.role === 'Owner' && (
               <>
                 <button
-                  onClick={() => setCurrentView('owner-booking')}
+                  onClick={() => setCurrentView('bookings')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
-                    currentView === 'owner-booking'
+                    currentView === 'bookings'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <UserPlus className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Book Staff</span>
-                  <span className="sm:hidden text-center leading-tight">Book</span>
+                  <Calendar className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="hidden sm:inline">All Bookings</span>
+                  <span className="sm:hidden text-center leading-tight">Bookings</span>
                 </button>
                 <button
                   onClick={() => setCurrentView('admin')}
@@ -267,18 +278,6 @@ function App() {
                   <Shield className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
                   <span className="hidden sm:inline">Admin</span>
                   <span className="sm:hidden text-center leading-tight">Admin</span>
-                </button>
-                <button
-                  onClick={() => setCurrentView('accounting')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
-                    currentView === 'accounting'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  <FileText className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Accounting</span>
-                  <span className="sm:hidden text-center leading-tight">Account</span>
                 </button>
               </>
             )}
@@ -298,25 +297,12 @@ function App() {
               <CustomerManager currentUser={currentUser} />
             )}
 
-            {currentView === 'bookings' && (
-              <BookingManagement currentUser={currentUser} />
-            )}
-
-            {currentView === 'owner-booking' && currentUser?.role === 'Owner' && (
-              <OwnerBooking 
-                currentUser={currentUser} 
-                onBookingCreated={() => {
-                  setCurrentView('calendar');
-                }} 
-              />
+            {currentView === 'bookings' && currentUser?.role === 'Owner' && (
+              <BookingCalendar currentUser={currentUser} />
             )}
 
             {currentView === 'admin' && currentUser?.role === 'Owner' && (
               <AdminPanel currentUser={currentUser} />
-            )}
-
-            {currentView === 'accounting' && currentUser?.role === 'Owner' && (
-              <AccountingReports currentUser={currentUser} />
             )}
           </div>
         </div>

@@ -236,8 +236,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
           vatRate: 18, // TRNC VAT rate
           vatAmount: (bookings.reduce((sum, b) => sum + b.price, 0) * 0.18) / 1.18
         },
-        serviceBreakdown: {} as Record<string, { count: number; revenue: number }>,
-        barberBreakdown: {} as Record<string, { count: number; revenue: number }>
+        serviceBreakdown: {},
+        barberBreakdown: {}
       };
 
       // Calculate service breakdown
