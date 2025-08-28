@@ -6,11 +6,14 @@ class ShopSettingsService {
     try {
       const { data, error } = await supabase
         .from('shop_settings')
-        .select('*')
+        .select('id, shop_name, opening_time, closing_time, sunday_opening_time, sunday_closing_time, closed_days, services, daily_target, weekly_target, monthly_target, default_commission_rate, barber_commission, apprentice_commission, social_insurance_rate, income_tax_rate, income_tax_threshold')
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
-      
+      if (error) {
+        console.error('Error fetching shop settings:', error);
+        throw error;
+      }
+
       // Return default settings if none exist
       if (!data) {
         return {
