@@ -363,7 +363,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                               </span>
                             </div>
                           </div>
-                          
                           <div className="flex items-center space-x-1 ml-2">
                             {booking.status === 'scheduled' && (
                               <>
@@ -458,9 +457,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     >
                       <option value="">Select a service</option>
                       {services.map(service => (
-                        <option key={service.name} value={service.name}>
-                          {service.name} - {formatCurrency(service.price)} ({service.duration}min)
-                        </option>
+                        <option key={service.name} value={service.name}>{service.name}</option>
                       ))}
                     </select>
                   </div>
