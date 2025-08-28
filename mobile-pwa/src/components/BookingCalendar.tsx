@@ -230,186 +230,53 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     );
   }
 
-  const BookingList = ({ bookings }: { bookings: Booking[] }) => (
-    <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-      {bookings.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">
-          <p className="text-sm">No bookings available</p>
-        </div>
-      ) : (
-        bookings.map((booking) => (
-          <div key={booking.id} className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center">
-              <div>
-                <h4 className="text-md font-semibold">Booking #{booking.id}</h4>
-                <p className="text-sm text-gray-600">Customer: {booking.customer_name}</p>
-                <p className="text-sm text-gray-600">Service: {booking.service}</p>
-                <p className="text-sm text-gray-600">Time: {booking.time}</p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleEdit(booking)}
-                  className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                  title="Edit"
-                >
-                  <Edit2 className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(booking.id)}
-                  className="p-1 text-red-600 hover:bg-red-100 rounded"
-                  title="Delete"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-    </div>
-  );
-
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Booking Calendar</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Calendar View */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-md font-medium text-gray-800 mb-2">Calendar</h3>
-            {/* Calendar Component */}
-            {view === 'calendar' ? (
-              <>
-                {/* Calendar Header */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="flex items-center justify-between p-4 border-b">
-                    <button
-                      onClick={() => navigateMonth('prev')}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <h3 className="text-lg font-semibold">
-                      {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h3>
-                    <button
-                      onClick={() => navigateMonth('next')}
-                      className="p-2 hover:bg-gray-100 rounded-lg"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </div>
-                  
-                  {/* Calendar Grid */}
-                  <div className="p-4">
-                    <div className="grid grid-cols-7 gap-1 mb-2">
-                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="p-2 text-center text-sm font-medium text-gray-600">
-                          {day}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                      {getDaysInMonth(currentMonth).map((date, index) => {
-                        const dayBookings = getBookingsForDate(date);
-                        const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
-                        const isToday = date.toDateString() === new Date().toDateString();
-                        const isSelected = date.toISOString().split('T')[0] === selectedDate;
-                        
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => {
-                              setSelectedDate(date.toISOString().split('T')[0]);
-                              setView('day');
-                            }}
-                            className={`p-2 h-16 text-left text-sm border rounded-lg hover:bg-gray-50 ${
-                              !isCurrentMonth ? 'text-gray-400 bg-gray-50' :
-                              isSelected ? 'bg-blue-100 border-blue-300' :
-                              isToday ? 'bg-yellow-50 border-yellow-300' :
-                              'border-gray-200'
-                            }`}
-                          >
-                            <div className="font-medium">{date.getDate()}</div>
-                            {dayBookings.length > 0 && (
-                              <div className="mt-1">
-                                <div className="text-xs text-blue-600 font-medium">
-                                  {dayBookings.length} booking{dayBookings.length !== 1 ? 's' : ''}
-                                </div>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Day View - Date Selector */}
-                <div className="bg-white rounded-lg shadow p-4">
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full sm:w-auto border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Booking List */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-md font-medium text-gray-800 mb-2">Bookings</h3>
-            {/* Bookings List */}
-            <div className="bg-white rounded-lg shadow">
-              <div className="p-4 border-b border-gray-200">
-                <h3 className="font-medium text-gray-900">
-                  {new Date(selectedDate).toLocaleDateString()} ({bookings.length})
-                </h3>
-              </div>
-              
-              <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
-                {bookings.length === 0 ? (
-                  <div className="p-8 text-center text-gray-500">
-                    <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
-                    <p className="text-sm">No bookings</p>
-                  </div>
-                ) : (
-                  bookings
-                    .sort((a, b) => Number(a.id) - Number(b.id))
-                    .map((booking) => (
-                      <div key={booking.id} className="p-4 border rounded-lg">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h4 className="text-md font-semibold">Booking #{booking.id}</h4>
-                            <p className="text-sm text-gray-600">Status: {booking.status}</p>
-                          </div>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEdit(booking)}
-                              className="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                              title="Edit"
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(booking.id)}
-                              className="p-1 text-red-600 hover:bg-red-100 rounded"
-                              title="Delete"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                )}
-              </div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Appointments</h2>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-md font-medium text-gray-800">All Appointments</h3>
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          >
+            + New Booking
+          </button>
+        </div>
+        <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+          {bookings.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
+              <Calendar className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">No appointments available</p>
             </div>
-          </div>
+          ) : (
+            bookings.map((booking) => (
+              <div key={booking.id} className="p-4 border rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-md font-semibold">{booking.customer_name}</h4>
+                    <p className="text-sm text-gray-600">{booking.service} - {booking.time}</p>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleEdit(booking)}
+                      className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                      title="Edit"
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(booking.id)}
+                      className="p-1 text-red-600 hover:bg-red-100 rounded"
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -423,7 +290,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">
                   {editingBooking ? 'Edit Booking' : 'New Booking'}
                 </h3>
-                
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -434,14 +300,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       value={formData.customer_name}
                       onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))}
                       className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      list="customers"
                       required
                     />
-                    <datalist id="customers">
-                      {customers.map(customer => (
-                        <option key={customer.id} value={customer.name} />
-                      ))}
-                    </datalist>
                   </div>
 
                   <div>
@@ -470,7 +330,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Price (₺)
+                      Price (
+                      ₺)
                     </label>
                     <input
                       type="number"
