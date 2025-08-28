@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BarChart3, Users, Settings, FileText, Plus, Edit2, Trash2, Save, Download } from 'react-icons/fa';
+import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
