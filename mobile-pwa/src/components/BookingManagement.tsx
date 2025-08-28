@@ -89,6 +89,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const loadBookings = async () => {
     setLoading(true);
     try {
+      console.log('BookingManagement - Starting load with:');
+      console.log('- Current view:', currentView);
+      console.log('- User role:', currentUser.role);
+      console.log('- User ID:', currentUser.id);
+      console.log('- User object:', currentUser);
+
       let query = supabase
         .from('bookings')
         .select(`
@@ -96,36 +102,55 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           users:user_id (name)
         `);
 
-      // If not owner, only show own bookings
-      if (currentUser.role?.toLowerCase() !== 'owner') {
+      // Check role more flexibly - show all bookings for owners
+      const userRole = currentUser.role?.toLowerCase() || '';
+      const isOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'owner (omustapha2)';
+      
+      console.log('BookingManagement - Role check:', { userRole, isOwner });
+
+      // If not owner/admin, only show own bookings
+      if (!isOwner && currentUser.id) {
+        console.log('BookingManagement - Filtering by user_id:', currentUser.id);
         query = query.eq('user_id', currentUser.id);
+      } else {
+        console.log('BookingManagement - Owner/Admin: showing all bookings');
       }
 
       // Apply date range based on current view
       const now = new Date();
       const today = now.toISOString().split('T')[0];
       
+      console.log('BookingManagement - Today:', today);
+      
       if (currentView === 'upcoming') {
         query = query.gte('date', today);
         query = query.order('date', { ascending: true });
+        console.log('BookingManagement - Filtering upcoming bookings >= ', today);
       } else if (currentView === 'history') {
         query = query.lt('date', today);
         query = query.order('date', { ascending: false });
+        console.log('BookingManagement - Filtering history bookings < ', today);
       } else {
         query = query.order('date', { ascending: false });
+        console.log('BookingManagement - Showing all bookings');
       }
 
       const { data, error } = await query;
 
-      if (error) throw error;
-      console.log('BookingManagement - Loaded bookings:', data?.length || 0, 'bookings');
-      console.log('BookingManagement - Current view:', currentView);
-      console.log('BookingManagement - User role:', currentUser.role);
-      console.log('BookingManagement - User ID:', currentUser.id);
-      console.log('BookingManagement - All booking data:', data);
+      if (error) {
+        console.error('BookingManagement - Query error:', error);
+        throw error;
+      }
+      
+      console.log('BookingManagement - Query successful:');
+      console.log('- Raw data:', data);
+      console.log('- Bookings count:', data?.length || 0);
+      console.log('- First booking:', data?.[0]);
+      
       setBookings(data || []);
     } catch (error) {
-      console.error('Error loading bookings:', error);
+      console.error('BookingManagement - Error loading bookings:', error);
+      setBookings([]);
     } finally {
       setLoading(false);
     }

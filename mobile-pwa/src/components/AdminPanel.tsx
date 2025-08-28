@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
+import { AlertTriangle } from 'lucide-react';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
@@ -34,32 +35,83 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
-      const settings = await shopSettingsService.getSettings();
-      setShopSettings(settings);
+      console.log('AdminPanel - Starting data load for user:', currentUser.id);
+      
+      // Try to load shop settings with better error handling
+      try {
+        const settings = await shopSettingsService.getSettings();
+        console.log('AdminPanel - Shop settings loaded:', settings);
+        setShopSettings(settings);
+      } catch (settingsError) {
+        console.error('AdminPanel - Shop settings error:', settingsError);
+        console.log('AdminPanel - Using default settings due to error');
+        // Use a default settings object if shop_settings table doesn't exist
+        setShopSettings({
+          shop_name: 'Edge & Co Barber Shop',
+          opening_time: '09:00',
+          closing_time: '20:00',
+          sunday_opening_time: '12:00',
+          sunday_closing_time: '18:00',
+          closed_days: ['Thursday'],
+          services: [
+            { name: 'Haircut', price: 700, duration: 45 },
+            { name: 'Beard trim', price: 300, duration: 15 },
+            { name: 'Blowdry', price: 500, duration: 30 },
+            { name: 'Face mask', price: 200, duration: 30 },
+            { name: 'Colour', price: 1000, duration: 60 },
+            { name: 'Wax', price: 500, duration: 60 },
+            { name: 'Massage', price: 900, duration: 45 },
+            { name: 'Shave', price: 500, duration: 30 }
+          ],
+          daily_target: 2000,
+          weekly_target: 10000,
+          monthly_target: 40000,
+          default_commission_rate: 50
+        });
+      }
 
-      const allUsers = await userManagementService.getAllUsers();
-      setUsers(allUsers);
+      // Try to load users
+      try {
+        const allUsers = await userManagementService.getAllUsers();
+        console.log('AdminPanel - Users loaded:', allUsers.length);
+        setUsers(allUsers);
+      } catch (usersError) {
+        console.error('AdminPanel - Users loading error:', usersError);
+        setUsers([]);
+      }
 
-      const [customers, monthlyEarnings, weeklyEarnings, dailyEarnings] = await Promise.all([
-        customerService.getAllCustomers(),
-        bookingService.getMonthlyEarnings(),
-        bookingService.getWeeklyEarnings(),
-        bookingService.getDailyEarnings(new Date().toISOString().split('T')[0])
-      ]);
+      // Load stats with better error handling
+      try {
+        const [customers, monthlyEarnings, weeklyEarnings, dailyEarnings] = await Promise.all([
+          customerService.getAllCustomers(),
+          bookingService.getMonthlyEarnings(),
+          bookingService.getWeeklyEarnings(),
+          bookingService.getDailyEarnings(new Date().toISOString().split('T')[0])
+        ]);
 
-      const totalBookings = await bookingService.getAllBookings();
-      console.log('AdminPanel - Total bookings found:', totalBookings.length);
-      console.log('AdminPanel - All bookings data:', totalBookings);
+        const totalBookings = await bookingService.getAllBookings();
+        console.log('AdminPanel - Total bookings found:', totalBookings.length);
+        console.log('AdminPanel - All bookings data:', totalBookings);
 
-      setStats({
-        totalBookings: totalBookings.length,
-        totalCustomers: customers.length,
-        monthlyRevenue: monthlyEarnings.totalAmount,
-        weeklyRevenue: weeklyEarnings.totalAmount,
-        dailyRevenue: dailyEarnings.totalAmount
-      });
+        setStats({
+          totalBookings: totalBookings.length,
+          totalCustomers: customers.length,
+          monthlyRevenue: monthlyEarnings.totalAmount,
+          weeklyRevenue: weeklyEarnings.totalAmount,
+          dailyRevenue: dailyEarnings.totalAmount
+        });
+      } catch (statsError) {
+        console.error('AdminPanel - Stats loading error:', statsError);
+        setStats({
+          totalBookings: 0,
+          totalCustomers: 0,
+          monthlyRevenue: 0,
+          weeklyRevenue: 0,
+          dailyRevenue: 0
+        });
+      }
     } catch (error) {
-      console.error('Error loading admin data:', error);
+      console.error('AdminPanel - General error loading admin data:', error);
     } finally {
       setIsLoading(false);
     }
@@ -295,9 +347,30 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
         )}
 
         {/* Settings Tab */}
-        {currentTab === 'settings' && shopSettings && (
+        {currentTab === 'settings' && (
           <div>
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
+            {!shopSettings ? (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center">
+                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
+                  <h3 className="text-lg font-medium text-yellow-800">Database Setup Required</h3>
+                </div>
+                <p className="mt-2 text-yellow-700">
+                  The shop_settings table is missing from your Supabase database. Please run the SQL script from 
+                  <code className="bg-yellow-100 px-1 rounded">missing_shop_settings_table.sql</code> in your Supabase SQL Editor.
+                </p>
+                <div className="mt-3">
+                  <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1">
+                    <li>Go to your Supabase dashboard</li>
+                    <li>Navigate to SQL Editor</li>
+                    <li>Copy and run the SQL from missing_shop_settings_table.sql</li>
+                    <li>Refresh this page</li>
+                  </ol>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
               <h2 className="text-xl sm:text-2xl font-bold">Shop Settings</h2>
               <button
                 onClick={handleSaveSettings}
@@ -354,7 +427,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (R)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (₺)</label>
                   <input
                     type="number"
                     value={shopSettings.weekly_target}
@@ -364,7 +437,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (R)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (₺)</label>
                   <input
                     type="number"
                     value={shopSettings.monthly_target}
@@ -374,6 +447,8 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
               </div>
             </div>
+              </>
+            )}
           </div>
         )}
 
