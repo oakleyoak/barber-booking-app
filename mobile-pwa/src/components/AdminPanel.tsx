@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload } from 'react-icons/fa';
+import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
@@ -126,22 +126,378 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg">Loading admin panel...</div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1>Admin Panel</h1>
-      <div>
-        <button onClick={() => setCurrentTab('overview')}>Overview</button>
-        <button onClick={() => setCurrentTab('users')}>Users</button>
-        <button onClick={() => setCurrentTab('settings')}>Settings</button>
-        <button onClick={() => setCurrentTab('reports')}>Reports</button>
+    <div className="min-h-screen bg-gray-50 p-4">
+      {/* Header */}
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
+        <p className="text-gray-600">Manage your barbershop operations</p>
       </div>
-      {currentTab === 'overview' && <div>Overview Content</div>}
-      {currentTab === 'users' && <div>User Management Content</div>}
-      {currentTab === 'settings' && <div>Settings Content</div>}
-      {currentTab === 'reports' && <div>Reports Content</div>}
+
+      {/* Navigation Tabs */}
+      <div className="bg-white rounded-lg shadow-sm mb-6">
+        <nav className="flex border-b border-gray-200">
+          {[
+            { id: 'overview', label: 'Overview', icon: FaChartBar },
+            { id: 'users', label: 'Users', icon: FaUsers },
+            { id: 'settings', label: 'Settings', icon: FaCogs },
+            { id: 'reports', label: 'Reports', icon: FaFileAlt }
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setCurrentTab(id as any)}
+              className={`flex items-center px-6 py-4 text-sm font-medium border-b-2 ${
+                currentTab === id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <Icon className="mr-2" />
+              {label}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        {/* Overview Tab */}
+        {currentTab === 'overview' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+            
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <h3 className="text-sm font-medium text-blue-600 mb-2">Total Bookings</h3>
+                <p className="text-3xl font-bold text-blue-900">{stats.totalBookings}</p>
+              </div>
+              <div className="bg-green-50 p-6 rounded-lg">
+                <h3 className="text-sm font-medium text-green-600 mb-2">Total Customers</h3>
+                <p className="text-3xl font-bold text-green-900">{stats.totalCustomers}</p>
+              </div>
+              <div className="bg-purple-50 p-6 rounded-lg">
+                <h3 className="text-sm font-medium text-purple-600 mb-2">Daily Revenue</h3>
+                <p className="text-3xl font-bold text-purple-900">R{stats.dailyRevenue}</p>
+              </div>
+              <div className="bg-orange-50 p-6 rounded-lg">
+                <h3 className="text-sm font-medium text-orange-600 mb-2">Monthly Revenue</h3>
+                <p className="text-3xl font-bold text-orange-900">R{stats.monthlyRevenue}</p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={() => setCurrentTab('users')}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+                >
+                  <FaUsers className="mr-2" />
+                  Manage Users
+                </button>
+                <button
+                  onClick={() => setCurrentTab('settings')}
+                  className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+                >
+                  <FaCogs className="mr-2" />
+                  Shop Settings
+                </button>
+                <button
+                  onClick={() => exportReport('X')}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center"
+                >
+                  <FaDownload className="mr-2" />
+                  Export Report
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Tab */}
+        {currentTab === 'users' && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">User Management</h2>
+              <button
+                onClick={() => {
+                  setShowUserModal(true);
+                  setEditingUser(null);
+                  setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+              >
+                <FaPlus className="mr-2" />
+                Add User
+              </button>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="min-w-full bg-white">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Shop</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {users.map((user) => (
+                    <tr key={user.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{user.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.email}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.role}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{user.shop_name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingUser(user);
+                            setNewUser(user);
+                            setShowUserModal(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-900"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 hover:text-red-900"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Settings Tab */}
+        {currentTab === 'settings' && shopSettings && (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Shop Settings</h2>
+              <button
+                onClick={handleSaveSettings}
+                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center"
+              >
+                <FaSave className="mr-2" />
+                Save Settings
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
+                  <input
+                    type="text"
+                    value={shopSettings.shop_name}
+                    onChange={(e) => setShopSettings({ ...shopSettings, shop_name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Opening Time</label>
+                    <input
+                      type="time"
+                      value={shopSettings.opening_time}
+                      onChange={(e) => setShopSettings({ ...shopSettings, opening_time: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Closing Time</label>
+                    <input
+                      type="time"
+                      value={shopSettings.closing_time}
+                      onChange={(e) => setShopSettings({ ...shopSettings, closing_time: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Daily Target (R)</label>
+                  <input
+                    type="number"
+                    value={shopSettings.daily_target}
+                    onChange={(e) => setShopSettings({ ...shopSettings, daily_target: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (R)</label>
+                  <input
+                    type="number"
+                    value={shopSettings.weekly_target}
+                    onChange={(e) => setShopSettings({ ...shopSettings, weekly_target: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (R)</label>
+                  <input
+                    type="number"
+                    value={shopSettings.monthly_target}
+                    onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Reports Tab */}
+        {currentTab === 'reports' && (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Reports & Analytics</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Daily Reports</h3>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => exportReport('X')}
+                    className="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center"
+                  >
+                    <FaDownload className="mr-2" />
+                    Export X Report
+                  </button>
+                  <button
+                    onClick={() => exportReport('Z')}
+                    className="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center"
+                  >
+                    <FaDownload className="mr-2" />
+                    Export Z Report
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Revenue Summary</h3>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Today:</span>
+                    <span className="font-semibold">R{stats.dailyRevenue}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>This Week:</span>
+                    <span className="font-semibold">R{stats.weeklyRevenue}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>This Month:</span>
+                    <span className="font-semibold">R{stats.monthlyRevenue}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* User Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                {editingUser ? 'Edit User' : 'Add New User'}
+              </h3>
+              <button
+                onClick={() => setShowUserModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form onSubmit={handleUserSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={newUser.name}
+                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <select
+                  value={newUser.role}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="Barber">Barber</option>
+                  <option value="Apprentice">Apprentice</option>
+                  <option value="Owner">Owner</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
+                <input
+                  type="text"
+                  value={newUser.shop_name}
+                  onChange={(e) => setNewUser({ ...newUser, shop_name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowUserModal(false)}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {editingUser ? 'Update' : 'Create'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -6,50 +6,74 @@ class ShopSettingsService {
     try {
       const { data, error } = await supabase
         .from('shop_settings')
-        .select('id, shop_name, opening_time, closing_time, sunday_opening_time, sunday_closing_time, closed_days, services, daily_target, weekly_target, monthly_target, default_commission_rate, barber_commission, apprentice_commission, social_insurance_rate, income_tax_rate, income_tax_threshold')
+        .select('id, shop_name, opening_time, closing_time, closed_days, daily_target, weekly_target, monthly_target, barber_commission, apprentice_commission, social_insurance_rate, income_tax_rate, income_tax_threshold')
         .single();
 
       if (error) {
         console.error('Error fetching shop settings:', error);
+        // If no settings exist, return default settings
+        if (error.code === 'PGRST116') {
+          return this.getDefaultSettings();
+        }
         throw error;
       }
 
       // Return default settings if none exist
       if (!data) {
-        return {
-          shop_name: 'Edge & Co Barber Shop',
-          opening_time: '09:00',
-          closing_time: '20:00',
-          sunday_opening_time: '12:00',
-          sunday_closing_time: '18:00',
-          closed_days: ['thursday'],
-          services: [
-            { name: 'Haircut', price: 700, duration: 45 },
-            { name: 'Beard trim', price: 300, duration: 15 },
-            { name: 'Blowdry', price: 500, duration: 30 },
-            { name: 'Face mask', price: 200, duration: 30 },
-            { name: 'Colour', price: 1000, duration: 60 },
-            { name: 'Wax', price: 500, duration: 60 },
-            { name: 'Massage', price: 900, duration: 45 },
-            { name: 'Shave', price: 500, duration: 30 }
-          ],
-          daily_target: 2000,
-          weekly_target: 10000,
-          monthly_target: 40000,
-          default_commission_rate: 50,
-          barber_commission: 0.5,
-          apprentice_commission: 0.3,
-          social_insurance_rate: 0.12,
-          income_tax_rate: 0.2,
-          income_tax_threshold: 50000
-        };
+        return this.getDefaultSettings();
       }
 
-      return data;
+      // Map database fields to expected ShopSettings interface
+      return {
+        ...data,
+        sunday_opening_time: '12:00',
+        sunday_closing_time: '18:00',
+        services: [
+          { name: 'Haircut', price: 700, duration: 45 },
+          { name: 'Beard trim', price: 300, duration: 15 },
+          { name: 'Blowdry', price: 500, duration: 30 },
+          { name: 'Face mask', price: 200, duration: 30 },
+          { name: 'Colour', price: 1000, duration: 60 },
+          { name: 'Wax', price: 500, duration: 60 },
+          { name: 'Massage', price: 900, duration: 45 },
+          { name: 'Shave', price: 500, duration: 30 }
+        ],
+        default_commission_rate: data.barber_commission || 50
+      };
     } catch (error) {
       console.error('Error fetching shop settings:', error);
-      return null;
+      return this.getDefaultSettings();
     }
+  }
+
+  private getDefaultSettings(): ShopSettings {
+    return {
+      shop_name: 'Edge & Co Barber Shop',
+      opening_time: '09:00',
+      closing_time: '20:00',
+      sunday_opening_time: '12:00',
+      sunday_closing_time: '18:00',
+      closed_days: ['Thursday'],
+      services: [
+        { name: 'Haircut', price: 700, duration: 45 },
+        { name: 'Beard trim', price: 300, duration: 15 },
+        { name: 'Blowdry', price: 500, duration: 30 },
+        { name: 'Face mask', price: 200, duration: 30 },
+        { name: 'Colour', price: 1000, duration: 60 },
+        { name: 'Wax', price: 500, duration: 60 },
+        { name: 'Massage', price: 900, duration: 45 },
+        { name: 'Shave', price: 500, duration: 30 }
+      ],
+      daily_target: 2000,
+      weekly_target: 10000,
+      monthly_target: 40000,
+      default_commission_rate: 50,
+      barber_commission: 0.5,
+      apprentice_commission: 0.3,
+      social_insurance_rate: 0.12,
+      income_tax_rate: 0.2,
+      income_tax_threshold: 50000
+    };
   }
 
   async updateSettings(settings: Partial<ShopSettings>): Promise<ShopSettings | null> {
