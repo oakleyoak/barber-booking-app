@@ -66,8 +66,9 @@ function App() {
         
         if (user) {
           setCurrentUser(user);
+          setError(''); // Clear any previous errors
         } else {
-          setError('Invalid email or password');
+          setError('Login failed. Please check your credentials and try again.');
         }
       } else {
         // Registration
@@ -103,25 +104,18 @@ function App() {
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestConnection = async () => {
-    setError('');
-    setIsLoading(true);
-
-    try {
-      const isConnected = await dbService.testSupabaseConnection();
-      if (isConnected) {
-        setError('✅ Supabase connection successful!');
+      console.error('Authentication error:', err);
+      
+      // Provide specific error messages for common issues
+      if (err.message?.includes('Network connection error')) {
+        setError('❌ Connection failed. Please check your internet connection and try again.');
+      } else if (err.message?.includes('Authentication failed')) {
+        setError('❌ Login failed. Please check your email and password.');
+      } else if (err.message?.includes('already registered')) {
+        setError('❌ This email is already registered. Please try logging in instead.');
       } else {
-        setError('❌ Supabase connection failed. Check console for details.');
+        setError(err.message || '❌ Something went wrong. Please try again.');
       }
-    } catch (err: any) {
-      setError(`❌ Connection error: ${err.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -464,16 +458,7 @@ function App() {
           </div>
 
           {isLogin && (
-            <div className="text-center space-y-2">
-              <button
-                type="button"
-                onClick={handleTestConnection}
-                disabled={isLoading}
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
-              >
-                🔍 Test Supabase Connection
-              </button>
-              <br />
+            <div className="text-center">
               <button
                 type="button"
                 onClick={handleCreateTestUser}

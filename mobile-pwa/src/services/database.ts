@@ -56,6 +56,15 @@ export const dbService = {
   async login(email: string, password: string): Promise<User | null> {
     try {
       console.log('🔐 Starting login process for:', email);
+      
+      // Quick connection test
+      console.log('🌐 Testing Supabase connection...');
+      const { data: connectionTest } = await supabase
+        .from('users')
+        .select('count')
+        .limit(1);
+      
+      console.log('✅ Supabase connection verified');
 
       // Step 1: Authenticate with Supabase Auth
       console.log('📡 Attempting Supabase auth...');
@@ -66,6 +75,10 @@ export const dbService = {
 
       if (error) {
         console.error('❌ Supabase auth error:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          status: error.status
+        });
         throw new Error(`Authentication failed: ${error.message}`);
       }
 
@@ -103,8 +116,15 @@ export const dbService = {
       console.log('✅ User profile fetched successfully:', profile);
       console.log('🎉 Login process completed successfully');
       return profile;
-    } catch (error) {
+    } catch (error: any) {
       console.error('💥 Login error:', error);
+      
+      // If it's a network error, provide specific guidance
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+        console.error('🌐 Network connectivity issue detected');
+        throw new Error('Network connection error. Please check your internet connection.');
+      }
+      
       return null;
     }
   },
