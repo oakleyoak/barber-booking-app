@@ -6,6 +6,7 @@ import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
 import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
+import BookingManagement from './components/BookingManagement';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -263,7 +264,7 @@ function App() {
             )}
 
             {currentView === 'bookings' && currentUser?.role === 'Owner' && (
-              <BookingCalendar currentUser={currentUser} />
+              <BookingManagement currentUser={currentUser} />
             )}
 
             {currentView === 'admin' && currentUser?.role === 'Owner' && (
