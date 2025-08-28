@@ -91,9 +91,80 @@ export const dbService = {
     }
   },
 
+  async createTestUser(): Promise<User | null> {
+    try {
+      const testUserData = {
+        name: 'Test User',
+        email: 'test@example.com',
+        password: 'test123',
+        role: 'Owner' as const,
+        shop_name: 'Test Shop'
+      };
+
+      console.log('Creating test user:', testUserData.email);
+
+      // First try to sign up
+      const { data, error } = await supabase.auth.signUp({
+        email: testUserData.email,
+        password: testUserData.password,
+        options: {
+          data: {
+            name: testUserData.name,
+            role: testUserData.role,
+            shop_name: testUserData.shop_name
+          }
+        }
+      });
+
+      if (error) {
+        // If user already exists, try to sign in instead
+        if (error.message.includes('already registered')) {
+          console.log('Test user already exists, signing in...');
+          return await this.login(testUserData.email, testUserData.password);
+        }
+        console.error('Test user creation error:', error);
+        throw error;
+      }
+
+      if (data.user) {
+        // Create user profile in users table
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .insert([{
+            id: data.user.id,
+            name: testUserData.name,
+            email: testUserData.email,
+            role: testUserData.role,
+            shop_name: testUserData.shop_name
+          }])
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('Profile creation error:', profileError);
+          throw profileError;
+        }
+
+        console.log('Test user created successfully:', profile);
+        return profile;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Test user creation error:', error);
+      return null;
+    }
+  },
+
   async logout(): Promise<void> {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        throw error;
+      }
+      console.log('User logged out successfully');
+    } catch (error) {
       console.error('Logout error:', error);
       throw error;
     }

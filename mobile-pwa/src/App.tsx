@@ -109,6 +109,31 @@ function App() {
     }
   };
 
+  const handleCreateTestUser = async () => {
+    setError('');
+    setIsLoading(true);
+
+    try {
+      const testUser = await dbService.createTestUser();
+      if (testUser) {
+        setCurrentUser(testUser);
+        setFormData({ 
+          email: 'test@example.com', 
+          password: 'test123', 
+          name: '', 
+          role: 'Barber', 
+          shopName: '' 
+        });
+      } else {
+        setError('Failed to create test user');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to create test user');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await dbService.logout();
@@ -299,6 +324,11 @@ function App() {
           <p className="text-gray-600">
             {isLogin ? 'Sign in to your account' : 'Create your barber shop account'}
           </p>
+          {!isLogin && (
+            <p className="text-sm text-gray-500 mt-2">
+              After registration, check your email for a confirmation link.
+            </p>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -389,6 +419,11 @@ function App() {
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg p-3">
               <p className="text-red-600 text-sm">{error}</p>
+              {error.includes('Invalid login credentials') && (
+                <p className="text-red-500 text-xs mt-1">
+                  Try registering first or use the test account below.
+                </p>
+              )}
             </div>
           )}
 
@@ -409,6 +444,19 @@ function App() {
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </button>
           </div>
+
+          {isLogin && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleCreateTestUser}
+                disabled={isLoading}
+                className="text-green-600 hover:text-green-700 text-sm font-medium disabled:opacity-50"
+              >
+                Create Test Account (test@example.com / test123)
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>
