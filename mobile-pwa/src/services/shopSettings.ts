@@ -14,11 +14,7 @@ export const defaultShopSettings: ShopSettings = {
   income_tax_threshold: 3000,
   opening_time: '09:00:00',
   closing_time: '20:00:00',
-  closed_days: ['Thursday', 'Sunday'],
-  sunday_opening_time: '10:00:00',
-  sunday_closing_time: '18:00:00',
-  services: [],
-  default_commission_rate: 50
+  closed_days: ['Thursday', 'Sunday']
 };
 
 // Fix TypeScript errors by ensuring default values for optional properties
