@@ -34,8 +34,8 @@ export class DataCleanupService {
   }
 
   // Check if the app has any dummy data
-  static hasDummyData(shopName: string): boolean {
-    const customers = CustomerService.getCustomers(shopName);
+  static async hasDummyData(shopName: string): Promise<boolean> {
+    const customers = await CustomerService.getCustomers(shopName);
     const dummyCustomerNames = [
       'Ahmed Yılmaz', 'Mehmet Özkan', 'Ali Kaya', 'Hasan Demir', 'Emre Şahin',
       'Customer 0-0', 'Customer 1-1', 'Customer', 'Junior', 'joeseph', 'Muhammed'

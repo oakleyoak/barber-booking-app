@@ -1,5 +1,5 @@
-import { supabase } from '../lib/supabase';
-import { CustomerService, Customer, CustomerCreate } from './customerService';
+import { supabase, Customer } from '../lib/supabase';
+import { CustomerService, CustomerCreate } from './customerService';
 
 export class SharedCustomerService {
   /**
@@ -8,7 +8,7 @@ export class SharedCustomerService {
   static async getSharedCustomers(shopName: string): Promise<Customer[]> {
     try {
       // Get local customers
-      const localCustomers = CustomerService.getCustomers(shopName);
+      const localCustomers = await CustomerService.getCustomers(shopName);
       
       // Get Supabase customers
       const { data: supabaseCustomers, error } = await supabase
@@ -62,7 +62,7 @@ export class SharedCustomerService {
       return combinedCustomers;
     } catch (error) {
       console.error('Error getting shared customers:', error);
-      return CustomerService.getCustomers(shopName); // Fallback to local
+      return await CustomerService.getCustomers(shopName); // Fallback to local
     }
   }
   
@@ -105,7 +105,7 @@ export class SharedCustomerService {
    */
   static async syncLocalToSupabase(shopName: string): Promise<void> {
     try {
-      const localCustomers = CustomerService.getCustomers(shopName);
+      const localCustomers = await CustomerService.getCustomers(shopName);
       
       for (const customer of localCustomers) {
         // Check if customer already exists in Supabase
@@ -123,7 +123,7 @@ export class SharedCustomerService {
               name: customer.name,
               email: customer.email,
               phone: customer.phone,
-              last_visit: customer.lastVisit,
+              last_visit: customer.last_visit,
               user_id: shopName
             }]);
         }

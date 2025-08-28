@@ -502,5 +502,24 @@ export const dbService = {
       console.error('Create staff target error:', error);
       return null;
     }
+  },
+
+  async deleteAllCustomers(userId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('customers')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Delete all customers error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Delete all customers error:', error);
+      return false;
+    }
   }
 };

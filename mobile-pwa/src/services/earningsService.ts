@@ -1,5 +1,6 @@
 import { dbService } from './database';
 import { Transaction } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 
 export interface TransactionData {
   customer_name: string;
@@ -144,6 +145,25 @@ export class EarningsService {
         bookingCount: 0,
         transactions: []
       };
+    }
+  }
+
+  static async clearAllEarnings(userId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) {
+        console.error('Clear all earnings error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Clear all earnings error:', error);
+      return false;
     }
   }
 }

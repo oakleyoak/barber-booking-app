@@ -35,33 +35,40 @@ const AccountingReports: React.FC<AccountingReportsProps> = ({ currentUser }) =>
   });
 
   useEffect(() => {
-    // Load actual earnings data
-    const monthlyEarnings = EarningsService.getMonthlyEarnings(currentUser.shop_name);
-    const revenue = monthlyEarnings.totalAmount;
-    const commissions = monthlyEarnings.totalCommission;
-    
-    const fixedExpenses = 2500 + 300 + 450 + 200 + 150 + 100; // rent + utilities + supplies + marketing + insurance + other
-    const totalExpenses = commissions + fixedExpenses;
+    const loadEarnings = async () => {
+      try {
+        const monthlyEarnings = await EarningsService.getMonthlyEarnings(currentUser.id!);
+        const revenue = monthlyEarnings.totalAmount;
+        const commissions = monthlyEarnings.transactions.reduce((sum, t) => sum + t.commission_amount, 0);
 
-    setReportData({
-      revenue: {
-        services: revenue,
-        products: 0,
-        otherIncome: 0,
-        total: revenue
-      },
-      expenses: {
-        staffCommissions: commissions,
-        rent: 2500.00,
-        utilities: 300.00,
-        supplies: 450.00,
-        marketing: 200.00,
-        insurance: 150.00,
-        other: 100.00,
-        total: totalExpenses
+        const fixedExpenses = 2500 + 300 + 450 + 200 + 150 + 100; // rent + utilities + supplies + marketing + insurance + other
+        const totalExpenses = commissions + fixedExpenses;
+
+        setReportData({
+          revenue: {
+            services: revenue,
+            products: 0,
+            otherIncome: 0,
+            total: revenue
+          },
+          expenses: {
+            staffCommissions: commissions,
+            rent: 2500.00,
+            utilities: 300.00,
+            supplies: 450.00,
+            marketing: 200.00,
+            insurance: 150.00,
+            other: 100.00,
+            total: totalExpenses
+          }
+        });
+      } catch (error) {
+        console.error('Error loading earnings:', error);
       }
-    });
-  }, [currentUser.shop_name]);
+    };
+
+    loadEarnings();
+  }, [currentUser.id]);
 
   const grossProfit = reportData.revenue.total - reportData.expenses.total;
   const netProfit = grossProfit;

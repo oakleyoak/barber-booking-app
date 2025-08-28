@@ -176,14 +176,11 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       console.log('Booking created successfully:', bookingResult);
 
       // ALSO add to earnings service for immediate display and local tracking
-      EarningsService.addTransaction(currentUser.shop_name, {
+      EarningsService.addTransaction(currentUser.id!, {
         service: `${bookingData.service_type} - ${bookingData.customer_name}`,
-        customer: bookingData.customer_name,
-        date: `${bookingData.booking_date}T${bookingData.booking_time}:00`,
+        customer_name: bookingData.customer_name,
         amount: bookingData.amount,
-        barber: bookingData.staff_member,
         commission: 60, // Default commission
-        status: 'pending' // Start as pending, not completed
       });
 
       // Reset form

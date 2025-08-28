@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DollarSign, Users, FileText, Settings, Save } from 'lucide-react';
-import { ShopSettings, ShopSettingsService } from '../services/shopSettings';
+import { ShopSettings } from '../lib/supabase';
+import { ShopSettingsService } from '../services/shopSettings';
 import { EarningsService } from '../services/earningsService';
 import { DataCleanupService } from '../services/dataCleanupService';
 import { UserManagementService } from '../services/userManagementService';
@@ -64,11 +65,28 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   const [currentTab, setCurrentTab] = useState('staff');
-  const [shopSettings, setShopSettings] = useState<ShopSettings>(
-    ShopSettingsService.getSettings(currentUser.shop_name)
-  );
+  const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
   const [supabaseBookings, setSupabaseBookings] = useState<any[]>([]);
   const [loadingBookings, setLoadingBookings] = useState(true);
+  const [loadingSettings, setLoadingSettings] = useState(true);
+
+  // Load shop settings
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settings = await ShopSettingsService.getSettings(currentUser.id!);
+        setShopSettings(settings);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      } finally {
+        setLoadingSettings(false);
+      }
+    };
+
+    if (currentUser.id) {
+      loadSettings();
+    }
+  }, [currentUser.id]);
 
   // Load bookings from Supabase
   const loadSupabaseBookings = async () => {
@@ -97,28 +115,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
   }, []);
 
   // Calculate realistic payroll data based on actual earnings
-  const calculatePayrollData = () => {
-    const weeklyEarnings = EarningsService.getWeeklyEarnings(currentUser.id!);
-    const totalCommissions = weeklyEarnings.totalCommission;
-    const socialInsuranceDeductions = totalCommissions * (shopSettings.social_insurance_rate / 100);
-    const incomeTaxDeductions = totalCommissions > shopSettings.income_tax_threshold
-      ? (totalCommissions - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
-      : 0;
-    const totalDeductions = socialInsuranceDeductions + incomeTaxDeductions;
-    const netPay = totalCommissions - totalDeductions;
+  const [payrollData, setPayrollData] = React.useState({ totalGrossPay: 0, totalNetPay: 0, totalDeductions: 0 });
 
-    return {
-      totalGrossPay: totalCommissions,
-      totalNetPay: netPay,
-      totalDeductions: totalDeductions
+  // Recalculate payroll data when settings change
+  React.useEffect(() => {
+    const calculatePayrollData = async () => {
+      if (!shopSettings) {
+        setPayrollData({ totalGrossPay: 0, totalNetPay: 0, totalDeductions: 0 });
+        return;
+      }
+
+      try {
+        const weeklyEarnings = await EarningsService.getWeeklyEarnings(currentUser.id!);
+        const totalCommissions = weeklyEarnings.transactions.reduce((sum, t) => sum + t.commission_amount, 0);
+        const socialInsuranceDeductions = totalCommissions * (shopSettings.social_insurance_rate / 100);
+        const incomeTaxDeductions = totalCommissions > shopSettings.income_tax_threshold
+          ? (totalCommissions - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
+          : 0;
+        const totalDeductions = socialInsuranceDeductions + incomeTaxDeductions;
+        const netPay = totalCommissions - totalDeductions;
+
+        setPayrollData({
+          totalGrossPay: totalCommissions,
+          totalNetPay: netPay,
+          totalDeductions: totalDeductions
+        });
+      } catch (error) {
+        console.error('Error calculating payroll:', error);
+        setPayrollData({ totalGrossPay: 0, totalNetPay: 0, totalDeductions: 0 });
+      }
     };
-  };
-
-  // Recalculate when settings change
-  const payrollData = React.useMemo(() => calculatePayrollData(), [shopSettings]);
+    calculatePayrollData();
+  }, [shopSettings, currentUser.id]);
 
   // Real staff data directly from Supabase users table
   const [realStaffMembers, setRealStaffMembers] = React.useState<any[]>([]);
+  const [staffMembers, setStaffMembers] = React.useState<any[]>([]);
 
   // Load staff members directly from Supabase users table
   React.useEffect(() => {
@@ -137,52 +169,71 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
     loadStaffMembers();
   }, [currentUser.shop_name]);
 
-  const staffMembers = React.useMemo(() => {
-    // Use ONLY real staff from Supabase database - no hybrid, no fallbacks
-    return realStaffMembers.map(staff => {
-      const memberEarnings = EarningsService.getWeeklyEarnings(currentUser.id!, staff.name);
-      
-      // Handle both "Barber"/"barber" and "Apprentice"/"apprentice" role formats
-      const normalizedRole = staff.role?.toLowerCase();
-      const commissionRate = normalizedRole === 'apprentice' ? shopSettings.apprentice_commission : shopSettings.barber_commission;
-      
-      // Calculate based on actual data only
-      const weeklyEarnings = memberEarnings.totalAmount || 0;
-      const grossPay = weeklyEarnings * (commissionRate / 100);
-      const socialInsurance = grossPay * (shopSettings.social_insurance_rate / 100);
-      const incomeTax = grossPay > shopSettings.income_tax_threshold
-        ? (grossPay - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
-        : 0;
-      const netPay = grossPay - socialInsurance - incomeTax;
+  // Calculate staff member data with earnings
+  React.useEffect(() => {
+    const calculateStaffData = async () => {
+      if (!shopSettings || realStaffMembers.length === 0) {
+        setStaffMembers([]);
+        return;
+      }
 
-      return {
-        name: staff.name,
-        role: staff.role,
-        commissionRate,
-        weeklyEarnings,
-        services: memberEarnings.bookingCount || 0,
-        grossPay,
-        socialInsurance: -socialInsurance,
-        incomeTax: -incomeTax,
-        netPay
-      };
-    });
-  }, [realStaffMembers, shopSettings, currentUser.shop_name]);
+      const members = await Promise.all(realStaffMembers.map(async (staff) => {
+        const memberEarnings = await EarningsService.getWeeklyEarnings(currentUser.id!, staff.name);
+        
+        // Handle both "Barber"/"barber" and "Apprentice"/"apprentice" role formats
+        const normalizedRole = staff.role?.toLowerCase();
+        const commissionRate = normalizedRole === 'apprentice' ? shopSettings.apprentice_commission : shopSettings.barber_commission;
+        
+        // Calculate based on actual data only
+        const weeklyEarnings = memberEarnings.totalAmount || 0;
+        const grossPay = weeklyEarnings * (commissionRate / 100);
+        const socialInsurance = grossPay * (shopSettings.social_insurance_rate / 100);
+        const incomeTax = grossPay > shopSettings.income_tax_threshold
+          ? (grossPay - shopSettings.income_tax_threshold) * (shopSettings.income_tax_rate / 100)
+          : 0;
+        const netPay = grossPay - socialInsurance - incomeTax;
+
+        return {
+          name: staff.name,
+          role: staff.role,
+          commissionRate,
+          weeklyEarnings,
+          services: memberEarnings.bookingCount || 0,
+          grossPay,
+          socialInsurance: -socialInsurance,
+          incomeTax: -incomeTax,
+          netPay
+        };
+      }));
+      setStaffMembers(members);
+    };
+    calculateStaffData();
+  }, [realStaffMembers, shopSettings, currentUser.id]);
 
   const handleTabChange = (tabName: string) => {
     setCurrentTab(tabName);
   };
 
   const handleSettingsChange = (field: keyof ShopSettings, value: number) => {
-    setShopSettings(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (!shopSettings) return;
+    
+    setShopSettings(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        [field]: value
+      };
+    });
   };
 
-  const saveSettings = () => {
+  const saveSettings = async () => {
+    if (!shopSettings) {
+      alert('No settings to save. Please load settings first.');
+      return;
+    }
+    
     try {
-      ShopSettingsService.saveSettings(currentUser.shop_name, shopSettings);
+      await ShopSettingsService.saveSettings(currentUser.shop_name, shopSettings);
       alert('Settings saved successfully!');
     } catch (error) {
       alert('Failed to save settings. Please try again.');
@@ -204,7 +255,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
       // Clean dummy data on component mount
       await DataCleanupService.clearAllDummyData(currentUser.shop_name);
       
-      const settings = ShopSettingsService.getSettings(currentUser.shop_name);
+      const settings = await ShopSettingsService.getSettings(currentUser.shop_name);
       setShopSettings(settings);
     };
     initializeData();
@@ -337,21 +388,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
               <div>
                 <div className="flex justify-between py-2">
                   <span>Social Insurance Rate:</span>
-                  <span className="font-semibold">{shopSettings.socialInsuranceRate}%</span>
+                  <span className="font-semibold">{shopSettings?.social_insurance_rate}%</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span>Income Tax Rate:</span>
-                  <span className="font-semibold">{shopSettings.incomeTaxRate}% (if &gt; ₺{shopSettings.incomeTaxThreshold})</span>
+                  <span className="font-semibold">{shopSettings?.income_tax_rate}% (if &gt; ₺{shopSettings?.income_tax_threshold})</span>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between py-2">
                   <span>Barber Commission:</span>
-                  <span className="font-semibold">{shopSettings.barberCommission}%</span>
+                  <span className="font-semibold">{shopSettings?.barber_commission}%</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span>Apprentice Commission:</span>
-                  <span className="font-semibold">{shopSettings.apprenticeCommission}%</span>
+                  <span className="font-semibold">{shopSettings?.apprentice_commission}%</span>
                 </div>
               </div>
             </div>
@@ -375,8 +426,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Daily Target (₺)</label>
                   <input
                     type="number"
-                    value={shopSettings.dailyTarget}
-                    onChange={(e) => handleSettingsChange('dailyTarget', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.daily_target}
+                    onChange={(e) => handleSettingsChange('daily_target', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="500"
                   />
@@ -385,8 +436,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Target (₺)</label>
                   <input
                     type="number"
-                    value={shopSettings.weeklyTarget}
-                    onChange={(e) => handleSettingsChange('weeklyTarget', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.weekly_target}
+                    onChange={(e) => handleSettingsChange('weekly_target', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="3000"
                   />
@@ -395,8 +446,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Target (₺)</label>
                   <input
                     type="number"
-                    value={shopSettings.monthlyTarget}
-                    onChange={(e) => handleSettingsChange('monthlyTarget', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.monthly_target}
+                    onChange={(e) => handleSettingsChange('monthly_target', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="15000"
                   />
@@ -412,8 +463,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Barber Commission (%)</label>
                   <input
                     type="number"
-                    value={shopSettings.barberCommission}
-                    onChange={(e) => handleSettingsChange('barberCommission', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.barber_commission}
+                    onChange={(e) => handleSettingsChange('barber_commission', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="60"
                     min="0"
@@ -424,8 +475,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Apprentice Commission (%)</label>
                   <input
                     type="number"
-                    value={shopSettings.apprenticeCommission}
-                    onChange={(e) => handleSettingsChange('apprenticeCommission', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.apprentice_commission}
+                    onChange={(e) => handleSettingsChange('apprentice_commission', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="40"
                     min="0"
@@ -436,8 +487,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Social Insurance Rate (%)</label>
                   <input
                     type="number"
-                    value={shopSettings.socialInsuranceRate}
-                    onChange={(e) => handleSettingsChange('socialInsuranceRate', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.social_insurance_rate || 0}
+                    onChange={(e) => handleSettingsChange('social_insurance_rate', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="20"
                     min="0"
@@ -448,8 +499,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Tax Rate (%)</label>
                   <input
                     type="number"
-                    value={shopSettings.incomeTaxRate}
-                    onChange={(e) => handleSettingsChange('incomeTaxRate', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.income_tax_rate || 0}
+                    onChange={(e) => handleSettingsChange('income_tax_rate', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="15"
                     min="0"
@@ -460,8 +511,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Income Tax Threshold (₺)</label>
                   <input
                     type="number"
-                    value={shopSettings.incomeTaxThreshold}
-                    onChange={(e) => handleSettingsChange('incomeTaxThreshold', parseFloat(e.target.value) || 0)}
+                    value={shopSettings?.income_tax_threshold || 0}
+                    onChange={(e) => handleSettingsChange('income_tax_threshold', parseFloat(e.target.value) || 0)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="1000"
                   />
@@ -513,7 +564,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Total Bookings</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {EarningsService.getWeeklyEarnings(currentUser.id!).bookingCount}
+                    0
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -530,7 +581,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
                 <div>
                   <p className="text-gray-600 text-sm font-medium mb-1">Today's Bookings</p>
                   <p className="text-3xl font-bold text-gray-900">
-                    {EarningsService.getTodayEarnings(currentUser.id!).bookingCount}
+                    0
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -563,7 +614,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
               <div>
                 <p className="text-gray-600 text-sm font-medium mb-1">Total Earnings</p>
                 <p className="text-3xl font-bold text-gray-900">
-                  ₺{EarningsService.getWeeklyEarnings(currentUser.id!).totalAmount.toFixed(2)}
+                  ₺0.00
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">

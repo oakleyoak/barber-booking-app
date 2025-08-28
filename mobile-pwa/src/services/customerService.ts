@@ -79,4 +79,13 @@ export class CustomerService {
       return [];
     }
   }
+
+  static async clearAllCustomers(userId: string): Promise<boolean> {
+    try {
+      return await dbService.deleteAllCustomers(userId);
+    } catch (error) {
+      console.error('Error clearing all customers:', error);
+      return false;
+    }
+  }
 }

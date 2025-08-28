@@ -63,9 +63,9 @@ export class DataCleanupService {
   /**
    * Check if there's any dummy data in the system
    */
-  static hasDummyData(shopName: string): boolean {
-    const customers = CustomerService.getCustomers(shopName);
-    const earnings = EarningsService.getEarnings(shopName);
+  static async hasDummyData(shopName: string): Promise<boolean> {
+    const customers = await CustomerService.getCustomers(shopName);
+    const earnings = await EarningsService.getEarnings(shopName);
     
     // Check for common dummy/test names
     const dummyNames = [
@@ -84,7 +84,7 @@ export class DataCleanupService {
     );
     
     // Count all transactions across all daily earnings
-    const totalTransactions = earnings.reduce((total, daily) => total + daily.transactions.length, 0);
+    const totalTransactions = earnings.transactions.length;
     
     return hasDummyCustomers || totalTransactions > 0;
   }
@@ -109,11 +109,11 @@ export class DataCleanupService {
     supabaseCustomerCount: number;
     hasDummyData: boolean;
   }> {
-    const customers = CustomerService.getCustomers(shopName);
-    const earnings = EarningsService.getEarnings(shopName);
+    const customers = await CustomerService.getCustomers(shopName);
+    const earnings = await EarningsService.getEarnings(shopName);
     
     // Count all transactions across all daily earnings
-    const totalTransactions = earnings.reduce((total, daily) => total + daily.transactions.length, 0);
+    const totalTransactions = earnings.transactions.length;
     
     // Get Supabase customer count
     let supabaseCount = 0;
@@ -130,7 +130,7 @@ export class DataCleanupService {
       customerCount: customers.length,
       transactionCount: totalTransactions,
       supabaseCustomerCount: supabaseCount,
-      hasDummyData: this.hasDummyData(shopName) || supabaseCount > 0
+      hasDummyData: (await this.hasDummyData(shopName)) || supabaseCount > 0
     };
   }
 }
