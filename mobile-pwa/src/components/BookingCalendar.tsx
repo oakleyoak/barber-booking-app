@@ -340,48 +340,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                   </div>
                 ) : (
                   bookings
-                    .sort((a, b) => a.time.localeCompare(b.time))
+                    .sort((a, b) => Number(a.id) - Number(b.id))
                     .map((booking) => (
-                      <div key={booking.id} className="p-3 hover:bg-gray-50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              <span className="font-medium">{booking.time}</span>
-                              <User className="h-3 w-3 text-gray-400" />
-                              <span className="truncate">{booking.customer_name}</span>
-                            </div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <span className="text-sm text-gray-600">{booking.service}</span>
-                              <span className="text-sm font-medium">{formatCurrency(booking.price)}</span>
-                              <span
-                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(
-                                  booking.status
-                                )}`}
-                              >
-                                {booking.status}
-                              </span>
-                            </div>
+                      <div key={booking.id} className="p-4 border rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <h4 className="text-md font-semibold">Booking #{booking.id}</h4>
+                            <p className="text-sm text-gray-600">Status: {booking.status}</p>
                           </div>
-                          <div className="flex items-center space-x-1 ml-2">
-                            {booking.status === 'scheduled' && (
-                              <>
-                                <button
-                                  onClick={() => handleStatusUpdate(booking.id, 'completed')}
-                                  className="p-1 text-green-600 hover:bg-green-100 rounded"
-                                  title="Complete"
-                                >
-                                  <Check className="h-4 w-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleStatusUpdate(booking.id, 'cancelled')}
-                                  className="p-1 text-red-600 hover:bg-red-100 rounded"
-                                  title="Cancel"
-                                >
-                                  <X className="h-4 w-4" />
-                                </button>
-                              </>
-                            )}
+                          <div className="flex space-x-2">
                             <button
                               onClick={() => handleEdit(booking)}
                               className="p-1 text-blue-600 hover:bg-blue-100 rounded"
@@ -400,7 +367,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                         </div>
                       </div>
                     ))
-                }
+                )}
               </div>
             </div>
           </div>
