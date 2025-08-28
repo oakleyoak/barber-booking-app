@@ -117,3 +117,13 @@ export interface Transaction {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface StaffTarget {
+  id?: string;
+  user_id?: string;
+  target_name: string;
+  target_value: number;
+  achieved_value?: number;
+  created_at?: string;
+  updated_at?: string;
+}
