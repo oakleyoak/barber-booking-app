@@ -49,23 +49,15 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
           shop_name: 'Edge & Co Barber Shop',
           opening_time: '09:00',
           closing_time: '20:00',
-          sunday_opening_time: '12:00',
-          sunday_closing_time: '18:00',
-          closed_days: ['Thursday'],
-          services: [
-            { name: 'Haircut', price: 700, duration: 45 },
-            { name: 'Beard trim', price: 300, duration: 15 },
-            { name: 'Blowdry', price: 500, duration: 30 },
-            { name: 'Face mask', price: 200, duration: 30 },
-            { name: 'Colour', price: 1000, duration: 60 },
-            { name: 'Wax', price: 500, duration: 60 },
-            { name: 'Massage', price: 900, duration: 45 },
-            { name: 'Shave', price: 500, duration: 30 }
-          ],
-          daily_target: 2000,
-          weekly_target: 10000,
-          monthly_target: 40000,
-          default_commission_rate: 50
+          closed_days: ['Thursday', 'Sunday'],
+          daily_target: 1500,
+          weekly_target: 9000,
+          monthly_target: 45000,
+          barber_commission: 60,
+          apprentice_commission: 40,
+          social_insurance_rate: 20,
+          income_tax_rate: 15,
+          income_tax_threshold: 3000
         });
       }
 
@@ -359,18 +351,49 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
-                  <input
-                    type="text"
-                    value={shopSettings.shop_name}
-                    onChange={(e) => setShopSettings({ ...shopSettings, shop_name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  />
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
+                    <input
+                      type="text"
+                      value={shopSettings.shop_name}
+                      onChange={(e) => setShopSettings({ ...shopSettings, shop_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div className="lg:col-span-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Closed Days</label>
+                    <div className="space-y-2">
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
+                        <label key={day} className="flex items-center">
+                          <input
+                            type="checkbox"
+                            checked={shopSettings.closed_days?.includes(day) || false}
+                            onChange={(e) => {
+                              const currentDays = shopSettings.closed_days || [];
+                              if (e.target.checked) {
+                                setShopSettings({ ...shopSettings, closed_days: [...currentDays, day] });
+                              } else {
+                                setShopSettings({ ...shopSettings, closed_days: currentDays.filter((d: string) => d !== day) });
+                              }
+                            }}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">{day}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              </div>
 
+              {/* Operating Hours */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Operating Hours</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Opening Time</label>
@@ -393,35 +416,110 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Daily Target (R)</label>
-                  <input
-                    type="number"
-                    value={shopSettings.daily_target}
-                    onChange={(e) => setShopSettings({ ...shopSettings, daily_target: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  />
+              {/* Revenue Targets */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Revenue Targets</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Daily Target (₺)</label>
+                    <input
+                      type="number"
+                      value={shopSettings.daily_target}
+                      onChange={(e) => setShopSettings({ ...shopSettings, daily_target: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (₺)</label>
+                    <input
+                      type="number"
+                      value={shopSettings.weekly_target}
+                      onChange={(e) => setShopSettings({ ...shopSettings, weekly_target: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (₺)</label>
+                    <input
+                      type="number"
+                      value={shopSettings.monthly_target}
+                      onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (₺)</label>
-                  <input
-                    type="number"
-                    value={shopSettings.weekly_target}
-                    onChange={(e) => setShopSettings({ ...shopSettings, weekly_target: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  />
+              {/* Commission Rates */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Commission Rates (%)</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Barber Commission (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={shopSettings.barber_commission}
+                      onChange={(e) => setShopSettings({ ...shopSettings, barber_commission: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Apprentice Commission (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={shopSettings.apprentice_commission}
+                      onChange={(e) => setShopSettings({ ...shopSettings, apprentice_commission: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (₺)</label>
-                  <input
-                    type="number"
-                    value={shopSettings.monthly_target}
-                    onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  />
+              {/* Tax Settings */}
+              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Tax Settings</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Social Insurance Rate (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={shopSettings.social_insurance_rate}
+                      onChange={(e) => setShopSettings({ ...shopSettings, social_insurance_rate: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Income Tax Rate (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={shopSettings.income_tax_rate}
+                      onChange={(e) => setShopSettings({ ...shopSettings, income_tax_rate: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Income Tax Threshold (₺)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={shopSettings.income_tax_threshold}
+                      onChange={(e) => setShopSettings({ ...shopSettings, income_tax_threshold: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

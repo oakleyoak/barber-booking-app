@@ -114,14 +114,10 @@ export interface ShopSettings {
   shop_name: string;
   opening_time?: string;
   closing_time?: string;
-  sunday_opening_time?: string;
-  sunday_closing_time?: string;
   closed_days?: string[];
-  services?: ServicePricing[];
   daily_target: number;
   weekly_target: number;
   monthly_target: number;
-  default_commission_rate?: number;
   barber_commission?: number;
   apprentice_commission?: number;
   social_insurance_rate?: number;
@@ -136,8 +132,6 @@ export interface ServicePricing {
   price: number;
   duration: number;
 }
-
-// Legacy interface for backwards compatibility
 export interface PayrollEntry {
   id?: string;
   user_id?: string;

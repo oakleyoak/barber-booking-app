@@ -25,22 +25,17 @@ class ShopSettingsService {
       // Map database fields to expected ShopSettings interface with defaults for missing fields
       return {
         ...settings,
-        opening_time: settings.opening_time || '09:00',
-        closing_time: settings.closing_time || '18:00',
-        sunday_opening_time: settings.sunday_opening_time || '12:00',
-        sunday_closing_time: settings.sunday_closing_time || '18:00',
-        closed_days: settings.closed_days || [],
-        services: [
-          { name: 'Haircut', price: 700, duration: 45 },
-          { name: 'Beard trim', price: 300, duration: 15 },
-          { name: 'Blowdry', price: 500, duration: 30 },
-          { name: 'Face mask', price: 200, duration: 30 },
-          { name: 'Colour', price: 1000, duration: 60 },
-          { name: 'Wax', price: 500, duration: 60 },
-          { name: 'Massage', price: 900, duration: 45 },
-          { name: 'Shave', price: 500, duration: 30 }
-        ],
-        default_commission_rate: settings.barber_commission || 50
+        opening_time: settings.opening_time || '09:00:00',
+        closing_time: settings.closing_time || '20:00:00',
+        closed_days: settings.closed_days || ['Thursday', 'Sunday'],
+        daily_target: settings.daily_target || 1500,
+        weekly_target: settings.weekly_target || 9000,
+        monthly_target: settings.monthly_target || 45000,
+        barber_commission: settings.barber_commission || 60,
+        apprentice_commission: settings.apprentice_commission || 40,
+        social_insurance_rate: settings.social_insurance_rate || 20,
+        income_tax_rate: settings.income_tax_rate || 15,
+        income_tax_threshold: settings.income_tax_threshold || 3000
       };
     } catch (error) {
       console.error('Error fetching shop settings:', error);
@@ -51,30 +46,17 @@ class ShopSettingsService {
   private getDefaultSettings(): ShopSettings {
     return {
       shop_name: 'Edge & Co Barber Shop',
-      opening_time: '09:00',
-      closing_time: '20:00',
-      sunday_opening_time: '12:00',
-      sunday_closing_time: '18:00',
-      closed_days: ['Thursday'],
-      services: [
-        { name: 'Haircut', price: 700, duration: 45 },
-        { name: 'Beard trim', price: 300, duration: 15 },
-        { name: 'Blowdry', price: 500, duration: 30 },
-        { name: 'Face mask', price: 200, duration: 30 },
-        { name: 'Colour', price: 1000, duration: 60 },
-        { name: 'Wax', price: 500, duration: 60 },
-        { name: 'Massage', price: 900, duration: 45 },
-        { name: 'Shave', price: 500, duration: 30 }
-      ],
-      daily_target: 2000,
-      weekly_target: 10000,
-      monthly_target: 40000,
-      default_commission_rate: 50,
-      barber_commission: 0.5,
-      apprentice_commission: 0.3,
-      social_insurance_rate: 0.12,
-      income_tax_rate: 0.2,
-      income_tax_threshold: 50000
+      opening_time: '09:00:00',
+      closing_time: '20:00:00',
+      closed_days: ['Thursday', 'Sunday'],
+      daily_target: 1500,
+      weekly_target: 9000,
+      monthly_target: 45000,
+      barber_commission: 60,
+      apprentice_commission: 40,
+      social_insurance_rate: 20,
+      income_tax_rate: 15,
+      income_tax_threshold: 3000
     };
   }
 
