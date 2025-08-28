@@ -173,7 +173,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
-              £{monthlyEarnings.bookingCount > 0 ? (monthlyEarnings.totalAmount / monthlyEarnings.bookingCount).toFixed(0) : '0'}
+              ₺{monthlyEarnings.bookingCount > 0 ? (monthlyEarnings.totalAmount / monthlyEarnings.bookingCount).toFixed(0) : '0'}
             </div>
             <div className="text-sm text-gray-600">Avg per booking</div>
           </div>
@@ -185,7 +185,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">
-              £{expenses.month.toFixed(0)}
+              ₺{expenses.month.toFixed(0)}
             </div>
             <div className="text-sm text-gray-600">Monthly expenses</div>
           </div>
@@ -211,7 +211,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                 <div>
                   <p className="text-sm text-gray-600">Today's Commission</p>
                   <p className="text-xl font-bold text-green-600">
-                    £{(todayEarnings.totalAmount * 0.1).toFixed(2)}
+                    ₺{(todayEarnings.totalAmount * 0.1).toFixed(2)}
                   </p>
                 </div>
                 <Users className="h-6 w-6 text-green-600" />
@@ -222,7 +222,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                 <div>
                   <p className="text-sm text-gray-600">Monthly Commission</p>
                   <p className="text-xl font-bold text-blue-600">
-                    £{(monthlyEarnings.totalAmount * 0.1).toFixed(2)}
+                    ₺{(monthlyEarnings.totalAmount * 0.1).toFixed(2)}
                   </p>
                 </div>
                 <TrendingUp className="h-6 w-6 text-blue-600" />
