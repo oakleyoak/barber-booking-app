@@ -127,3 +127,17 @@ export interface StaffTarget {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface Payroll {
+  id: string;
+  user_id?: string;
+  period_start: string;
+  period_end: string;
+  base_salary?: number;
+  commission_earned: number;
+  bonus?: number;
+  deductions?: number;
+  total_pay: number;
+  created_at?: string;
+  updated_at?: string;
+}
