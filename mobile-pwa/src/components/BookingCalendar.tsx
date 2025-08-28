@@ -230,6 +230,45 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     );
   }
 
+  const BookingList = ({ bookings }: { bookings: Booking[] }) => (
+    <div className="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+      {bookings.length === 0 ? (
+        <div className="p-8 text-center text-gray-500">
+          <p className="text-sm">No bookings available</p>
+        </div>
+      ) : (
+        bookings.map((booking) => (
+          <div key={booking.id} className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-md font-semibold">Booking #{booking.id}</h4>
+                <p className="text-sm text-gray-600">Customer: {booking.customer_name}</p>
+                <p className="text-sm text-gray-600">Service: {booking.service}</p>
+                <p className="text-sm text-gray-600">Time: {booking.time}</p>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleEdit(booking)}
+                  className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                  title="Edit"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => handleDelete(booking.id)}
+                  className="p-1 text-red-600 hover:bg-red-100 rounded"
+                  title="Delete"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  );
+
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="bg-white rounded-lg shadow p-4 sm:p-6 md:p-8">
