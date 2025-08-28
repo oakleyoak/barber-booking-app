@@ -97,14 +97,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       let query = supabase
         .from('bookings')
-        .select(`
-          *,
-          users:user_id (name)
-        `);
+        .select(`*`);
 
       // Check role more flexibly - show all bookings for owners
       const userRole = currentUser.role?.toLowerCase() || '';
-      const isOwner = userRole === 'owner' || userRole === 'admin' || userRole === 'owner (omustapha2)';
+      const isOwner = userRole === 'owner' || userRole === 'admin' || userRole.includes('owner');
       
       console.log('BookingManagement - Role check:', { userRole, isOwner });
 
@@ -145,7 +142,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       console.log('BookingManagement - Query successful:');
       console.log('- Raw data:', data);
       console.log('- Bookings count:', data?.length || 0);
-      console.log('- First booking:', data?.[0]);
+      if (data && data.length > 0) {
+        console.log('- First booking details:', data[0]);
+        console.log('- Booking date comparison:', {
+          bookingDate: data[0].date,
+          today: today,
+          isUpcoming: data[0].date >= today,
+          isHistory: data[0].date < today
+        });
+      }
       
       setBookings(data || []);
     } catch (error) {

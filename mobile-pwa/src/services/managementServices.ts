@@ -7,30 +7,29 @@ class ShopSettingsService {
       const { data, error } = await supabase
         .from('shop_settings')
         .select('*')
-        .single();
+        .limit(1);
 
       if (error) {
         console.error('Error fetching shop settings:', error);
-        // If no settings exist, return default settings
-        if (error.code === 'PGRST116') {
-          return this.getDefaultSettings();
-        }
-        throw error;
-      }
-
-      // Return default settings if none exist
-      if (!data) {
         return this.getDefaultSettings();
       }
 
+      // If no settings exist, return default settings
+      if (!data || data.length === 0) {
+        console.log('No shop settings found, using defaults');
+        return this.getDefaultSettings();
+      }
+
+      const settings = data[0];
+      
       // Map database fields to expected ShopSettings interface with defaults for missing fields
       return {
-        ...data,
-        opening_time: data.opening_time || '09:00',
-        closing_time: data.closing_time || '18:00',
-        sunday_opening_time: data.sunday_opening_time || '12:00',
-        sunday_closing_time: data.sunday_closing_time || '18:00',
-        closed_days: data.closed_days || [],
+        ...settings,
+        opening_time: settings.opening_time || '09:00',
+        closing_time: settings.closing_time || '18:00',
+        sunday_opening_time: settings.sunday_opening_time || '12:00',
+        sunday_closing_time: settings.sunday_closing_time || '18:00',
+        closed_days: settings.closed_days || [],
         services: [
           { name: 'Haircut', price: 700, duration: 45 },
           { name: 'Beard trim', price: 300, duration: 15 },
@@ -41,7 +40,7 @@ class ShopSettingsService {
           { name: 'Massage', price: 900, duration: 45 },
           { name: 'Shave', price: 500, duration: 30 }
         ],
-        default_commission_rate: data.barber_commission || 50
+        default_commission_rate: settings.barber_commission || 50
       };
     } catch (error) {
       console.error('Error fetching shop settings:', error);

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
-import { AlertTriangle } from 'lucide-react';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
@@ -347,30 +346,9 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
         )}
 
         {/* Settings Tab */}
-        {currentTab === 'settings' && (
+        {currentTab === 'settings' && shopSettings && (
           <div>
-            {!shopSettings ? (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center">
-                  <AlertTriangle className="h-5 w-5 text-yellow-600 mr-2" />
-                  <h3 className="text-lg font-medium text-yellow-800">Database Setup Required</h3>
-                </div>
-                <p className="mt-2 text-yellow-700">
-                  The shop_settings table is missing from your Supabase database. Please run the SQL script from 
-                  <code className="bg-yellow-100 px-1 rounded">missing_shop_settings_table.sql</code> in your Supabase SQL Editor.
-                </p>
-                <div className="mt-3">
-                  <ol className="list-decimal list-inside text-sm text-yellow-700 space-y-1">
-                    <li>Go to your Supabase dashboard</li>
-                    <li>Navigate to SQL Editor</li>
-                    <li>Copy and run the SQL from missing_shop_settings_table.sql</li>
-                    <li>Refresh this page</li>
-                  </ol>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
               <h2 className="text-xl sm:text-2xl font-bold">Shop Settings</h2>
               <button
                 onClick={handleSaveSettings}
@@ -447,8 +425,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
               </div>
             </div>
-              </>
-            )}
           </div>
         )}
 
