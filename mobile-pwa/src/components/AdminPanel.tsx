@@ -45,6 +45,9 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
     try {
       // Get the shop name from current user or use default
       const shopName = currentUser.shop_name || 'Edge & Co Barber Shop';
+      console.log('AdminPanel - Current user:', currentUser);
+      console.log('AdminPanel - Using shop name:', shopName);
+      console.log('AdminPanel - Current user shop_name:', currentUser.shop_name);
       
       // Try to load shop settings with better error handling
       try {

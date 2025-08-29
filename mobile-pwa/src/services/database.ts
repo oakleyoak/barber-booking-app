@@ -497,11 +497,17 @@ export const dbService = {
   // Shop Settings
   async getShopSettings(shopName: string): Promise<ShopSettings | null> {
     try {
+      console.log('Database.getShopSettings called with:', shopName);
+      console.log('Query URL would be:', `shop_settings?select=*&shop_name=eq.${encodeURIComponent(shopName)}`);
+      
       const { data, error } = await supabase
         .from('shop_settings')
         .select('*')
         .eq('shop_name', shopName)
         .single();
+
+      console.log('Supabase response data:', data);
+      console.log('Supabase response error:', error);
 
       if (error && error.code !== 'PGRST116') {
         console.error('Get shop settings error:', error);

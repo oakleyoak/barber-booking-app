@@ -22,7 +22,13 @@ export const defaultShopSettings: ShopSettings = {
 export class ShopSettingsService {
   static async getSettings(shopName: string): Promise<ShopSettings> {
     try {
+      console.log('ShopSettingsService.getSettings called with shopName:', shopName);
+      console.log('ShopName length:', shopName.length);
+      console.log('ShopName encoded:', encodeURIComponent(shopName));
+      
       const settings = await dbService.getShopSettings(shopName);
+      console.log('Shop settings result:', settings);
+      
       if (settings) {
         return {
           ...defaultShopSettings,
@@ -30,9 +36,11 @@ export class ShopSettingsService {
         };
       }
       // Return default settings if none exist
+      console.log('No settings found, returning defaults for shop:', shopName);
       return { ...defaultShopSettings, shop_name: shopName };
     } catch (error) {
-      console.error('Error loading shop settings:', error);
+      console.error('Error loading shop settings for shop:', shopName);
+      console.error('Full error:', error);
       return { ...defaultShopSettings, shop_name: shopName };
     }
   }
