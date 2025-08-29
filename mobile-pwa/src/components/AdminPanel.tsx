@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
+import { ShopSettingsService } from '../services/shopSettings';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
-const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
+const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string } }) => {
   const [currentTab, setCurrentTab] = useState<'overview' | 'users' | 'settings' | 'reports'>('overview');
   const [shopSettings, setShopSettings] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -42,15 +43,18 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
+      // Get the shop name from current user or use default
+      const shopName = currentUser.shop_name || 'Edge & Co Barber Shop';
+      
       // Try to load shop settings with better error handling
       try {
-        const settings = await shopSettingsService.getSettings();
+        const settings = await ShopSettingsService.getSettings(shopName);
         setShopSettings(settings);
       } catch (settingsError) {
         console.error('AdminPanel - Shop settings error:', settingsError);
         // Use a default settings object if shop_settings table doesn't exist
         setShopSettings({
-          shop_name: 'Edge & Co Barber Shop',
+          shop_name: shopName,
           opening_time: '09:00',
           closing_time: '20:00',
           closed_days: ['Thursday', 'Sunday'],
@@ -113,7 +117,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   const handleSaveSettings = async () => {
     if (!shopSettings) return;
     try {
-      await shopSettingsService.updateSettings(shopSettings);
+      await ShopSettingsService.saveSettings(shopSettings.shop_name, shopSettings);
       alert('Settings saved successfully!');
     } catch (error) {
       console.error('Error saving settings:', error);
