@@ -867,20 +867,36 @@ export const authService = {
   // Login with existing users table
   async loginUser(email: string, password: string): Promise<User> {
     try {
-      const { data, error } = await supabase
+      console.log('Attempting login with:', email, password);
+      
+      // First, let's check if user exists by email
+      const { data: userCheck, error: checkError } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .single();
+        .eq('email', email);
 
-      if (error || !data) {
-        throw new Error('Invalid email or password');
+      console.log('User check result:', userCheck, checkError);
+
+      if (checkError) {
+        console.error('Database error:', checkError);
+        throw new Error('Database connection failed');
       }
 
+      if (!userCheck || userCheck.length === 0) {
+        throw new Error('User not found');
+      }
+
+      // Check password match
+      const user = userCheck.find(u => u.password === password);
+      if (!user) {
+        throw new Error('Invalid password');
+      }
+
+      console.log('Login successful for user:', user);
+
       // Store in localStorage for session management
-      localStorage.setItem('currentUser', JSON.stringify(data));
-      return data;
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      return user;
     } catch (error: any) {
       console.error('Login error:', error);
       throw new Error(error.message || 'Login failed');
