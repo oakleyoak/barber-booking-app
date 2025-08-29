@@ -118,6 +118,7 @@ export interface ShopSettings {
   weekly_target: number;
   monthly_target: number;
   barber_commission?: number;
+  manager_commission?: number;
   apprentice_commission?: number;
   social_insurance_rate?: number;
   income_tax_rate?: number;

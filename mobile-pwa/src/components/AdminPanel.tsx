@@ -30,7 +30,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
     email: '',
     role: 'Barber',
     shop_name: '',
-    commission_rate: 50,
+    commission_rate: 60, // Default to barber commission
     target_weekly: 2000,
     target_monthly: 8000
   });
@@ -58,6 +58,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
           weekly_target: 9000,
           monthly_target: 45000,
           barber_commission: 60,
+          manager_commission: 70,
           apprentice_commission: 40,
           social_insurance_rate: 20,
           income_tax_rate: 15,
@@ -277,7 +278,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 onClick={() => {
                   setShowUserModal(true);
                   setEditingUser(null);
-                  setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
+                  setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 60, target_weekly: 2000, target_monthly: 8000 });
                 }}
                 className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base"
               >
@@ -450,10 +451,9 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 </div>
               </div>
 
-              {/* Commission Rates */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4">Commission Rates (%)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Barber Commission (%)</label>
                     <input
@@ -463,6 +463,18 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                       max="100"
                       value={shopSettings.barber_commission}
                       onChange={(e) => setShopSettings({ ...shopSettings, barber_commission: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Manager Commission (%)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      value={shopSettings.manager_commission || 70}
+                      onChange={(e) => setShopSettings({ ...shopSettings, manager_commission: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     />
                   </div>
@@ -617,13 +629,41 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice' })}
+                  onChange={(e) => {
+                    const selectedRole = e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
+                    let defaultCommission = 60; // Default barber commission
+                    
+                    if (selectedRole === 'Owner') {
+                      defaultCommission = 100;
+                    } else if (selectedRole === 'Manager') {
+                      defaultCommission = 70;
+                    } else if (selectedRole === 'Apprentice') {
+                      defaultCommission = 40;
+                    }
+                    
+                    setNewUser({ ...newUser, role: selectedRole, commission_rate: defaultCommission });
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
+                  <option value="Owner">Owner</option>
+                  <option value="Manager">Manager</option>
                   <option value="Barber">Barber</option>
                   <option value="Apprentice">Apprentice</option>
-                  <option value="Owner">Owner</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                <input
+                  type="number"
+                  value={newUser.commission_rate}
+                  onChange={(e) => setNewUser({ ...newUser, commission_rate: parseFloat(e.target.value) || 0 })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                  placeholder="Enter commission rate"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                />
               </div>
 
               <div>

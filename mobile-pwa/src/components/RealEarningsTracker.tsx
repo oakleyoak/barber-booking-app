@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, Calendar, DollarSign, Users, Target, Download } from 'lucide-react';
 import { bookingService, expenseService } from '../services/supabaseServices';
+import { ShopSettingsService } from '../services/shopSettings';
 import type { User as UserType } from '../lib/supabase';
 
 interface RealEarningsTrackerProps {
@@ -12,6 +13,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
   const [weeklyEarnings, setWeeklyEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
   const [monthlyEarnings, setMonthlyEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
   const [expenses, setExpenses] = useState({ today: 0, week: 0, month: 0 });
+  const [commissionRate, setCommissionRate] = useState(60);
   const [loading, setLoading] = useState(true);
 
   const formatCurrency = (amount: number) => {
@@ -26,6 +28,12 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
     try {
       setLoading(true);
       const userId = currentUser.role === 'Barber' ? currentUser.id : undefined;
+      
+      // Get commission rate for the current user
+      if (currentUser.role !== 'Owner') {
+        const rate = await ShopSettingsService.getCommissionRate(currentUser.role, currentUser.shop_name || '');
+        setCommissionRate(rate);
+      }
       
       // Get earnings data
       const [today, weekly, monthly] = await Promise.all([
@@ -198,12 +206,12 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         </div>
       </div>
 
-      {/* Commission Info for Barbers */}
-      {currentUser.role === 'Barber' && (
+      {/* Commission Info */}
+      {(currentUser.role === 'Barber' || currentUser.role === 'Manager' || currentUser.role === 'Apprentice') && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Target className="h-5 w-5 mr-2" />
-            Commission Summary (10%)
+            Commission Summary ({commissionRate}%)
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-lg border">
@@ -211,7 +219,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                 <div>
                   <p className="text-sm text-gray-600">Today's Commission</p>
                   <p className="text-xl font-bold text-green-600">
-                    ₺{(todayEarnings.totalAmount * 0.1).toFixed(2)}
+                    ₺{(todayEarnings.totalAmount * (commissionRate / 100)).toFixed(2)}
                   </p>
                 </div>
                 <Users className="h-6 w-6 text-green-600" />
@@ -222,10 +230,58 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                 <div>
                   <p className="text-sm text-gray-600">Monthly Commission</p>
                   <p className="text-xl font-bold text-blue-600">
-                    ₺{(monthlyEarnings.totalAmount * 0.1).toFixed(2)}
+                    ₺{(monthlyEarnings.totalAmount * (commissionRate / 100)).toFixed(2)}
                   </p>
                 </div>
                 <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Owner Earnings from Staff */}
+      {currentUser.role === 'Owner' && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Target className="h-5 w-5 mr-2" />
+            Owner Earnings from Staff
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Today's Share</p>
+                  <p className="text-xl font-bold text-green-600">
+                    ₺{(todayEarnings.totalAmount * 0.4).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">40% of total revenue</p>
+                </div>
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Monthly Share</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    ₺{(monthlyEarnings.totalAmount * 0.4).toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">40% of total revenue</p>
+                </div>
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Total Revenue</p>
+                  <p className="text-xl font-bold text-purple-600">
+                    ₺{monthlyEarnings.totalAmount.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-gray-500">100% of all bookings</p>
+                </div>
+                <DollarSign className="h-6 w-6 text-purple-600" />
               </div>
             </div>
           </div>

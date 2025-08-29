@@ -8,6 +8,7 @@ export const defaultShopSettings: ShopSettings = {
   weekly_target: 9000,
   monthly_target: 45000,
   barber_commission: 60,
+  manager_commission: 70,
   apprentice_commission: 40,
   social_insurance_rate: 20,
   income_tax_rate: 15,
@@ -51,8 +52,12 @@ export class ShopSettingsService {
       switch (role.toLowerCase()) {
         case 'barber':
           return settings.barber_commission ?? defaultShopSettings.barber_commission ?? 60;
+        case 'manager':
+          return settings.manager_commission ?? defaultShopSettings.manager_commission ?? 70;
         case 'apprentice':
           return settings.apprentice_commission ?? defaultShopSettings.apprentice_commission ?? 40;
+        case 'owner':
+          return 100; // Owner always gets 100%
         default:
           return defaultShopSettings.barber_commission ?? 60;
       }
