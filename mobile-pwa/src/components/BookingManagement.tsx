@@ -26,7 +26,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { CustomerService } from '../services/supabaseCustomerService';
-import { userService, customerService } from '../services/completeDatabase';
+import { userService, customerService, bookingService } from '../services/completeDatabase';
 
 interface Booking {
   id: string;
@@ -115,8 +115,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         const cust = allCustomers.find(c => c.id === createForm.customer_id);
         customerName = cust ? cust.name : '';
       }
-      // Add your booking creation logic here (e.g., supabase insert)
-      // After successful creation:
+      // Actually create the booking in Supabase
+      await bookingService.createBooking({
+        customer_id: createForm.customer_id,
+        customer_name: customerName,
+        service: createForm.service,
+        price: createForm.price,
+        date: createForm.date,
+        time: createForm.time,
+        user_id: createForm.user_id,
+        status: createForm.status as 'scheduled' | 'completed' | 'cancelled',
+      });
       setShowCreateBooking(false);
       setCreateForm({
         customer_id: '',
@@ -130,7 +139,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       });
       loadBookings();
     } catch (error) {
-      // Handle error
+      // Handle error (could show a toast or alert)
+      console.error('Error creating booking:', error);
     } finally {
       setCreating(false);
     }
