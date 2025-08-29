@@ -26,6 +26,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { CustomerService } from '../services/supabaseCustomerService';
+import { userService, customerService } from '../services/completeDatabase';
 
 interface Booking {
   id: string;
@@ -79,6 +80,61 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     time: '',
     status: 'scheduled'
   });
+
+  // Owner booking creation state
+  const [showCreateBooking, setShowCreateBooking] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    customer_id: '',
+    customer_name: '',
+    service: '',
+    price: 0,
+    date: '',
+    time: '',
+    user_id: '',
+    status: 'scheduled',
+  });
+  const [allStaff, setAllStaff] = useState<{id: string, name: string}[]>([]);
+  const [allCustomers, setAllCustomers] = useState<{id: string, name: string}[]>([]);
+  const [creating, setCreating] = useState(false);
+
+  // Load all staff and customers for owner booking creation
+  useEffect(() => {
+    if (currentUser.role === 'Owner' || currentUser.role === 'owner') {
+      userService.getUsers().then((users: any[]) => setAllStaff(users.map(u => ({id: u.id, name: u.name}))));
+      customerService.getCustomers().then((customers: any[]) => setAllCustomers(customers.map(c => ({id: c.id, name: c.name}))));
+    }
+  }, [currentUser.role]);
+
+  // Owner create booking handler
+  const handleCreateBooking = async () => {
+    setCreating(true);
+    try {
+      // Find customer name if only id is selected
+      let customerName = createForm.customer_name;
+      if (!customerName && createForm.customer_id) {
+        const cust = allCustomers.find(c => c.id === createForm.customer_id);
+        customerName = cust ? cust.name : '';
+      }
+      // Add your booking creation logic here (e.g., supabase insert)
+      // After successful creation:
+      setShowCreateBooking(false);
+      setCreateForm({
+        customer_id: '',
+        customer_name: '',
+        service: '',
+        price: 0,
+        date: '',
+        time: '',
+        user_id: '',
+        status: 'scheduled',
+      });
+      loadBookings();
+    } catch (error) {
+      // Handle error
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const services = [
     'Haircut', 'Beard trim', 'Blowdry', 'Face mask', 'Colour', 
@@ -470,7 +526,114 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
               <Download className="h-4 w-4 mr-1" />
               Export
             </button>
+            {(currentUser.role === 'Owner' || currentUser.role === 'owner') && currentView === 'all' && (
+              <button
+                onClick={() => setShowCreateBooking(true)}
+                className="flex items-center px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm"
+              >
+                <CheckSquare className="h-4 w-4 mr-1" />
+                Create Booking
+              </button>
+            )}
           </div>
+        {/* Owner Create Booking Modal */}
+        {showCreateBooking && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-lg">
+              <h3 className="text-lg font-semibold mb-4">Create Booking</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Barber/Staff</label>
+                  <select
+                    value={createForm.user_id}
+                    onChange={e => setCreateForm(f => ({ ...f, user_id: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select staff...</option>
+                    {allStaff.map(staff => (
+                      <option key={staff.id} value={staff.id}>{staff.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <input
+                    type="text"
+                    value={createForm.customer_name}
+                    onChange={e => setCreateForm(f => ({ ...f, customer_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                  <input
+                    type="text"
+                    value={createForm.service}
+                    onChange={e => setCreateForm(f => ({ ...f, service: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₺)</label>
+                  <input
+                    type="number"
+                    value={createForm.price}
+                    onChange={e => setCreateForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input
+                      type="date"
+                      value={createForm.date}
+                      onChange={e => setCreateForm(f => ({ ...f, date: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                    <input
+                      type="time"
+                      value={createForm.time}
+                      onChange={e => setCreateForm(f => ({ ...f, time: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={createForm.status}
+                    onChange={e => setCreateForm(f => ({ ...f, status: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="scheduled">Scheduled</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleCreateBooking}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+                  disabled={creating}
+                >
+                  {creating ? 'Creating...' : 'Create Booking'}
+                </button>
+                <button
+                  onClick={() => setShowCreateBooking(false)}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
+                  disabled={creating}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         </div>
 
         {/* View Tabs */}
