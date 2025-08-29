@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield } from 'lucide-react';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList } from 'lucide-react';
 import { userManagementService } from './services/managementServices';
 import type { User as SupabaseUser } from './lib/supabase';
 import BookingCalendar from './components/BookingCalendar';
@@ -7,6 +7,7 @@ import RealEarningsTracker from './components/RealEarningsTracker';
 import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
 import BookingManagement from './components/BookingManagement';
+import OperationsManual from './components/OperationsManual';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -217,6 +218,18 @@ function App() {
               <span className="hidden sm:inline">Customers</span>
               <span className="sm:hidden text-center leading-tight">Customers</span>
             </button>
+            <button
+              onClick={() => setCurrentView('operations')}
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+                currentView === 'operations'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-white text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <ClipboardList className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="hidden sm:inline">Operations</span>
+              <span className="sm:hidden text-center leading-tight">Operations</span>
+            </button>
             
             {/* Owner-only features */}
             {currentUser?.role === 'Owner' && (
@@ -261,6 +274,10 @@ function App() {
 
             {currentView === 'customers' && (
               <CustomerManager currentUser={currentUser} />
+            )}
+
+            {currentView === 'operations' && (
+              <OperationsManual currentUser={currentUser} />
             )}
 
             {currentView === 'bookings' && currentUser?.role === 'Owner' && (
