@@ -199,6 +199,7 @@ CREATE TABLE IF NOT EXISTS public.shop_settings (
   weekly_target numeric(10, 2) not null default 9000,
   monthly_target numeric(10, 2) not null default 45000,
   barber_commission numeric(5, 2) not null default 60,
+  manager_commission numeric(5, 2) not null default 70,
   apprentice_commission numeric(5, 2) not null default 40,
   social_insurance_rate numeric(5, 2) not null default 20,
   income_tax_rate numeric(5, 2) not null default 15,
@@ -470,9 +471,46 @@ create trigger update_incident_reports_updated_at BEFORE update on incident_repo
 -- ===================================================================
 
 -- Insert default shop settings
-INSERT INTO public.shop_settings (shop_name, daily_target, weekly_target, monthly_target) 
-VALUES ('Edge & Co Barber Shop', 1500, 9000, 45000)
-ON CONFLICT (shop_name) DO NOTHING;
+INSERT INTO public.shop_settings (
+  shop_name, 
+  daily_target, 
+  weekly_target, 
+  monthly_target,
+  barber_commission,
+  manager_commission,
+  apprentice_commission,
+  social_insurance_rate,
+  income_tax_rate,
+  income_tax_threshold,
+  opening_time,
+  closing_time,
+  closed_days
+) 
+VALUES (
+  'Edge & Co Barber Shop', 
+  1500, 
+  9000, 
+  45000,
+  60,  -- barber_commission
+  70,  -- manager_commission
+  40,  -- apprentice_commission
+  20,  -- social_insurance_rate
+  15,  -- income_tax_rate
+  3000, -- income_tax_threshold
+  '09:00:00', -- opening_time
+  '20:00:00', -- closing_time
+  ARRAY['Thursday', 'Sunday'] -- closed_days
+)
+ON CONFLICT (shop_name) DO UPDATE SET
+  barber_commission = EXCLUDED.barber_commission,
+  manager_commission = EXCLUDED.manager_commission,
+  apprentice_commission = EXCLUDED.apprentice_commission,
+  social_insurance_rate = EXCLUDED.social_insurance_rate,
+  income_tax_rate = EXCLUDED.income_tax_rate,
+  income_tax_threshold = EXCLUDED.income_tax_threshold,
+  opening_time = EXCLUDED.opening_time,
+  closing_time = EXCLUDED.closing_time,
+  closed_days = EXCLUDED.closed_days;
 
 -- Insert default cleaning tasks
 INSERT INTO public.cleaning_tasks (task_name, description, category, frequency, estimated_time_minutes, priority, compliance_requirement, instructions) VALUES

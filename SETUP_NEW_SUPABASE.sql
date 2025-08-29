@@ -291,6 +291,31 @@ CREATE TABLE IF NOT EXISTS public.safety_check_logs (
   constraint safety_check_logs_barber_id_fkey foreign KEY (barber_id) references users (id)
 );
 
+-- Shop settings table (enhanced)
+CREATE TABLE IF NOT EXISTS public.shop_settings (
+  id uuid not null default gen_random_uuid (),
+  shop_name text not null,
+  daily_target numeric(10, 2) not null default 1500,
+  weekly_target numeric(10, 2) not null default 9000,
+  monthly_target numeric(10, 2) not null default 45000,
+  barber_commission numeric(5, 2) not null default 60,
+  manager_commission numeric(5, 2) not null default 70,
+  apprentice_commission numeric(5, 2) not null default 40,
+  social_insurance_rate numeric(5, 2) not null default 20,
+  income_tax_rate numeric(5, 2) not null default 15,
+  income_tax_threshold numeric(10, 2) not null default 3000,
+  opening_time time without time zone not null default '09:00:00'::time without time zone,
+  closing_time time without time zone not null default '20:00:00'::time without time zone,
+  closed_days text[] not null default array['Thursday'::text, 'Sunday'::text],
+  currency text not null default 'TRY',
+  address text null,
+  phone text null,
+  created_at timestamp with time zone null default now(),
+  updated_at timestamp with time zone null default now(),
+  constraint shop_settings_pkey primary key (id),
+  constraint shop_settings_shop_name_key unique (shop_name)
+);
+
 -- ===================================================================
 -- INDEXES FOR PERFORMANCE
 -- ===================================================================
@@ -329,12 +354,22 @@ WHERE email IN ('omustafa2@googlemail.com', 'ismailhmahmut@googlemail.com');
 -- Insert new users if they don't exist
 INSERT INTO public.users (id, name, email, password, role, shop_name, commission_rate, target_weekly, target_monthly, shop_settings) 
 SELECT * FROM (VALUES
-  ('b399ed95-dee8-4939-b044-b9347d2be54e'::uuid, 'Okan', 'omustafa2@googlemail.com', '22562310', 'Owner', 'edge and co', 0.40, 1969.31, 118, '{"dailyTarget":1969.31,"weeklyTarget":118}'),
-  ('ccc4901b-7e0a-4439-bd17-b4dc62acd802'::uuid, 'İsmail Hassan Azimkar', 'ismailhmahmut@googlemail.com', 'ishy2256', 'Barber', 'edge and co', 0.40, 800, 3200, NULL)
+  ('b399ed95-dee8-4939-b044-b9347d2be54e'::uuid, 'Okan', 'omustafa2@googlemail.com', '22562310', 'Owner', 'Edge & Co Barber Shop', 0.40, 1969.31, 118, '{"dailyTarget":1969.31,"weeklyTarget":118}'),
+  ('ccc4901b-7e0a-4439-bd17-b4dc62acd802'::uuid, 'İsmail Hassan Azimkar', 'ismailhmahmut@googlemail.com', 'ishy2256', 'Barber', 'Edge & Co Barber Shop', 0.40, 800, 3200, NULL)
 ) AS new_users(id, name, email, password, role, shop_name, commission_rate, target_weekly, target_monthly, shop_settings)
 WHERE NOT EXISTS (
   SELECT 1 FROM public.users WHERE users.email = new_users.email
 );
+
+-- Fix any existing users with incorrect shop name
+UPDATE public.users 
+SET shop_name = 'Edge & Co Barber Shop' 
+WHERE shop_name IN ('edge and co', 'edge & co', 'Edge and Co');
+
+-- Fix any existing shop_settings with incorrect shop name
+UPDATE public.shop_settings 
+SET shop_name = 'Edge & Co Barber Shop' 
+WHERE shop_name IN ('edge and co', 'edge & co', 'Edge and Co');
 
 -- ===================================================================
 -- SUCCESS MESSAGE
