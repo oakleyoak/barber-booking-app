@@ -95,11 +95,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
 
   const handlePromoteUser = async (userId: string, currentRole: string) => {
     let newRole: 'manager' | 'barber' | 'apprentice';
-    if (currentRole === 'apprentice') {
+    if (currentRole === 'Apprentice') {
       newRole = 'barber';
-    } else if (currentRole === 'barber') {
+    } else if (currentRole === 'Barber') {
       newRole = 'manager';
-    } else if (currentRole === 'manager') {
+    } else if (currentRole === 'Manager') {
       newRole = 'barber';
     } else {
       newRole = 'apprentice';
@@ -158,7 +158,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
           <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
           <p className="text-gray-600">Manage your barbershop staff members</p>
         </div>
-        {currentUser.role === 'owner' && (
+        {currentUser.role === 'Owner' && (
           <button
             onClick={() => setShowAddModal(true)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -179,7 +179,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
           <div className="px-6 py-8 text-center text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>No staff members found</p>
-            {currentUser.role === 'owner' && (
+            {currentUser.role === 'Owner' && (
               <p className="text-sm">Add your first staff member to get started</p>
             )}
           </div>
@@ -203,12 +203,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
                   </span>
                 </div>
                 
-                {currentUser.role === 'owner' && (
+                {currentUser.role === 'Owner' && (
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handlePromoteUser(staff.id, staff.role)}
                       className="text-blue-600 hover:text-blue-800 p-1"
-                      title={`Change to ${staff.role === 'apprentice' ? 'barber' : staff.role === 'barber' ? 'manager' : staff.role === 'manager' ? 'barber' : 'apprentice'}`}
+                      title={`Change to ${staff.role === 'Apprentice' ? 'Barber' : staff.role === 'Barber' ? 'Manager' : staff.role === 'Manager' ? 'Barber' : 'Apprentice'}`}
                     >
                       <Crown className="w-4 h-4" />
                     </button>

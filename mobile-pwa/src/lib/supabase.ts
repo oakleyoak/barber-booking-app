@@ -17,15 +17,14 @@ export interface User {
   name: string;
   email: string;
   password?: string; // Optional for frontend use (never sent to client)
-  role: string;
+  role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
+  commission_rate: number;
+  target_weekly: number;
+  target_monthly: number;
   shop_settings?: string;
   created_at?: string;
   updated_at?: string;
-  // Legacy fields for backwards compatibility (not in database)
-  commission_rate?: number;
-  target_weekly?: number;
-  target_monthly?: number;
 }
 
 export interface Customer {

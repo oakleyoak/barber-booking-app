@@ -27,7 +27,7 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS target_monthly numeric(10, 2) default 3200,
   ADD COLUMN IF NOT EXISTS shop_settings text;
 
--- Add role constraint if it doesn't exist
+-- Add role constraint if it doesn't exist (including Manager role)
 DO $$ 
 BEGIN
   IF NOT EXISTS (
@@ -35,7 +35,27 @@ BEGIN
     WHERE constraint_name = 'users_role_check'
   ) THEN
     ALTER TABLE public.users ADD CONSTRAINT users_role_check 
-    CHECK (role = ANY (ARRAY['Owner'::text, 'Barber'::text, 'Apprentice'::text]));
+    CHECK (role = ANY (ARRAY['Owner'::text, 'Barber'::text, 'Apprentice'::text, 'Manager'::text]));
+  ELSE
+    -- Update existing constraint to include Manager role
+    ALTER TABLE public.users DROP CONSTRAINT users_role_check;
+    ALTER TABLE public.users ADD CONSTRAINT users_role_check 
+    CHECK (role = ANY (ARRAY['Owner'::text, 'Barber'::text, 'Apprentice'::text, 'Manager'::text]));
+  END IF;
+END $$;
+
+-- Create index on email for better performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users USING btree (email);
+
+-- Create trigger for updated_at if it doesn't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.triggers 
+    WHERE trigger_name = 'update_users_updated_at'
+  ) THEN
+    CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
   END IF;
 END $$;
 

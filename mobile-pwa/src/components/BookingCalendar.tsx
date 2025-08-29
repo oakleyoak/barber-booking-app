@@ -53,8 +53,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load bookings for selected date - owners see all, barbers see their own
-      const userFilter = currentUser.role === 'Barber' || currentUser.role === 'Apprentice' ? currentUser.id : undefined;
+      // Load bookings for selected date - always filter by current user
+      const userFilter = currentUser.id;
 
       const dayBookings = await bookingService.getBookingsByDate(selectedDate, userFilter);
 
@@ -77,8 +77,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-      // Use same user filtering as loadData
-      const userFilter = currentUser.role === 'Barber' || currentUser.role === 'Apprentice' ? currentUser.id : undefined;
+      // Always filter by current user for calendar view
+      const userFilter = currentUser.id;
       const monthBookings = await bookingService.getBookingsByDateRange(
         startDate.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],

@@ -115,7 +115,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    if (currentUser.role === 'Owner' || currentUser.role === 'owner' || currentUser.role === 'Manager' || currentUser.role === 'manager') {
+    if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
   userService.getUsers().then((users: any[]) => setAllStaff(users.map(u => ({id: u.id, name: u.name}))));
   customerService.getCustomers().then((customers: any[]) => setAllCustomers(customers.map(c => ({id: c.id, name: c.name}))));
     }
@@ -124,24 +124,46 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const handleCreateBooking = async () => {
     setCreating(true);
     try {
+      // Debug logging
+      console.log('Creating booking with currentUser:', currentUser);
+      console.log('Create form data:', createForm);
+
       // If owner creating from 'all' view, ensure a staff member is selected
       const assignedUserId = currentView === 'all' ? createForm.user_id : currentUser.id;
-      if ((currentUser.role === 'Owner' || currentUser.role === 'owner' || currentUser.role === 'Manager' || currentUser.role === 'manager') && currentView === 'all' && !assignedUserId) {
+      if ((currentUser.role === 'Owner' || currentUser.role === 'Manager') && currentView === 'all' && !assignedUserId) {
         alert('Please select a staff member for this booking.');
         setCreating(false);
         return;
       }
 
+      // Ensure we have a valid user_id
+      const finalUserId = assignedUserId || currentUser.id;
+      if (!finalUserId) {
+        console.error('No valid user ID found. Current user:', currentUser);
+        alert('Unable to create booking: No valid user ID found.');
+        setCreating(false);
+        return;
+      }
+
       const bookingData = {
-        customer_id: createForm.customer_id,
+        customer_id: createForm.customer_id || undefined, // Convert empty string to undefined
         customer_name: createForm.customer_name,
         service: createForm.service,
         price: createForm.price,
         date: createForm.date,
         time: createForm.time,
-        user_id: assignedUserId || currentUser.id,
+        user_id: finalUserId,
         status: createForm.status as 'scheduled' | 'completed' | 'cancelled'
       };
+
+      console.log('Final booking data:', bookingData);
+
+      // Validate required fields
+      if (!bookingData.customer_name || !bookingData.service || !bookingData.date || !bookingData.time) {
+        alert('Please fill in all required fields.');
+        setCreating(false);
+        return;
+      }
 
       // createBooking throws on error (completeDatabase service), so await directly
       const created = await bookingService.createBooking(bookingData);
@@ -174,7 +196,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     try {
       // Owner sees all, staff see their own
       let bookingsData: Booking[] = [];
-      if (currentUser.role === 'Owner' || currentUser.role === 'owner' || currentUser.role === 'Manager' || currentUser.role === 'manager') {
+      if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
         bookingsData = await bookingService.getBookings();
       } else {
         bookingsData = await bookingService.getBookings(currentUser.id);
@@ -428,7 +450,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           >
             <RefreshCw className="h-4 w-4 mr-1" />Refresh
           </button>
-          {(currentUser.role === 'Owner' || currentUser.role === 'owner' || currentUser.role === 'Manager' || currentUser.role === 'manager') && (
+          {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
             <button onClick={() => setShowCreateBooking(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"><CalendarIcon className="h-4 w-4 mr-1" />New Booking</button>
           )}
         </div>
@@ -503,7 +525,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             <h3 className="text-lg font-semibold mb-4">Create Booking</h3>
             <div className="space-y-4">
               {/* Staff dropdown only in 'all' tab (Owner can pick staff) */}
-              {currentView === 'all' && (currentUser.role === 'Owner' || currentUser.role === 'owner' || currentUser.role === 'Manager' || currentUser.role === 'manager') && (
+              {currentView === 'all' && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Staff</label>
                   <select

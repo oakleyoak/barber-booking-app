@@ -4,12 +4,15 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'owner' | 'manager' | 'barber' | 'apprentice';
+  password: string;
+  role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
-  phone?: string;
-  created_at: string;
-  updated_at: string;
-  is_active: boolean;
+  commission_rate: number;
+  target_weekly: number;
+  target_monthly: number;
+  created_at?: string;
+  updated_at?: string;
+  shop_settings?: string;
 }
 
 export interface UserCreate {

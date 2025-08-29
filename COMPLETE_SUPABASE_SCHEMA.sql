@@ -39,11 +39,18 @@ CREATE TABLE IF NOT EXISTS public.users (
   constraint users_role_check check (
     (
       role = any (
-        array['Owner'::text, 'Barber'::text, 'Apprentice'::text]
+        array['Owner'::text, 'Barber'::text, 'Apprentice'::text, 'Manager'::text]
       )
     )
   )
 ) TABLESPACE pg_default;
+
+-- Create index on email for better performance
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users USING btree (email) TABLESPACE pg_default;
+
+-- Create trigger for updated_at
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Customers table (existing)
 CREATE TABLE IF NOT EXISTS public.customers (
