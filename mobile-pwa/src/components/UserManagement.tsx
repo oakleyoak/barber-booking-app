@@ -94,7 +94,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
   };
 
   const handlePromoteUser = async (userId: string, currentRole: string) => {
-    let newRole: string;
+    let newRole: 'manager' | 'barber' | 'apprentice';
     if (currentRole === 'apprentice') {
       newRole = 'barber';
     } else if (currentRole === 'barber') {

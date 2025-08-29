@@ -1,23 +1,3 @@
-
-  // Handler to open delete modal for a booking
-  const deleteBooking = (booking: Booking) => {
-    setBookingToDelete(booking);
-    setShowDeleteModal(true);
-  };
-
-  // Handler to confirm deletion
-  const confirmDeleteBooking = async () => {
-    if (!bookingToDelete) return;
-    try {
-      const { error } = await supabase.from('bookings').delete().eq('id', bookingToDelete.id);
-      if (error) throw error;
-      setShowDeleteModal(false);
-      setBookingToDelete(null);
-      await loadBookings();
-    } catch (err) {
-      alert('Failed to delete booking');
-    }
-  };
 import React, { useState, useEffect } from 'react';
 import { 
   Calendar, 
