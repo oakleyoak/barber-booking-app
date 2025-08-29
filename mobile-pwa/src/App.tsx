@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList } from 'lucide-react';
-import { userManagementService } from './services/managementServices';
-import type { User as SupabaseUser } from './lib/supabase';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
+import { sessionService, userService, type User as SupabaseUser } from './services/completeDatabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
 import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
 import BookingManagement from './components/BookingManagement';
 import OperationsManual from './components/OperationsManual';
+import ExpenseManager from './components/ExpenseManager';
+import InventoryManager from './components/InventoryManager';
+import SuppliesInventory from './components/SuppliesInventory';
+import IncidentReports from './components/IncidentReports';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -24,24 +27,22 @@ function App() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check for saved user session on load
+  // Check for saved user session on load using Supabase session service
   useEffect(() => {
     const initializeApp = async () => {
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        try {
-          const user = JSON.parse(savedUser) as SupabaseUser;
+      try {
+        const user = await sessionService.getCurrentUser();
+        if (user) {
           setCurrentUser(user);
-        } catch (error) {
-          console.error('Error parsing saved user:', error);
-          localStorage.removeItem('currentUser');
         }
+      } catch (error) {
+        console.error('Error loading user session:', error);
       }
     };
     initializeApp();
   }, []);
 
-  // Authentication handler
+  // Authentication handler with Supabase integration
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -49,7 +50,7 @@ function App() {
 
     try {
       if (isLogin) {
-        // Login
+        // Login - check user exists in Supabase
         if (!formData.email.includes('@') || formData.email.length < 5) {
           setError('Please enter a valid email address');
           return;
@@ -59,24 +60,34 @@ function App() {
           return;
         }
 
-        const user: SupabaseUser = {
-          id: crypto.randomUUID(),
-          name: formData.email.split('@')[0] || 'User',
-          email: formData.email,
-          role: 'Owner',
-          shop_name: 'Edge & Co Barber Shop',
-          commission_rate: 0.4,
-          target_weekly: 800,
-          target_monthly: 3200,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
+        // Try to find user in database
+        const existingUser = await userService.getUserByEmail(formData.email);
         
-        localStorage.setItem('currentUser', JSON.stringify(user));
-        setCurrentUser(user);
+        if (existingUser) {
+          // Use existing user from database
+          await sessionService.setCurrentUser(existingUser);
+          setCurrentUser(existingUser);
+        } else {
+          // Create a demo user for login if not found
+          const newUser: Omit<SupabaseUser, 'id' | 'created_at' | 'updated_at'> = {
+            name: formData.email.split('@')[0] || 'User',
+            email: formData.email,
+            password: formData.password,
+            role: 'Owner',
+            shop_name: 'Edge & Co Barber Shop',
+            commission_rate: 0.4,
+            target_weekly: 800,
+            target_monthly: 3200
+          };
+          
+          const createdUser = await userService.createUser(newUser);
+          await sessionService.setCurrentUser(createdUser);
+          setCurrentUser(createdUser);
+        }
+        
         setError(''); // Clear any previous errors
       } else {
-        // Registration
+        // Registration - create new user in Supabase
         if (!formData.email.includes('@') || formData.email.length < 5) {
           setError('Please enter a valid email address');
           return;
@@ -94,28 +105,26 @@ function App() {
           return;
         }
 
-        const userData = {
+        // Check if user already exists
+        const existingUser = await userService.getUserByEmail(formData.email);
+        if (existingUser) {
+          setError('This email is already registered. Please try logging in instead.');
+          return;
+        }
+
+        const userData: Omit<SupabaseUser, 'id' | 'created_at' | 'updated_at'> = {
           name: formData.name,
           email: formData.email,
           password: formData.password,
           role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
-          shop_name: formData.role === 'Owner' ? formData.shopName : 'Default Shop'
-        };
-
-        const newUser: SupabaseUser = {
-          id: crypto.randomUUID(),
-          name: formData.name,
-          email: formData.email,
-          role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co Barber Shop',
           commission_rate: formData.role === 'Barber' ? 0.4 : 0.3,
           target_weekly: formData.role === 'Owner' ? 3000 : 800,
-          target_monthly: formData.role === 'Owner' ? 12000 : 3200,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          target_monthly: formData.role === 'Owner' ? 12000 : 3200
         };
-        
-        localStorage.setItem('currentUser', JSON.stringify(newUser));
+
+        const newUser = await userService.createUser(userData);
+        await sessionService.setCurrentUser(newUser);
         setCurrentUser(newUser);
       }
     } catch (err: any) {
@@ -138,7 +147,7 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      localStorage.removeItem('currentUser');
+      await sessionService.clearSession();
       setCurrentUser(null);
       setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
     } catch (error) {
@@ -160,7 +169,7 @@ function App() {
               <div className="flex items-center">
                 <Building className="h-8 w-8 text-blue-600 mr-3" />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Barber POS System</h1>
+                  <h1 className="text-xl font-bold text-gray-900">Edge & Co Barber Management</h1>
                   <p className="text-sm text-gray-500">{currentUser.shop_name}</p>
                 </div>
               </div>
@@ -181,82 +190,134 @@ function App() {
 
         {/* Navigation */}
         <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="grid grid-cols-3 gap-1 sm:flex sm:space-x-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-1 sm:gap-2 mb-6">
+            {/* Core Features - Available to All Users */}
             <button
               onClick={() => setCurrentView('calendar')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'calendar'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Calendar className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="hidden sm:inline">Calendar</span>
-              <span className="sm:hidden text-center leading-tight">Calendar</span>
+              <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="text-center leading-tight">Calendar</span>
             </button>
+            
             <button
               onClick={() => setCurrentView('earnings')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'earnings'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <TrendingUp className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="hidden sm:inline">Earnings</span>
-              <span className="sm:hidden text-center leading-tight">Earnings</span>
+              <TrendingUp className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="text-center leading-tight">Earnings</span>
             </button>
+            
             <button
               onClick={() => setCurrentView('customers')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'customers'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <Users className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="hidden sm:inline">Customers</span>
-              <span className="sm:hidden text-center leading-tight">Customers</span>
+              <Users className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="text-center leading-tight">Customers</span>
             </button>
+            
             <button
               onClick={() => setCurrentView('operations')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'operations'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <ClipboardList className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="hidden sm:inline">Operations</span>
-              <span className="sm:hidden text-center leading-tight">Operations</span>
+              <ClipboardList className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="text-center leading-tight">Operations</span>
             </button>
+
+            {/* Management Features - Owner/Barber Access */}
+            {(currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+              <>
+                <button
+                  onClick={() => setCurrentView('expenses')}
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                    currentView === 'expenses'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <DollarSign className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">Expenses</span>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentView('equipment')}
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                    currentView === 'equipment'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">Equipment</span>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentView('supplies')}
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                    currentView === 'supplies'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">Supplies</span>
+                </button>
+                
+                <button
+                  onClick={() => setCurrentView('incidents')}
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                    currentView === 'incidents'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <AlertTriangle className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">Incidents</span>
+                </button>
+              </>
+            )}
             
             {/* Owner-only features */}
             {currentUser?.role === 'Owner' && (
               <>
                 <button
                   onClick={() => setCurrentView('bookings')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'bookings'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <Calendar className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="hidden sm:inline">All Bookings</span>
-                  <span className="sm:hidden text-center leading-tight">Bookings</span>
+                  <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">All Bookings</span>
                 </button>
+                
                 <button
                   onClick={() => setCurrentView('admin')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-4 py-2 rounded-lg transition-colors text-xs sm:text-base ${
+                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'admin'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <Shield className="h-4 w-4 sm:h-4 sm:w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="hidden sm:inline">Admin</span>
-                  <span className="sm:hidden text-center leading-tight">Admin</span>
+                  <Shield className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+                  <span className="text-center leading-tight">Admin</span>
                 </button>
               </>
             )}
@@ -280,6 +341,22 @@ function App() {
               <OperationsManual />
             )}
 
+            {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+              <ExpenseManager currentUserId={currentUser.id} />
+            )}
+
+            {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+              <InventoryManager />
+            )}
+
+            {currentView === 'supplies' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+              <SuppliesInventory />
+            )}
+
+            {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+              <IncidentReports currentUserId={currentUser.id} />
+            )}
+
             {currentView === 'bookings' && currentUser?.role === 'Owner' && (
               <BookingManagement currentUser={currentUser} />
             )}
@@ -301,13 +378,13 @@ function App() {
           <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
             <Building className="h-6 w-6 text-blue-600" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Barber POS System</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Edge & Co Management</h1>
           <p className="text-gray-600">
             {isLogin ? 'Sign in to your account' : 'Create your barber shop account'}
           </p>
           {!isLogin && (
             <p className="text-sm text-gray-500 mt-2">
-              After registration, check your email for a confirmation link.
+              Complete barber shop management system with operations tracking.
             </p>
           )}
         </div>
