@@ -277,7 +277,7 @@ function App() {
             )}
 
             {currentView === 'operations' && (
-              <OperationsManual currentUser={currentUser} />
+              <OperationsManual />
             )}
 
             {currentView === 'bookings' && currentUser?.role === 'Owner' && (
