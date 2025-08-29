@@ -373,9 +373,7 @@ const OperationsManual: React.FC = () => {
                         check_name: newTask.name,
                         description: newTask.description,
                         frequency: newTask.frequency,
-                        category: newTask.category,
-                        check_type: newTask.check_type,
-                        acceptable_range: newTask.acceptable_range,
+                        compliance_requirement: newTask.compliance_requirement,
                         instructions: newTask.instructions
                       });
                     }
