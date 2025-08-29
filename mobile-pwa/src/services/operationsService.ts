@@ -1,417 +1,551 @@
 import { supabase } from '../lib/supabase';
 
-export interface DailyOperations {
-  id: string;
-  date: string;
-  barber_id: string;
-  shift_start: string;
-  shift_end: string;
-  total_customers_served: number;
-  total_revenue: number;
-  notes: string;
-}
-
+// Type definitions
 export interface CleaningTask {
   id: string;
   task_name: string;
+  description: string;
+  frequency: string;
+  estimated_time_minutes: number;
+  priority: string;
   category: string;
+  compliance_requirement: boolean;
+  instructions: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaintenanceTask {
+  id: string;
+  equipment_name: string;
+  task_name: string;
   frequency: string;
   estimated_time_minutes: number;
   instructions: string;
-}
-
-export interface CleaningLog {
-  id: string;
-  date: string;
-  barber_id: string;
-  task_id: string;
-  completed: boolean;
-  completed_at: string;
-  notes: string;
+  requires_specialist: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface SafetyCheckItem {
   id: string;
-  item_name: string;
-  category: string;
-  check_type: string;
+  check_name: string;
+  description: string;
   frequency: string;
+  compliance_requirement: boolean;
   instructions: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CleaningLog {
+  id: string;
+  task_id: string;
+  barber_id: string;
+  completed_date: string;
+  completed_at: string;
+  notes: string;
+  created_at: string;
+}
+
+export interface MaintenanceLog {
+  id: string;
+  task_id: string;
+  barber_id: string;
+  completed_date: string;
+  completed_at: string;
+  notes: string;
+  created_at: string;
 }
 
 export interface SafetyCheckLog {
   id: string;
-  date: string;
-  barber_id: string;
   item_id: string;
-  status: 'pass' | 'fail' | 'n/a';
-  reading_value: string;
-  notes: string;
-}
-
-export interface StaffAccountability {
-  id: string;
-  date: string;
   barber_id: string;
-  check_in_time: string;
-  check_out_time: string;
-  uniform_compliant: boolean;
-  hygiene_compliant: boolean;
-  behavior_rating: number;
-  performance_notes: string;
-  issues_reported: string;
+  check_date: string;
+  status: string;
+  notes: string;
+  created_at: string;
 }
 
-export const operationsService = {
-  // Daily Operations
-  async getDailyOperations(date: string, barberId: string): Promise<DailyOperations | null> {
-    const { data, error } = await supabase
-      .from('daily_operations')
-      .select('*')
-      .eq('date', date)
-      .eq('barber_id', barberId)
-      .single();
+// Get current user/barber ID helper
+const getCurrentBarberId = () => {
+  return 'default-barber'; // In real app, get from auth context
+};
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching daily operations:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  async updateDailyOperations(operations: Partial<DailyOperations>): Promise<DailyOperations | null> {
-    const { data, error } = await supabase
-      .from('daily_operations')
-      .upsert(operations)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating daily operations:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  // Cleaning Tasks
-  async getCleaningTasks(): Promise<CleaningTask[]> {
+// Cleaning Tasks Operations
+export const getCleaningTasks = async (): Promise<CleaningTask[]> => {
+  try {
     const { data, error } = await supabase
       .from('cleaning_tasks')
       .select('*')
       .eq('is_active', true)
-      .order('category', { ascending: true });
+      .order('priority', { ascending: false })
+      .order('task_name');
 
-    if (error) {
-      console.error('Error fetching cleaning tasks:', error);
-      return [];
-    }
-
+    if (error) throw error;
     return data || [];
-  },
+  } catch (error) {
+    console.error('Error fetching cleaning tasks:', error);
+    return [];
+  }
+};
 
-  async getCleaningLogs(date: string, barberId: string): Promise<CleaningLog[]> {
+export const addCleaningTask = async (task: Omit<CleaningTask, 'id' | 'is_active' | 'created_at' | 'updated_at'>): Promise<CleaningTask | null> => {
+  try {
     const { data, error } = await supabase
-      .from('daily_cleaning_log')
-      .select(`
-        *,
-        task:cleaning_tasks(*)
-      `)
-      .eq('date', date)
-      .eq('barber_id', barberId);
-
-    if (error) {
-      console.error('Error fetching cleaning logs:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  async updateCleaningLog(log: Partial<CleaningLog>): Promise<CleaningLog | null> {
-    const { data, error } = await supabase
-      .from('daily_cleaning_log')
-      .upsert(log)
+      .from('cleaning_tasks')
+      .insert([{
+        ...task,
+        is_active: true
+      }])
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating cleaning log:', error);
-      return null;
-    }
-
+    if (error) throw error;
     return data;
-  },
+  } catch (error) {
+    console.error('Error adding cleaning task:', error);
+    throw error;
+  }
+};
 
-  async updateCleaningNotes(taskId: string, date: string, barberId: string, notes: string): Promise<CleaningLog | null> {
+export const updateCleaningTask = async (id: string, updates: Partial<CleaningTask>): Promise<CleaningTask | null> => {
+  try {
     const { data, error } = await supabase
-      .from('daily_cleaning_log')
-      .upsert({
-        task_id: taskId,
-        date: date,
-        barber_id: barberId,
-        notes: notes
-      })
+      .from('cleaning_tasks')
+      .update(updates)
+      .eq('id', id)
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating cleaning notes:', error);
-      return null;
-    }
-
+    if (error) throw error;
     return data;
-  },
+  } catch (error) {
+    console.error('Error updating cleaning task:', error);
+    throw error;
+  }
+};
 
-  // Safety Checks
-  async getSafetyCheckItems(): Promise<SafetyCheckItem[]> {
-    const { data, error } = await supabase
-      .from('safety_check_items')
-      .select('*')
-      .eq('is_active', true)
-      .order('category', { ascending: true });
+export const deleteCleaningTask = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('cleaning_tasks')
+      .update({ is_active: false })
+      .eq('id', id);
 
-    if (error) {
-      console.error('Error fetching safety check items:', error);
-      return [];
-    }
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting cleaning task:', error);
+    throw error;
+  }
+};
 
-    return data || [];
-  },
-
-  async getSafetyCheckLogs(date: string, barberId: string): Promise<SafetyCheckLog[]> {
-    const { data, error } = await supabase
-      .from('daily_safety_checks')
-      .select(`
-        *,
-        item:safety_check_items(*)
-      `)
-      .eq('date', date)
-      .eq('barber_id', barberId);
-
-    if (error) {
-      console.error('Error fetching safety check logs:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  async updateSafetyCheckLog(log: Partial<SafetyCheckLog>): Promise<SafetyCheckLog | null> {
-    const { data, error } = await supabase
-      .from('daily_safety_checks')
-      .upsert(log)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating safety check log:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  // Staff Accountability
-  async getStaffAccountability(date: string, barberId: string): Promise<StaffAccountability | null> {
-    const { data, error } = await supabase
-      .from('staff_accountability')
-      .select('*')
-      .eq('date', date)
-      .eq('barber_id', barberId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching staff accountability:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  async updateStaffAccountability(accountability: Partial<StaffAccountability>): Promise<StaffAccountability | null> {
-    const { data, error } = await supabase
-      .from('staff_accountability')
-      .upsert(accountability)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating staff accountability:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  // Maintenance Tasks
-  async getMaintenanceTasks(): Promise<any[]> {
+// Maintenance Tasks Operations
+export const getMaintenanceTasks = async (): Promise<MaintenanceTask[]> => {
+  try {
     const { data, error } = await supabase
       .from('maintenance_tasks')
       .select('*')
       .eq('is_active', true)
-      .order('equipment_name', { ascending: true });
+      .order('equipment_name')
+      .order('task_name');
 
-    if (error) {
-      console.error('Error fetching maintenance tasks:', error);
-      return [];
-    }
-
+    if (error) throw error;
     return data || [];
-  },
-
-  async getMaintenanceLogs(date: string): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('equipment_maintenance_log')
-      .select(`
-        *,
-        task:maintenance_tasks(*)
-      `)
-      .eq('date', date);
-
-    if (error) {
-      console.error('Error fetching maintenance logs:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  async updateMaintenanceLog(log: any): Promise<any | null> {
-    const { data, error } = await supabase
-      .from('equipment_maintenance_log')
-      .upsert(log)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating maintenance log:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  async toggleMaintenanceTask(taskId: number, date: string, completed: boolean): Promise<any | null> {
-    const { data, error } = await supabase
-      .from('equipment_maintenance_log')
-      .upsert({
-        task_id: taskId,
-        date: date,
-        completed: completed,
-        completed_at: completed ? new Date().toISOString() : null,
-        completed_by: completed ? 'current_user' : null
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error toggling maintenance task:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  async updateMaintenanceNotes(taskId: number, date: string, notes: string): Promise<any | null> {
-    const { data, error } = await supabase
-      .from('equipment_maintenance_log')
-      .upsert({
-        task_id: taskId,
-        date: date,
-        notes: notes
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error updating maintenance notes:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  async saveStaffAccountability(accountability: any): Promise<any | null> {
-    const { data, error } = await supabase
-      .from('staff_accountability')
-      .upsert({
-        ...accountability,
-        date: new Date().toISOString().split('T')[0],
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error saving staff accountability:', error);
-      return null;
-    }
-
-    return data;
-  },
-
-  // Equipment Inventory
-  async getEquipmentInventory(): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('equipment_inventory')
-      .select('*')
-      .eq('is_active', true)
-      .order('equipment_name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching equipment inventory:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  // Supplies Inventory
-  async getSuppliesInventory(): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('supplies_inventory')
-      .select('*')
-      .eq('is_active', true)
-      .order('item_name', { ascending: true });
-
-    if (error) {
-      console.error('Error fetching supplies inventory:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  // Incident Reports
-  async getIncidentReports(): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('incident_reports')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error('Error fetching incident reports:', error);
-      return [];
-    }
-
-    return data || [];
-  },
-
-  async createIncidentReport(report: any): Promise<any | null> {
-    const { data, error } = await supabase
-      .from('incident_reports')
-      .insert(report)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating incident report:', error);
-      return null;
-    }
-
-    return data;
+  } catch (error) {
+    console.error('Error fetching maintenance tasks:', error);
+    return [];
   }
+};
+
+export const addMaintenanceTask = async (task: Omit<MaintenanceTask, 'id' | 'is_active' | 'created_at' | 'updated_at'>): Promise<MaintenanceTask | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('maintenance_tasks')
+      .insert([{
+        ...task,
+        is_active: true
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding maintenance task:', error);
+    throw error;
+  }
+};
+
+export const updateMaintenanceTask = async (id: string, updates: Partial<MaintenanceTask>): Promise<MaintenanceTask | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('maintenance_tasks')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating maintenance task:', error);
+    throw error;
+  }
+};
+
+export const deleteMaintenanceTask = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('maintenance_tasks')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting maintenance task:', error);
+    throw error;
+  }
+};
+
+// Safety Check Items Operations
+export const getSafetyCheckItems = async (): Promise<SafetyCheckItem[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('safety_check_items')
+      .select('*')
+      .eq('is_active', true)
+      .order('check_name');
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching safety check items:', error);
+    return [];
+  }
+};
+
+export const addSafetyCheckItem = async (item: Omit<SafetyCheckItem, 'id' | 'is_active' | 'created_at' | 'updated_at'>): Promise<SafetyCheckItem | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('safety_check_items')
+      .insert([{
+        ...item,
+        is_active: true
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error adding safety check item:', error);
+    throw error;
+  }
+};
+
+export const updateSafetyCheckItem = async (id: string, updates: Partial<SafetyCheckItem>): Promise<SafetyCheckItem | null> => {
+  try {
+    const { data, error } = await supabase
+      .from('safety_check_items')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating safety check item:', error);
+    throw error;
+  }
+};
+
+export const deleteSafetyCheckItem = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('safety_check_items')
+      .update({ is_active: false })
+      .eq('id', id);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting safety check item:', error);
+    throw error;
+  }
+};
+
+// Task Completion Operations
+export const updateTaskCompletion = async (type: string, taskId: string, completed: boolean): Promise<void> => {
+  try {
+    const barberId = getCurrentBarberId();
+    const today = new Date().toISOString().split('T')[0];
+    
+    if (type === 'cleaning') {
+      if (completed) {
+        // Add completion log
+        const { error } = await supabase
+          .from('cleaning_logs')
+          .upsert([{
+            task_id: taskId,
+            barber_id: barberId,
+            completed_date: today,
+            completed_at: new Date().toISOString(),
+            notes: ''
+          }], { onConflict: 'task_id,barber_id,completed_date' });
+        
+        if (error) throw error;
+      } else {
+        // Remove completion log
+        const { error } = await supabase
+          .from('cleaning_logs')
+          .delete()
+          .eq('task_id', taskId)
+          .eq('barber_id', barberId)
+          .eq('completed_date', today);
+        
+        if (error) throw error;
+      }
+    } else if (type === 'maintenance') {
+      if (completed) {
+        const { error } = await supabase
+          .from('maintenance_logs')
+          .upsert([{
+            task_id: taskId,
+            barber_id: barberId,
+            completed_date: today,
+            completed_at: new Date().toISOString(),
+            notes: ''
+          }], { onConflict: 'task_id,barber_id,completed_date' });
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('maintenance_logs')
+          .delete()
+          .eq('task_id', taskId)
+          .eq('barber_id', barberId)
+          .eq('completed_date', today);
+        
+        if (error) throw error;
+      }
+    } else if (type === 'safety') {
+      if (completed) {
+        const { error } = await supabase
+          .from('safety_check_logs')
+          .upsert([{
+            item_id: taskId,
+            barber_id: barberId,
+            check_date: today,
+            status: 'pass',
+            notes: ''
+          }], { onConflict: 'item_id,barber_id,check_date' });
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('safety_check_logs')
+          .delete()
+          .eq('item_id', taskId)
+          .eq('barber_id', barberId)
+          .eq('check_date', today);
+        
+        if (error) throw error;
+      }
+    }
+  } catch (error) {
+    console.error('Error updating task completion:', error);
+    throw error;
+  }
+};
+
+// Statistics and Reports
+export const getOperationsStatistics = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const barberId = getCurrentBarberId();
+
+    // Get total tasks
+    const [cleaningTasks, maintenanceTasks, safetyItems] = await Promise.all([
+      getCleaningTasks(),
+      getMaintenanceTasks(),
+      getSafetyCheckItems()
+    ]);
+
+    // Get completed tasks today
+    const [cleaningLogs, maintenanceLogs, safetyLogs] = await Promise.all([
+      supabase.from('cleaning_logs').select('*').eq('barber_id', barberId).eq('completed_date', today),
+      supabase.from('maintenance_logs').select('*').eq('barber_id', barberId).eq('completed_date', today),
+      supabase.from('safety_check_logs').select('*').eq('barber_id', barberId).eq('check_date', today)
+    ]);
+
+    const totalTasks = cleaningTasks.length + maintenanceTasks.length + safetyItems.length;
+    const completedToday = (cleaningLogs.data?.length || 0) + (maintenanceLogs.data?.length || 0) + (safetyLogs.data?.length || 0);
+    const pendingTasks = totalTasks - completedToday;
+    const complianceRate = totalTasks > 0 ? Math.round((completedToday / totalTasks) * 100) : 0;
+
+    return {
+      total_tasks: totalTasks,
+      tasks_completed_today: completedToday,
+      tasks_pending: pendingTasks,
+      compliance_rate: `${complianceRate}%`
+    };
+  } catch (error) {
+    console.error('Error getting operations statistics:', error);
+    return {
+      total_tasks: 0,
+      tasks_completed_today: 0,
+      tasks_pending: 0,
+      compliance_rate: '0%'
+    };
+  }
+};
+
+export const getComplianceReports = async (startDate: string, endDate: string) => {
+  try {
+    const barberId = getCurrentBarberId();
+
+    const [cleaningCompliance, maintenanceCompliance, safetyCompliance] = await Promise.all([
+      supabase
+        .from('cleaning_logs')
+        .select(`
+          *,
+          cleaning_tasks(task_name, compliance_requirement)
+        `)
+        .eq('barber_id', barberId)
+        .gte('completed_date', startDate)
+        .lte('completed_date', endDate),
+      
+      supabase
+        .from('maintenance_logs')
+        .select(`
+          *,
+          maintenance_tasks(equipment_name, task_name)
+        `)
+        .eq('barber_id', barberId)
+        .gte('completed_date', startDate)
+        .lte('completed_date', endDate),
+      
+      supabase
+        .from('safety_check_logs')
+        .select(`
+          *,
+          safety_check_items(check_name, compliance_requirement)
+        `)
+        .eq('barber_id', barberId)
+        .gte('check_date', startDate)
+        .lte('check_date', endDate)
+    ]);
+
+    return {
+      cleaning: cleaningCompliance.data || [],
+      maintenance: maintenanceCompliance.data || [],
+      safety: safetyCompliance.data || []
+    };
+  } catch (error) {
+    console.error('Error getting compliance reports:', error);
+    return {
+      cleaning: [],
+      maintenance: [],
+      safety: []
+    };
+  }
+};
+
+// Enhanced task fetching with completion status
+export const getCleaningTasksWithStatus = async (): Promise<(CleaningTask & { completed_today: boolean })[]> => {
+  try {
+    const tasks = await getCleaningTasks();
+    const today = new Date().toISOString().split('T')[0];
+    const barberId = getCurrentBarberId();
+
+    const { data: logs } = await supabase
+      .from('cleaning_logs')
+      .select('task_id')
+      .eq('barber_id', barberId)
+      .eq('completed_date', today);
+
+    const completedTaskIds = new Set(logs?.map(log => log.task_id) || []);
+
+    return tasks.map(task => ({
+      ...task,
+      completed_today: completedTaskIds.has(task.id)
+    }));
+  } catch (error) {
+    console.error('Error fetching cleaning tasks with status:', error);
+    return [];
+  }
+};
+
+export const getMaintenanceTasksWithStatus = async (): Promise<(MaintenanceTask & { completed_today: boolean })[]> => {
+  try {
+    const tasks = await getMaintenanceTasks();
+    const today = new Date().toISOString().split('T')[0];
+    const barberId = getCurrentBarberId();
+
+    const { data: logs } = await supabase
+      .from('maintenance_logs')
+      .select('task_id')
+      .eq('barber_id', barberId)
+      .eq('completed_date', today);
+
+    const completedTaskIds = new Set(logs?.map(log => log.task_id) || []);
+
+    return tasks.map(task => ({
+      ...task,
+      completed_today: completedTaskIds.has(task.id)
+    }));
+  } catch (error) {
+    console.error('Error fetching maintenance tasks with status:', error);
+    return [];
+  }
+};
+
+export const getSafetyCheckItemsWithStatus = async (): Promise<(SafetyCheckItem & { completed_today: boolean })[]> => {
+  try {
+    const items = await getSafetyCheckItems();
+    const today = new Date().toISOString().split('T')[0];
+    const barberId = getCurrentBarberId();
+
+    const { data: logs } = await supabase
+      .from('safety_check_logs')
+      .select('item_id')
+      .eq('barber_id', barberId)
+      .eq('check_date', today);
+
+    const completedItemIds = new Set(logs?.map(log => log.item_id) || []);
+
+    return items.map(item => ({
+      ...item,
+      completed_today: completedItemIds.has(item.id)
+    }));
+  } catch (error) {
+    console.error('Error fetching safety check items with status:', error);
+    return [];
+  }
+};
+
+export default {
+  getCleaningTasks,
+  getMaintenanceTasks,
+  getSafetyCheckItems,
+  addCleaningTask,
+  addMaintenanceTask,
+  addSafetyCheckItem,
+  updateCleaningTask,
+  updateMaintenanceTask,
+  updateSafetyCheckItem,
+  deleteCleaningTask,
+  deleteMaintenanceTask,
+  deleteSafetyCheckItem,
+  updateTaskCompletion,
+  getOperationsStatistics,
+  getComplianceReports,
+  getCleaningTasksWithStatus,
+  getMaintenanceTasksWithStatus,
+  getSafetyCheckItemsWithStatus
 };
