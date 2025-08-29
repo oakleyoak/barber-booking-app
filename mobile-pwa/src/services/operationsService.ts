@@ -258,6 +258,80 @@ export const operationsService = {
     return data || [];
   },
 
+  async updateMaintenanceLog(log: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('equipment_maintenance_log')
+      .upsert(log)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating maintenance log:', error);
+      return null;
+    }
+
+    return data;
+  },
+
+  async toggleMaintenanceTask(taskId: number, date: string, completed: boolean): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('equipment_maintenance_log')
+      .upsert({
+        task_id: taskId,
+        date: date,
+        completed: completed,
+        completed_at: completed ? new Date().toISOString() : null,
+        completed_by: completed ? 'current_user' : null
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error toggling maintenance task:', error);
+      return null;
+    }
+
+    return data;
+  },
+
+  async updateMaintenanceNotes(taskId: number, date: string, notes: string): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('equipment_maintenance_log')
+      .upsert({
+        task_id: taskId,
+        date: date,
+        notes: notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating maintenance notes:', error);
+      return null;
+    }
+
+    return data;
+  },
+
+  async saveStaffAccountability(accountability: any): Promise<any | null> {
+    const { data, error } = await supabase
+      .from('staff_accountability')
+      .upsert({
+        ...accountability,
+        date: new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving staff accountability:', error);
+      return null;
+    }
+
+    return data;
+  },
+
   // Equipment Inventory
   async getEquipmentInventory(): Promise<any[]> {
     const { data, error } = await supabase

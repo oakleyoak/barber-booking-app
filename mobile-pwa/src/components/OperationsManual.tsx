@@ -24,6 +24,28 @@ import type {
   StaffAccountability
 } from '../services/operationsService';
 
+interface MaintenanceTask {
+  id: string;
+  equipment_name: string;
+  task_name: string;
+  frequency: string;
+  estimated_time_minutes: number;
+  instructions: string;
+  requires_specialist: boolean;
+}
+
+interface MaintenanceLog {
+  id: string;
+  date: string;
+  barber_id: string;
+  task_id: string;
+  completed: boolean;
+  completed_at: string;
+  next_due_date: string;
+  notes: string;
+  issues_found: string;
+}
+
 interface OperationsManualProps {
   currentUser: any;
 }
@@ -36,6 +58,8 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
   const [dailyOps, setDailyOps] = useState<DailyOperations | null>(null);
   const [cleaningTasks, setCleaningTasks] = useState<CleaningTask[]>([]);
   const [cleaningLogs, setCleaningLogs] = useState<CleaningLog[]>([]);
+  const [maintenanceTasks, setMaintenanceTasks] = useState<MaintenanceTask[]>([]);
+  const [maintenanceLogs, setMaintenanceLogs] = useState<MaintenanceLog[]>([]);
   const [safetyItems, setSafetyItems] = useState<SafetyCheckItem[]>([]);
   const [safetyLogs, setSafetyLogs] = useState<SafetyCheckLog[]>([]);
   const [staffAccountability, setStaffAccountability] = useState<StaffAccountability | null>(null);
@@ -51,6 +75,7 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
       await Promise.all([
         loadDailyOperations(),
         loadCleaningData(),
+        loadMaintenanceData(),
         loadSafetyData(),
         loadStaffAccountability()
       ]);
@@ -72,10 +97,14 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
 
   const loadCleaningData = async () => {
     try {
+      console.log('Loading cleaning data...');
       const [tasks, logs] = await Promise.all([
         operationsService.getCleaningTasks(),
         operationsService.getCleaningLogs(selectedDate, currentUser.id)
       ]);
+
+      console.log('Cleaning tasks loaded:', tasks.length);
+      console.log('Cleaning logs loaded:', logs.length);
 
       setCleaningTasks(tasks);
       setCleaningLogs(logs);
@@ -86,10 +115,14 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
 
   const loadSafetyData = async () => {
     try {
+      console.log('Loading safety data...');
       const [items, logs] = await Promise.all([
         operationsService.getSafetyCheckItems(),
         operationsService.getSafetyCheckLogs(selectedDate, currentUser.id)
       ]);
+
+      console.log('Safety items loaded:', items.length);
+      console.log('Safety logs loaded:', logs.length);
 
       setSafetyItems(items);
       setSafetyLogs(logs);
@@ -104,6 +137,20 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
       setStaffAccountability(data);
     } catch (error) {
       console.error('Error loading staff accountability:', error);
+    }
+  };
+
+  const loadMaintenanceData = async () => {
+    try {
+      const [tasks, logs] = await Promise.all([
+        operationsService.getMaintenanceTasks(),
+        operationsService.getMaintenanceLogs(selectedDate)
+      ]);
+
+      setMaintenanceTasks(tasks);
+      setMaintenanceLogs(logs);
+    } catch (error) {
+      console.error('Error loading maintenance data:', error);
     }
   };
 
@@ -170,6 +217,93 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
       console.error('Error updating staff accountability:', error);
       alert('Failed to update staff accountability');
     }
+  };
+
+  const saveStaffAccountability = async () => {
+    try {
+      if (!staffAccountability) {
+        alert('No staff accountability data to save');
+        return;
+      }
+
+      const result = await operationsService.saveStaffAccountability({
+        ...staffAccountability,
+        barber_id: currentUser.id
+      });
+
+      if (result) {
+        alert('Staff accountability saved successfully');
+        await loadStaffAccountability();
+      } else {
+        alert('Failed to save staff accountability');
+      }
+    } catch (error) {
+      console.error('Error saving staff accountability:', error);
+      alert('Failed to save staff accountability');
+    }
+  };
+
+  const toggleMaintenanceTask = async (taskId: string, completed: boolean) => {
+    try {
+      const result = await operationsService.toggleMaintenanceTask(
+        parseInt(taskId),
+        selectedDate,
+        completed
+      );
+
+      if (result) {
+        await loadMaintenanceData();
+      } else {
+        alert('Failed to update maintenance task');
+      }
+    } catch (error) {
+      console.error('Error updating maintenance task:', error);
+      alert('Failed to update maintenance task');
+    }
+  };
+
+  const updateMaintenanceNotes = async (taskId: string, notes: string) => {
+    try {
+      const result = await operationsService.updateMaintenanceNotes(
+        parseInt(taskId),
+        selectedDate,
+        notes
+      );
+
+      if (result) {
+        await loadMaintenanceData();
+      } else {
+        alert('Failed to update maintenance notes');
+      }
+    } catch (error) {
+      console.error('Error updating maintenance notes:', error);
+      alert('Failed to update maintenance notes');
+    }
+  };
+
+  const calculateNextDueDate = (taskId: string): string => {
+    const task = maintenanceTasks.find(t => t.id === taskId);
+    if (!task) return '';
+
+    const currentDate = new Date();
+    switch (task.frequency) {
+      case 'daily':
+        currentDate.setDate(currentDate.getDate() + 1);
+        break;
+      case 'weekly':
+        currentDate.setDate(currentDate.getDate() + 7);
+        break;
+      case 'monthly':
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        currentDate.setMonth(currentDate.getMonth() + 3);
+        break;
+      default:
+        currentDate.setDate(currentDate.getDate() + 30); // Default to monthly
+    }
+
+    return currentDate.toISOString().split('T')[0];
   };
 
   const getStatusColor = (status: string) => {
@@ -403,6 +537,93 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
                     </div>
                   );
                 })}
+                {safetyItems.length === 0 && !isLoading && (
+                  <div className="text-center py-8">
+                    <Shield className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">No safety check items found</p>
+                    <p className="text-sm text-gray-400 mt-1">Safety check items will appear here once added to the system</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'maintenance' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900">Equipment Maintenance</h3>
+              <div className="grid gap-4">
+                {maintenanceTasks.map(task => {
+                  const log = maintenanceLogs.find(l => l.task_id === task.id);
+                  return (
+                    <div key={task.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-900">{task.equipment_name}</h4>
+                          <p className="text-sm text-gray-600 mt-1">{task.task_name}</p>
+                          <p className="text-xs text-gray-500 mt-1">{task.instructions}</p>
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span>Frequency: {task.frequency}</span>
+                            <span>Est. Time: {task.estimated_time_minutes}min</span>
+                            {task.requires_specialist && (
+                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                                Requires Specialist
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => toggleMaintenanceTask(task.id, !log?.completed)}
+                            className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition ${
+                              log?.completed
+                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                            }`}
+                          >
+                            {log?.completed ? (
+                              <CheckCircle className="h-4 w-4 mr-2" />
+                            ) : (
+                              <XCircle className="h-4 w-4 mr-2" />
+                            )}
+                            {log?.completed ? 'Completed' : 'Mark Complete'}
+                          </button>
+                          {log?.completed && (
+                            <button
+                              onClick={() => updateMaintenanceNotes(task.id, '')}
+                              className="px-3 py-2 bg-blue-100 text-blue-800 rounded-lg text-sm hover:bg-blue-200 transition"
+                            >
+                              Add Notes
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      {log?.completed && log.completed_at && (
+                        <div className="mt-3 pt-3 border-t border-gray-200">
+                          <p className="text-xs text-gray-500">
+                            Completed at: {new Date(log.completed_at).toLocaleTimeString()}
+                          </p>
+                          {log.next_due_date && (
+                            <p className="text-xs text-gray-500">
+                              Next due: {new Date(log.next_due_date).toLocaleDateString()}
+                            </p>
+                          )}
+                          {log.issues_found && (
+                            <p className="text-xs text-red-600 mt-1">
+                              Issues: {log.issues_found}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {maintenanceTasks.length === 0 && !isLoading && (
+                  <div className="text-center py-8">
+                    <Wrench className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-gray-500">No maintenance tasks found</p>
+                    <p className="text-sm text-gray-400 mt-1">Maintenance tasks will appear here once added to the system</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -498,6 +719,14 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ currentUser }) => {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Any issues or concerns..."
                   />
+                </div>
+                <div className="mt-6 flex justify-end">
+                  <button
+                    onClick={saveStaffAccountability}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium"
+                  >
+                    Save Staff Accountability
+                  </button>
                 </div>
               </div>
             </div>
