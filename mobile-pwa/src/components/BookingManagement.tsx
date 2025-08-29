@@ -566,12 +566,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                  <input
-                    type="text"
+                  <select
                     value={createForm.service}
                     onChange={e => setCreateForm(f => ({ ...f, service: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  >
+                    <option value="">Select service...</option>
+                    {services.map(service => (
+                      <option key={service} value={service}>{service}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Price (₺)</label>
