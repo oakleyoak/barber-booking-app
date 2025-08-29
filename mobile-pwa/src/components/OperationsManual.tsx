@@ -56,6 +56,7 @@ const OperationsManual: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState('');
+  const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
   const [newTask, setNewTask] = useState({
     name: '',
@@ -67,7 +68,10 @@ const OperationsManual: React.FC = () => {
     compliance_requirement: false,
     instructions: '',
     equipment_name: '',
-    requires_specialist: false
+    requires_specialist: false,
+    selectedId: undefined as string | undefined,
+    check_type: '',
+    acceptable_range: ''
   });
 
   useEffect(() => {
@@ -141,7 +145,10 @@ const OperationsManual: React.FC = () => {
         compliance_requirement: false,
         instructions: '',
         equipment_name: '',
-        requires_specialist: false
+        requires_specialist: false,
+        selectedId: undefined,
+        check_type: '',
+        acceptable_range: ''
       });
     } catch (error) {
       console.error('Failed to add task:', error);
@@ -180,164 +187,345 @@ const OperationsManual: React.FC = () => {
   const renderAddForm = () => {
     if (!showAddForm) return null;
 
+    // Get the correct list of predefined tasks for the current form type
+    let predefinedTasks: any[] = [];
+    let label = '';
+    if (showAddForm === 'cleaning') {
+      predefinedTasks = data.cleaningTasks;
+      label = 'Cleaning Task';
+    } else if (showAddForm === 'maintenance') {
+      predefinedTasks = data.maintenanceTasks;
+      label = 'Maintenance Task';
+    } else if (showAddForm === 'safety') {
+      predefinedTasks = data.safetyItems;
+      label = 'Safety Check';
+    }
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-          <h3 className="text-lg font-semibold mb-4">
-            Add New {showAddForm === 'cleaning' ? 'Cleaning Task' : 
-                     showAddForm === 'maintenance' ? 'Maintenance Task' : 'Safety Check'}
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                {showAddForm === 'maintenance' ? 'Equipment Name' : 'Task Name'}
-              </label>
-              <input
-                type="text"
-                value={showAddForm === 'maintenance' ? newTask.equipment_name : newTask.name}
-                onChange={(e) => setNewTask(prev => ({ 
-                  ...prev, 
-                  [showAddForm === 'maintenance' ? 'equipment_name' : 'name']: e.target.value 
-                }))}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                placeholder={showAddForm === 'maintenance' ? 'e.g., Hair Clippers' : 'e.g., Clean mirrors'}
-              />
-            </div>
-
-            {showAddForm === 'maintenance' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Task Name</label>
-                <input
-                  type="text"
-                  value={newTask.name}
-                  onChange={(e) => setNewTask(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Oil and clean blades"
-                />
+          <h3 className="text-lg font-semibold mb-4">{showNewTaskForm ? `Add New ${label}` : `Select ${label}`}</h3>
+          {!showNewTaskForm ? (
+            <>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">{label}</label>
+                  <select
+                    value={newTask.selectedId || ''}
+                    onChange={e => {
+                      const selected = predefinedTasks.find(t => t.id === e.target.value || t.uuid === e.target.value);
+                      if (selected) {
+                        if (showAddForm === 'cleaning') {
+                          setNewTask({
+                            ...newTask,
+                            selectedId: selected.id || selected.uuid,
+                            name: selected.task_name,
+                            description: selected.description || '',
+                            frequency: selected.frequency,
+                            priority: selected.priority || '',
+                            estimated_time: selected.estimated_time_minutes || 0,
+                            category: selected.category || '',
+                            compliance_requirement: selected.compliance_requirement || false,
+                            instructions: selected.instructions || ''
+                          });
+                        } else if (showAddForm === 'maintenance') {
+                          setNewTask({
+                            ...newTask,
+                            selectedId: selected.id || selected.uuid,
+                            equipment_name: selected.equipment_name,
+                            name: selected.task_name,
+                            frequency: selected.frequency,
+                            estimated_time: selected.estimated_time_minutes || 0,
+                            instructions: selected.instructions || '',
+                            requires_specialist: selected.requires_specialist || false
+                          });
+                        } else if (showAddForm === 'safety') {
+                          setNewTask({
+                            ...newTask,
+                            selectedId: selected.id || selected.uuid,
+                            name: selected.item_name,
+                            description: selected.description || '',
+                            frequency: selected.frequency,
+                            category: selected.category || '',
+                            instructions: selected.instructions || '',
+                            check_type: selected.check_type || '',
+                            acceptable_range: selected.acceptable_range || ''
+                          });
+                        }
+                      }
+                    }}
+                    className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select a {label.toLowerCase()}</option>
+                    {predefinedTasks.map(t => (
+                      <option key={t.id || t.uuid} value={t.id || t.uuid}>
+                        {showAddForm === 'cleaning' && t.task_name}
+                        {showAddForm === 'maintenance' && `${t.equipment_name} - ${t.task_name}`}
+                        {showAddForm === 'safety' && t.item_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {newTask.selectedId && (
+                  <div className="bg-gray-50 rounded p-3 text-sm space-y-2">
+                    {showAddForm === 'cleaning' && (
+                      <>
+                        <div><b>Description:</b> {newTask.description}</div>
+                        <div><b>Frequency:</b> {newTask.frequency}</div>
+                        <div><b>Priority:</b> {newTask.priority}</div>
+                        <div><b>Estimated Time:</b> {newTask.estimated_time} min</div>
+                        <div><b>Category:</b> {newTask.category}</div>
+                        <div><b>Instructions:</b> {newTask.instructions}</div>
+                        <div><b>Compliance Requirement:</b> {newTask.compliance_requirement ? 'Yes' : 'No'}</div>
+                      </>
+                    )}
+                    {showAddForm === 'maintenance' && (
+                      <>
+                        <div><b>Equipment:</b> {newTask.equipment_name}</div>
+                        <div><b>Task:</b> {newTask.name}</div>
+                        <div><b>Frequency:</b> {newTask.frequency}</div>
+                        <div><b>Estimated Time:</b> {newTask.estimated_time} min</div>
+                        <div><b>Instructions:</b> {newTask.instructions}</div>
+                        <div><b>Requires Specialist:</b> {newTask.requires_specialist ? 'Yes' : 'No'}</div>
+                      </>
+                    )}
+                    {showAddForm === 'safety' && (
+                      <>
+                        <div><b>Item:</b> {newTask.name}</div>
+                        <div><b>Category:</b> {newTask.category}</div>
+                        <div><b>Check Type:</b> {newTask.check_type}</div>
+                        <div><b>Frequency:</b> {newTask.frequency}</div>
+                        <div><b>Acceptable Range:</b> {newTask.acceptable_range}</div>
+                        <div><b>Instructions:</b> {newTask.instructions}</div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
-              <textarea
-                value={newTask.description}
-                onChange={(e) => setNewTask(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Detailed description of the task"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Frequency</label>
-              <select
-                value={newTask.frequency}
-                onChange={(e) => setNewTask(prev => ({ ...prev, frequency: e.target.value }))}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="quarterly">Quarterly</option>
-                <option value="annually">Annually</option>
-              </select>
-            </div>
-
-            {showAddForm === 'cleaning' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Priority</label>
-                <select
-                  value={newTask.priority}
-                  onChange={(e) => setNewTask(prev => ({ ...prev, priority: e.target.value }))}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+              <div className="flex justify-between space-x-2 mt-6">
+                <button
+                  onClick={() => setShowAddForm('')}
+                  className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
                 >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
+                  Cancel
+                </button>
+                <button
+                  onClick={() => setShowNewTaskForm(true)}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                >
+                  Add New {label}
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowAddForm('');
+                    setNewTask({
+                      name: '',
+                      description: '',
+                      frequency: 'daily',
+                      priority: 'medium',
+                      estimated_time: 15,
+                      category: '',
+                      compliance_requirement: false,
+                      instructions: '',
+                      equipment_name: '',
+                      requires_specialist: false,
+                      selectedId: undefined,
+                      check_type: '',
+                      acceptable_range: ''
+                    });
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  disabled={!newTask.selectedId}
+                >
+                  Select
+                </button>
               </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Estimated Time (minutes)</label>
-              <input
-                type="number"
-                value={newTask.estimated_time}
-                onChange={(e) => setNewTask(prev => ({ ...prev, estimated_time: parseInt(e.target.value) || 0 }))}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                min="1"
-                max="480"
-              />
-            </div>
-
-            {showAddForm === 'cleaning' && (
-              <div>
-                <label className="block text-sm font-medium mb-1">Category</label>
-                <input
-                  type="text"
-                  value={newTask.category}
-                  onChange={(e) => setNewTask(prev => ({ ...prev, category: e.target.value }))}
-                  className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                  placeholder="e.g., Sanitation, Equipment, Floors"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium mb-1">Instructions</label>
-              <textarea
-                value={newTask.instructions}
-                onChange={(e) => setNewTask(prev => ({ ...prev, instructions: e.target.value }))}
-                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                rows={3}
-                placeholder="Step-by-step instructions"
-              />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {(showAddForm === 'cleaning' || showAddForm === 'safety') && (
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={newTask.compliance_requirement}
-                    onChange={(e) => setNewTask(prev => ({ ...prev, compliance_requirement: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  Compliance Requirement
-                </label>
-              )}
-
-              {showAddForm === 'maintenance' && (
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={newTask.requires_specialist}
-                    onChange={(e) => setNewTask(prev => ({ ...prev, requires_specialist: e.target.checked }))}
-                    className="mr-2"
-                  />
-                  Requires Specialist
-                </label>
-              )}
-            </div>
-          </div>
-
-          <div className="flex justify-end space-x-2 mt-6">
-            <button
-              onClick={() => setShowAddForm('')}
-              className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleAddTask}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              disabled={!newTask.name || (!newTask.equipment_name && showAddForm === 'maintenance')}
-            >
-              Add Task
-            </button>
-          </div>
+            </>
+          ) : (
+            <>
+              {/* New Task Form */}
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    if (showAddForm === 'cleaning') {
+                      await addCleaningTask({
+                        task_name: newTask.name,
+                        description: newTask.description,
+                        frequency: newTask.frequency,
+                        estimated_time_minutes: newTask.estimated_time,
+                        priority: newTask.priority,
+                        category: newTask.category,
+                        compliance_requirement: newTask.compliance_requirement,
+                        instructions: newTask.instructions
+                      });
+                    } else if (showAddForm === 'maintenance') {
+                      await addMaintenanceTask({
+                        equipment_name: newTask.equipment_name,
+                        task_name: newTask.name,
+                        frequency: newTask.frequency,
+                        estimated_time_minutes: newTask.estimated_time,
+                        instructions: newTask.instructions,
+                        requires_specialist: newTask.requires_specialist
+                      });
+                    } else if (showAddForm === 'safety') {
+                      await addSafetyCheckItem({
+                        check_name: newTask.name,
+                        description: newTask.description,
+                        frequency: newTask.frequency,
+                        category: newTask.category,
+                        check_type: newTask.check_type,
+                        acceptable_range: newTask.acceptable_range,
+                        instructions: newTask.instructions
+                      });
+                    }
+                    await loadData();
+                    setShowAddForm('');
+                    setShowNewTaskForm(false);
+                    setNewTask({
+                      name: '',
+                      description: '',
+                      frequency: 'daily',
+                      priority: 'medium',
+                      estimated_time: 15,
+                      category: '',
+                      compliance_requirement: false,
+                      instructions: '',
+                      equipment_name: '',
+                      requires_specialist: false,
+                      selectedId: undefined,
+                      check_type: '',
+                      acceptable_range: ''
+                    });
+                  } catch (error) {
+                    alert('Failed to add new task. Please try again.');
+                  }
+                }}
+                className="space-y-4"
+              >
+                {/* Fields for each type */}
+                {showAddForm === 'cleaning' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Task Name</label>
+                      <input type="text" value={newTask.name} onChange={e => setNewTask(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Description</label>
+                      <textarea value={newTask.description} onChange={e => setNewTask(prev => ({ ...prev, description: e.target.value }))} className="w-full p-2 border rounded" rows={2} />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Frequency</label>
+                      <select value={newTask.frequency} onChange={e => setNewTask(prev => ({ ...prev, frequency: e.target.value }))} className="w-full p-2 border rounded">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Priority</label>
+                      <select value={newTask.priority} onChange={e => setNewTask(prev => ({ ...prev, priority: e.target.value }))} className="w-full p-2 border rounded">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Estimated Time (minutes)</label>
+                      <input type="number" value={newTask.estimated_time} onChange={e => setNewTask(prev => ({ ...prev, estimated_time: parseInt(e.target.value) || 0 }))} className="w-full p-2 border rounded" min="1" max="480" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <input type="text" value={newTask.category} onChange={e => setNewTask(prev => ({ ...prev, category: e.target.value }))} className="w-full p-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Instructions</label>
+                      <textarea value={newTask.instructions} onChange={e => setNewTask(prev => ({ ...prev, instructions: e.target.value }))} className="w-full p-2 border rounded" rows={2} />
+                    </div>
+                    <div className="flex items-center">
+                      <input type="checkbox" checked={newTask.compliance_requirement} onChange={e => setNewTask(prev => ({ ...prev, compliance_requirement: e.target.checked }))} className="mr-2" />
+                      <span>Compliance Requirement</span>
+                    </div>
+                  </>
+                )}
+                {showAddForm === 'maintenance' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Equipment Name</label>
+                      <input type="text" value={newTask.equipment_name} onChange={e => setNewTask(prev => ({ ...prev, equipment_name: e.target.value }))} className="w-full p-2 border rounded" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Task Name</label>
+                      <input type="text" value={newTask.name} onChange={e => setNewTask(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Frequency</label>
+                      <select value={newTask.frequency} onChange={e => setNewTask(prev => ({ ...prev, frequency: e.target.value }))} className="w-full p-2 border rounded">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Estimated Time (minutes)</label>
+                      <input type="number" value={newTask.estimated_time} onChange={e => setNewTask(prev => ({ ...prev, estimated_time: parseInt(e.target.value) || 0 }))} className="w-full p-2 border rounded" min="1" max="480" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Instructions</label>
+                      <textarea value={newTask.instructions} onChange={e => setNewTask(prev => ({ ...prev, instructions: e.target.value }))} className="w-full p-2 border rounded" rows={2} />
+                    </div>
+                    <div className="flex items-center">
+                      <input type="checkbox" checked={newTask.requires_specialist} onChange={e => setNewTask(prev => ({ ...prev, requires_specialist: e.target.checked }))} className="mr-2" />
+                      <span>Requires Specialist</span>
+                    </div>
+                  </>
+                )}
+                {showAddForm === 'safety' && (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Item Name</label>
+                      <input type="text" value={newTask.name} onChange={e => setNewTask(prev => ({ ...prev, name: e.target.value }))} className="w-full p-2 border rounded" required />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Category</label>
+                      <input type="text" value={newTask.category} onChange={e => setNewTask(prev => ({ ...prev, category: e.target.value }))} className="w-full p-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Check Type</label>
+                      <input type="text" value={newTask.check_type} onChange={e => setNewTask(prev => ({ ...prev, check_type: e.target.value }))} className="w-full p-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Frequency</label>
+                      <select value={newTask.frequency} onChange={e => setNewTask(prev => ({ ...prev, frequency: e.target.value }))} className="w-full p-2 border rounded">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="quarterly">Quarterly</option>
+                        <option value="annually">Annually</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Acceptable Range</label>
+                      <input type="text" value={newTask.acceptable_range} onChange={e => setNewTask(prev => ({ ...prev, acceptable_range: e.target.value }))} className="w-full p-2 border rounded" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Instructions</label>
+                      <textarea value={newTask.instructions} onChange={e => setNewTask(prev => ({ ...prev, instructions: e.target.value }))} className="w-full p-2 border rounded" rows={2} />
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between space-x-2 mt-6">
+                  <button type="button" onClick={() => { setShowNewTaskForm(false); }} className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50">Back</button>
+                  <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add</button>
+                </div>
+              </form>
+            </>
+          )}
         </div>
       </div>
     );
