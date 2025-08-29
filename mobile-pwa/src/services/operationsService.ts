@@ -144,6 +144,26 @@ export const operationsService = {
     return data;
   },
 
+  async updateCleaningNotes(taskId: string, date: string, barberId: string, notes: string): Promise<CleaningLog | null> {
+    const { data, error } = await supabase
+      .from('daily_cleaning_log')
+      .upsert({
+        task_id: taskId,
+        date: date,
+        barber_id: barberId,
+        notes: notes
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating cleaning notes:', error);
+      return null;
+    }
+
+    return data;
+  },
+
   // Safety Checks
   async getSafetyCheckItems(): Promise<SafetyCheckItem[]> {
     const { data, error } = await supabase
