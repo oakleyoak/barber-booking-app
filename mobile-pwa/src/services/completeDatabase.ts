@@ -9,7 +9,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://cvvtyuqvnmqwpwdqzirh.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN2dnR5dXF2bm1xd3B3ZHF6aXJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQzNjA4NDIsImV4cCI6MjA0OTkzNjg0Mn0.Ic3YdcSGg3owDPNfz6RW1EF1SJ1PO9vMYFhiKUf_Adk';
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 // ===================================================================
 // TYPES DEFINITIONS
@@ -188,13 +194,13 @@ export interface StaffAccountability {
 }
 
 // ===================================================================
-// USER MANAGEMENT SERVICE
+// USER PROFILE MANAGEMENT SERVICE
 // ===================================================================
 
 export const userService = {
   async getUsers(): Promise<User[]> {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -204,18 +210,18 @@ export const userService = {
 
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('*')
       .eq('id', id)
       .single();
     
-    if (error) throw error;
+    if (error) return null;
     return data;
   },
 
   async getUserByEmail(email: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .select('*')
       .eq('email', email)
       .single();
@@ -224,20 +230,20 @@ export const userService = {
     return data;
   },
 
-  async createUser(user: Omit<User, 'id' | 'created_at' | 'updated_at'>): Promise<User> {
+  async getUserByAuthId(authUserId: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('users')
-      .insert([user])
-      .select()
+      .from('user_profiles')
+      .select('*')
+      .eq('auth_user_id', authUserId)
       .single();
     
-    if (error) throw error;
+    if (error) return null;
     return data;
   },
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
     const { data, error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .update(updates)
       .eq('id', id)
       .select()
@@ -249,7 +255,7 @@ export const userService = {
 
   async deleteUser(id: string): Promise<void> {
     const { error } = await supabase
-      .from('users')
+      .from('user_profiles')
       .delete()
       .eq('id', id);
     
@@ -854,44 +860,119 @@ export const staffAccountabilityService = {
 };
 
 // ===================================================================
-// SESSION SERVICE (REPLACES LOCALSTORAGE)
+// AUTHENTICATION SERVICE (USING SUPABASE AUTH)
 // ===================================================================
 
-export const sessionService = {
-  async setCurrentUser(user: User): Promise<void> {
+export const authService = {
+  // Login with existing users table
+  async loginUser(email: string, password: string): Promise<User> {
     try {
-      // Store in Supabase instead of localStorage
-      localStorage.setItem('currentUser', JSON.stringify(user));
-    } catch (error) {
-      console.error('Failed to set current user:', error);
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
+      if (error || !data) {
+        throw new Error('Invalid email or password');
+      }
+
+      // Store in localStorage for session management
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      return data;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error(error.message || 'Login failed');
     }
   },
 
+  // Register new user in existing users table
+  async registerUser(email: string, password: string, userData: Partial<User>): Promise<User> {
+    try {
+      // Check if email already exists
+      const { data: existing } = await supabase
+        .from('users')
+        .select('email')
+        .eq('email', email)
+        .single();
+
+      if (existing) {
+        throw new Error('Email already exists');
+      }
+
+      // Create new user record
+      const newUser = {
+        email,
+        password,
+        name: userData.name || '',
+        role: userData.role || 'Barber',
+        shop_name: userData.shop_name || '',
+        commission_rate: userData.commission_rate || 0.40,
+        target_weekly: userData.target_weekly || 800,
+        target_monthly: userData.target_monthly || 3200,
+      };
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert([newUser])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Store in localStorage for session management
+      localStorage.setItem('currentUser', JSON.stringify(data));
+      return data;
+    } catch (error: any) {
+      console.error('Registration error:', error);
+      throw new Error(error.message || 'Registration failed');
+    }
+  },
+
+  // Get current user from localStorage
   async getCurrentUser(): Promise<User | null> {
     try {
-      const userStr = localStorage.getItem('currentUser');
-      if (!userStr) return null;
-      
-      const user = JSON.parse(userStr);
-      // Verify user still exists in database
-      const dbUser = await userService.getUserById(user.id);
-      return dbUser;
+      const stored = localStorage.getItem('currentUser');
+      if (!stored) return null;
+      return JSON.parse(stored);
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      console.error('Get current user error:', error);
       return null;
     }
   },
 
-  async clearSession(): Promise<void> {
+  // Logout user
+  async logoutUser(): Promise<void> {
     try {
       localStorage.removeItem('currentUser');
     } catch (error) {
-      console.error('Failed to clear session:', error);
+      console.error('Logout error:', error);
     }
   }
 };
 
+// ===================================================================
+// SESSION SERVICE (BACKWARD COMPATIBILITY)
+// ===================================================================
+
+export const sessionService = {
+  async setCurrentUser(user: User): Promise<void> {
+    // This is now handled by Supabase Auth automatically
+    console.log('Session managed by Supabase Auth');
+  },
+
+  async getCurrentUser(): Promise<User | null> {
+    return await authService.getCurrentUser();
+  },
+
+  async clearSession(): Promise<void> {
+    await authService.logoutUser();
+  }
+};
+
 export default {
+  authService,
   userService,
   customerService,
   bookingService,

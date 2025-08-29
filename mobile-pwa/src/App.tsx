@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
-import { sessionService, userService, type User as SupabaseUser } from './services/completeDatabase';
+import { authService, userService, type User as SupabaseUser } from './services/completeDatabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
 import CustomerManager from './components/CustomerManager';
@@ -31,7 +31,7 @@ function App() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        const user = await sessionService.getCurrentUser();
+        const user = await authService.getCurrentUser();
         if (user) {
           setCurrentUser(user);
         }
@@ -50,7 +50,7 @@ function App() {
 
     try {
       if (isLogin) {
-        // Login - check user exists in Supabase
+        // Login using Supabase Auth
         if (!formData.email.includes('@') || formData.email.length < 5) {
           setError('Please enter a valid email address');
           return;
@@ -60,34 +60,11 @@ function App() {
           return;
         }
 
-        // Try to find user in database
-        const existingUser = await userService.getUserByEmail(formData.email);
-        
-        if (existingUser) {
-          // Use existing user from database
-          await sessionService.setCurrentUser(existingUser);
-          setCurrentUser(existingUser);
-        } else {
-          // Create a demo user for login if not found
-          const newUser: Omit<SupabaseUser, 'id' | 'created_at' | 'updated_at'> = {
-            name: formData.email.split('@')[0] || 'User',
-            email: formData.email,
-            password: formData.password,
-            role: 'Owner',
-            shop_name: 'Edge & Co Barber Shop',
-            commission_rate: 0.4,
-            target_weekly: 800,
-            target_monthly: 3200
-          };
-          
-          const createdUser = await userService.createUser(newUser);
-          await sessionService.setCurrentUser(createdUser);
-          setCurrentUser(createdUser);
-        }
-        
+        const user = await authService.loginUser(formData.email, formData.password);
+        setCurrentUser(user);
         setError(''); // Clear any previous errors
       } else {
-        // Registration - create new user in Supabase
+        // Registration using Supabase Auth
         if (!formData.email.includes('@') || formData.email.length < 5) {
           setError('Please enter a valid email address');
           return;
@@ -105,27 +82,17 @@ function App() {
           return;
         }
 
-        // Check if user already exists
-        const existingUser = await userService.getUserByEmail(formData.email);
-        if (existingUser) {
-          setError('This email is already registered. Please try logging in instead.');
-          return;
-        }
-
-        const userData: Omit<SupabaseUser, 'id' | 'created_at' | 'updated_at'> = {
+        const userData = {
           name: formData.name,
-          email: formData.email,
-          password: formData.password,
           role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co Barber Shop',
-          commission_rate: formData.role === 'Barber' ? 0.4 : 0.3,
+          commission_rate: formData.role === 'Barber' ? 40 : 30,
           target_weekly: formData.role === 'Owner' ? 3000 : 800,
           target_monthly: formData.role === 'Owner' ? 12000 : 3200
         };
 
-        const newUser = await userService.createUser(userData);
-        await sessionService.setCurrentUser(newUser);
-        setCurrentUser(newUser);
+        const user = await authService.registerUser(formData.email, formData.password, userData);
+        setCurrentUser(user);
       }
     } catch (err: any) {
       console.error('Authentication error:', err);
@@ -147,7 +114,7 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      await sessionService.clearSession();
+      await authService.logoutUser();
       setCurrentUser(null);
       setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
     } catch (error) {
