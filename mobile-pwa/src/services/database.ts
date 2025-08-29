@@ -4,8 +4,6 @@ export const dbService = {
   // Authentication
   async register(userData: { name: string; email: string; password: string; role: string; shop_name: string }): Promise<User | null> {
     try {
-      console.log('Registering user with Supabase:', userData);
-
       const { data, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
@@ -42,7 +40,6 @@ export const dbService = {
           throw profileError;
         }
 
-        console.log('User registered successfully:', profile);
         return profile;
       }
 
@@ -55,10 +52,7 @@ export const dbService = {
 
   async login(email: string, password: string): Promise<User | null> {
     try {
-      console.log('🔐 Starting login process for:', email);
-
       // Step 1: Authenticate with Supabase Auth
-      console.log('� Attempting Supabase auth...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
@@ -74,10 +68,7 @@ export const dbService = {
         throw new Error('Authentication failed: No user data');
       }
 
-      console.log('✅ Supabase auth successful, user ID:', data.user.id);
-
       // Step 2: Get user profile from users table
-      console.log('� Fetching user profile from users table...');
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
@@ -94,8 +85,6 @@ export const dbService = {
         throw new Error('User profile not found in database');
       }
 
-      console.log('✅ User profile fetched successfully:', profile);
-      console.log('🎉 Login process completed successfully');
       return profile;
     } catch (error: any) {
       console.error('💥 Login error:', error);
@@ -105,8 +94,6 @@ export const dbService = {
 
   async createUserAccount(email: string, password: string, name: string, role: string = 'Owner'): Promise<User | null> {
     try {
-      console.log('🆕 Creating user account for:', email);
-
       const userData = {
         name: name || 'User',
         email: email,
@@ -154,7 +141,6 @@ export const dbService = {
           throw profileError;
         }
 
-        console.log('✅ User account created successfully:', profile);
         return profile;
       }
 
@@ -175,8 +161,6 @@ export const dbService = {
         shop_name: 'Test Shop'
       };
 
-      console.log('Creating test user:', testUserData.email);
-
       // First try to sign up
       const { data, error } = await supabase.auth.signUp({
         email: testUserData.email,
@@ -193,7 +177,6 @@ export const dbService = {
       if (error) {
         // If user already exists, try to sign in instead
         if (error.message.includes('already registered')) {
-          console.log('Test user already exists, signing in...');
           return await this.login(testUserData.email, testUserData.password);
         }
         console.error('Test user creation error:', error);
@@ -219,7 +202,6 @@ export const dbService = {
           throw profileError;
         }
 
-        console.log('Test user created successfully:', profile);
         return profile;
       }
 
@@ -263,7 +245,6 @@ export const dbService = {
         console.error('Logout error:', error);
         throw error;
       }
-      console.log('User logged out successfully');
     } catch (error) {
       console.error('Logout error:', error);
       throw error;
@@ -272,10 +253,7 @@ export const dbService = {
 
   async testSupabaseConnection(): Promise<boolean> {
     try {
-      console.log('🔍 Testing Supabase connection...');
-
       // Test 1: Basic connection to users table
-      console.log('📡 Testing users table access...');
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('count')
@@ -292,10 +270,7 @@ export const dbService = {
         return false;
       }
 
-      console.log('✅ Users table access successful');
-
       // Test 2: Check auth status
-      console.log('🔐 Testing auth status...');
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError) {
@@ -303,13 +278,6 @@ export const dbService = {
         return false;
       }
 
-      if (user) {
-        console.log('✅ User is authenticated:', user.email);
-      } else {
-        console.log('ℹ️  No user currently authenticated');
-      }
-
-      console.log('🎉 All Supabase tests passed!');
       return true;
     } catch (error) {
       console.error('💥 Supabase connection test error:', error);

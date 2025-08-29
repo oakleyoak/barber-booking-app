@@ -7,46 +7,89 @@ class BookingService {
       let query = supabase
         .from('bookings')
         .select('*')
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('date', { ascending: false })
+        .order('time', { ascending: true })
+        .limit(10); // Limit to recent bookings for debugging
 
       if (userId) {
         query = query.eq('user_id', userId);
       }
 
       const { data, error } = await query;
-      
-      if (error) throw error;
+
+      if (error) {
+        console.error('Error fetching all bookings:', error);
+        throw error;
+      }
+
       return data || [];
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('Error fetching all bookings:', error);
       return [];
     }
   }
 
   async getBookingsByDate(date: string, userId?: string): Promise<Booking[]> {
     try {
-      let query = supabase
-        .from('bookings')
-        .select('*')
-        .eq('date', date)
-        .order('time', { ascending: true });
+      // Ensure date is in YYYY-MM-DD format
+      const formattedDate = date.split('T')[0];
 
-      if (userId) {
-        query = query.eq('user_id', userId);
+      // Try multiple date formats to see which one works
+      const dateFormats = [
+        formattedDate, // YYYY-MM-DD
+        new Date(formattedDate).toISOString().split('T')[0], // Ensure proper ISO format
+      ];
+
+      let data: any[] | null = null;
+      let error: any = null;
+
+      // Try the primary format first
+      try {
+        let query = supabase
+          .from('bookings')
+          .select('*')
+          .eq('date', dateFormats[0])
+          .order('time', { ascending: true });
+
+        if (userId) {
+          query = query.eq('user_id', userId);
+        }
+
+        const result = await query;
+        data = result.data;
+        error = result.error;
+
+        if (error) {
+          // Try alternative format
+          let altQuery = supabase
+            .from('bookings')
+            .select('*')
+            .eq('date', dateFormats[1])
+            .order('time', { ascending: true });
+
+          if (userId) {
+            altQuery = altQuery.eq('user_id', userId);
+          }
+
+          const altResult = await altQuery;
+          data = altResult.data;
+          error = altResult.error;
+        }
+      } catch (err) {
+        error = err;
       }
 
-      const { data, error } = await query;
-      
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching bookings by date:', error);
+        throw error;
+      }
+
       return data || [];
     } catch (error) {
       console.error('Error fetching bookings by date:', error);
       return [];
     }
-  }
-
-  async createBooking(booking: Omit<Booking, 'id' | 'created_at' | 'updated_at'>): Promise<Booking | null> {
+  }  async createBooking(booking: Omit<Booking, 'id' | 'created_at' | 'updated_at'>): Promise<Booking | null> {
     try {
       const { data, error } = await supabase
         .from('bookings')

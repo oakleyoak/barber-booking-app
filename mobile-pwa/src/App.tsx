@@ -84,11 +84,11 @@ function App() {
 
         const userData = {
           name: formData.name,
-          role: formData.role as 'Owner' | 'Barber' | 'Apprentice',
+          role: formData.role as 'Owner' | 'Manager' | 'Barber' | 'Apprentice',
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co Barber Shop',
-          commission_rate: formData.role === 'Barber' ? 40 : 30,
-          target_weekly: formData.role === 'Owner' ? 3000 : 800,
-          target_monthly: formData.role === 'Owner' ? 12000 : 3200
+          commission_rate: formData.role === 'Barber' ? 40 : formData.role === 'Manager' ? 50 : 30,
+          target_weekly: formData.role === 'Owner' ? 3000 : formData.role === 'Manager' ? 2000 : 800,
+          target_monthly: formData.role === 'Owner' ? 12000 : formData.role === 'Manager' ? 8000 : 3200
         };
 
         const user = await authService.registerUser(formData.email, formData.password, userData);
@@ -207,8 +207,8 @@ function App() {
               <span className="text-center leading-tight">Operations</span>
             </button>
 
-            {/* Management Features - Owner/Barber Access */}
-            {(currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+            {/* Management Features - Owner/Manager/Barber Access */}
+            {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <>
                 <button
                   onClick={() => setCurrentView('expenses')}
@@ -324,7 +324,7 @@ function App() {
               <IncidentReports currentUserId={currentUser.id} />
             )}
 
-            {currentView === 'bookings' && currentUser?.role === 'Owner' && (
+            {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
               <BookingManagement currentUser={currentUser} />
             )}
 

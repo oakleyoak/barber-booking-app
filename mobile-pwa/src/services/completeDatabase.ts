@@ -16,7 +16,7 @@ export interface User {
   name: string;
   email: string;
   password: string;
-  role: 'Owner' | 'Barber' | 'Apprentice';
+  role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
   target_weekly: number;
@@ -855,15 +855,11 @@ export const authService = {
   // Login with existing users table
   async loginUser(email: string, password: string): Promise<User> {
     try {
-      console.log('Attempting login with:', email, password);
-      
       // First, let's check if user exists by email
       const { data: userCheck, error: checkError } = await supabase
         .from('users')
         .select('*')
         .eq('email', email);
-
-      console.log('User check result:', userCheck, checkError);
 
       if (checkError) {
         console.error('Database error:', checkError);
@@ -879,8 +875,6 @@ export const authService = {
       if (!user) {
         throw new Error('Invalid password');
       }
-
-      console.log('Login successful for user:', user);
 
       // Store in localStorage for session management
       localStorage.setItem('currentUser', JSON.stringify(user));
@@ -963,7 +957,6 @@ export const authService = {
 export const sessionService = {
   async setCurrentUser(user: User): Promise<void> {
     // This is now handled by Supabase Auth automatically
-    console.log('Session managed by Supabase Auth');
   },
 
   async getCurrentUser(): Promise<User | null> {

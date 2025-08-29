@@ -300,8 +300,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
         `Net Revenue,${formatCurrency(report.summary.netRevenue ?? 0)}`,
         `VAT Amount (18%),${formatCurrency(report.summary.vatAmount ?? 0)}`
       ].join('\n');
-
-      console.log(csvContent);
     } catch (error) {
       console.error('Error generating Z report:', error);
     }

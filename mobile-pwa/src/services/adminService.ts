@@ -8,8 +8,6 @@ export class AdminService {
    */
   async createAuthUserForExistingDbUser(email: string, temporaryPassword: string): Promise<{ success: boolean; message: string }> {
     try {
-      console.log('🔧 Admin: Creating auth user for:', email);
-
       // First, check if user exists in users table
       const { data: existingUser, error: userError } = await supabase
         .from('users')

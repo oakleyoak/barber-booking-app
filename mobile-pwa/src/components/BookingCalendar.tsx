@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3 } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw } from 'lucide-react';
 import { bookingService, customerService } from '../services/supabaseServices';
+import { supabase } from '../lib/supabase';
+import { CustomerService } from '../services/supabaseCustomerService';
 import type { Booking, Customer, User as UserType } from '../lib/supabase';
 
 interface BookingCalendarProps {
@@ -41,23 +43,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     loadMonthlyBookings();
   }, [selectedDate, currentMonth]);
 
+  // Reload data when switching to day or list view
+  useEffect(() => {
+    if (view === 'day' || view === 'list') {
+      loadData();
+    }
+  }, [view, selectedDate]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
-      console.log('Loading calendar data for date:', selectedDate);
+      // Load bookings for selected date - owners see all, barbers see their own
+      const userFilter = currentUser.role === 'Barber' || currentUser.role === 'Apprentice' ? currentUser.id : undefined;
 
-      // Load bookings for selected date with proper user filtering
-      const dayBookings = await bookingService.getBookingsByDate(
-        selectedDate,
-        currentUser.role === 'Barber' ? currentUser.id : undefined
-      );
+      const dayBookings = await bookingService.getBookingsByDate(selectedDate, userFilter);
 
       // Load customers for the current user
-      const allCustomers = await customerService.getAllCustomers(
-        currentUser.role === 'Barber' ? currentUser.id : undefined
-      );
+      const allCustomers = await customerService.getAllCustomers(userFilter);
 
-      console.log('Loaded bookings:', dayBookings.length, 'customers:', allCustomers.length);
       setBookings(dayBookings);
       setCustomers(allCustomers);
     } catch (error) {
@@ -74,15 +77,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-      console.log('Loading monthly bookings from', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
-
+      // Use same user filtering as loadData
+      const userFilter = currentUser.role === 'Barber' || currentUser.role === 'Apprentice' ? currentUser.id : undefined;
       const monthBookings = await bookingService.getBookingsByDateRange(
         startDate.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],
-        currentUser.role === 'Barber' ? currentUser.id : undefined
+        userFilter
       );
 
-      console.log('Loaded monthly bookings:', monthBookings.length);
       setMonthlyBookings(monthBookings);
     } catch (error) {
       console.error('Error loading monthly bookings:', error);
@@ -94,23 +96,23 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     e.preventDefault();
 
     try {
+      // Ensure time is in HH:MM:SS format for database
+      const formattedTime = formData.time.length === 5 ? `${formData.time}:00` : formData.time;
+
       const bookingData = {
         customer_name: formData.customer_name,
         service: formData.service,
         price: Number(formData.price),
         date: selectedDate,
-        time: formData.time,
+        time: formattedTime,
         status: formData.status,
         user_id: currentUser.id
       };
-
-      console.log('Saving booking:', bookingData);
 
       if (editingBooking) {
         // Update existing booking
         const updated = await bookingService.updateBooking(editingBooking.id, bookingData);
         if (updated) {
-          console.log('Booking updated successfully');
           setBookings(prev => prev.map(b => b.id === editingBooking.id ? updated : b));
           setMonthlyBookings(prev => prev.map(b => b.id === editingBooking.id ? updated : b));
         }
@@ -118,7 +120,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         // Create new booking
         const newBooking = await bookingService.createBooking(bookingData);
         if (newBooking) {
-          console.log('New booking created successfully');
           setBookings(prev => [...prev, newBooking]);
           setMonthlyBookings(prev => [...prev, newBooking]);
 
@@ -126,7 +127,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
           const customer = customers.find(c => c.name === formData.customer_name);
           if (customer) {
             await customerService.updateCustomer(customer.id, { last_visit: selectedDate });
-            console.log('Customer last visit updated');
           } else {
             // Create new customer if they don't exist
             const newCustomer = await customerService.createCustomer({
@@ -135,7 +135,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
               user_id: currentUser.id
             });
             if (newCustomer) {
-              console.log('New customer created');
               setCustomers(prev => [...prev, newCustomer]);
             }
           }
@@ -163,12 +162,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   };
 
   const handleEdit = (booking: Booking) => {
+    // Normalize time format for form (remove seconds if present)
+    const normalizedTime = booking.time.length > 5 ? booking.time.substring(0, 5) : booking.time;
+
     setEditingBooking(booking);
     setFormData({
       customer_name: booking.customer_name,
       service: booking.service,
       price: booking.price.toString(),
-      time: booking.time,
+      time: normalizedTime,
       status: booking.status
     });
     setShowModal(true);
@@ -179,7 +181,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       try {
         const success = await bookingService.deleteBooking(id);
         if (success) {
-          console.log('Booking deleted successfully');
           setBookings(prev => prev.filter(b => b.id !== id));
           setMonthlyBookings(prev => prev.filter(b => b.id !== id));
         }
@@ -192,11 +193,27 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   const handleStatusUpdate = async (id: string, status: 'completed' | 'cancelled') => {
     try {
+      // Get booking details first to know the customer
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('customer_id')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching booking details:', fetchError);
+        throw fetchError;
+      }
+
       const updated = await bookingService.updateBooking(id, { status });
       if (updated) {
-        console.log('Booking status updated successfully');
         setBookings(prev => prev.map(b => b.id === id ? updated : b));
         setMonthlyBookings(prev => prev.map(b => b.id === id ? updated : b));
+
+        // If booking was completed, refresh customer stats
+        if (status === 'completed' && booking?.customer_id) {
+          await CustomerService.refreshCustomerStats(currentUser.shop_name, booking.customer_id);
+        }
       }
     } catch (error) {
       console.error('Error updating booking status:', error);
@@ -246,6 +263,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   const formatCurrency = (amount: number) => {
     return `₺${amount.toLocaleString('tr-TR')}`;
+  };
+
+  // Utility function to normalize time format
+  const normalizeTime = (time: string) => {
+    return time.length > 5 ? time.substring(0, 5) : time;
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -318,6 +340,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
               <Plus className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">New Booking</span>
               <span className="sm:hidden">+</span>
+            </button>
+
+            <button
+              onClick={async () => {
+                await loadData();
+                await loadMonthlyBookings();
+              }}
+              className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm"
+              title="Refresh data from Supabase"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Refresh</span>
+              <span className="sm:hidden">↻</span>
             </button>
           </div>
         </div>
@@ -450,7 +485,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
             {/* Time Slots */}
             <div className="space-y-2">
               {timeSlots.map(time => {
-                const slotBookings = bookings.filter(b => b.time === time);
+                const slotBookings = bookings.filter(b => {
+                  const bookingTime = normalizeTime(b.time);
+                  return bookingTime === time;
+                });
 
                 return (
                   <div key={time} className="flex items-center p-3 border rounded-lg bg-gray-50">
@@ -462,7 +500,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       {slotBookings.length > 0 ? (
                         <div className="space-y-2">
                           {slotBookings.map(booking => (
-                            <div key={booking.id} className="bg-white p-3 rounded-lg border">
+                            <div key={booking.id} className="bg-white p-3 rounded-lg border shadow-sm">
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
@@ -517,8 +555,20 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-400 italic">
-                          No appointment
+                        <div
+                          className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
+                          onClick={() => {
+                            setFormData({
+                              customer_name: '',
+                              service: '',
+                              price: '',
+                              time: time,
+                              status: 'scheduled'
+                            });
+                            setShowModal(true);
+                          }}
+                        >
+                          Click to book this slot
                         </div>
                       )}
                     </div>
@@ -533,12 +583,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         {view === 'list' && (
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold mb-4">All Appointments</h3>
+              <h3 className="text-lg font-semibold mb-4">All Appointments for {selectedDate}</h3>
+              <p className="text-sm text-gray-600 mb-4">Found {bookings.length} booking(s)</p>
 
               {bookings.length === 0 ? (
                 <div className="text-center py-8">
                   <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                   <p className="text-gray-500">No appointments for this date</p>
+                  <p className="text-xs text-gray-400 mt-2">Date: {selectedDate}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -549,6 +601,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                           <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
                           <p className="text-sm text-gray-600">{booking.service} at {booking.time}</p>
                           <p className="text-sm font-medium text-gray-900">{formatCurrency(booking.price)}</p>
+                          <p className="text-xs text-gray-500">Date: {booking.date} | ID: {booking.id}</p>
                         </div>
 
                         <div className="flex items-center gap-2 ml-4">

@@ -4,7 +4,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'owner' | 'barber' | 'apprentice';
+  role: 'owner' | 'manager' | 'barber' | 'apprentice';
   shop_name: string;
   phone?: string;
   created_at: string;
@@ -15,14 +15,14 @@ export interface User {
 export interface UserCreate {
   name: string;
   email: string;
-  role: 'barber' | 'apprentice';
+  role: 'manager' | 'barber' | 'apprentice';
   phone?: string;
 }
 
 export interface UserUpdate {
   name?: string;
   email?: string;
-  role?: 'barber' | 'apprentice';
+  role?: 'manager' | 'barber' | 'apprentice';
   phone?: string;
   is_active?: boolean;
 }
@@ -33,8 +33,6 @@ export class UserManagementService {
    */
   static async getStaffMembers(shopName: string): Promise<User[]> {
     try {
-      console.log('Fetching staff for shop:', shopName);
-      
       // Query for staff members, making is_active optional since it might not exist
       const { data, error } = await supabase
         .from('users')
@@ -48,14 +46,11 @@ export class UserManagementService {
         throw error;
       }
       
-      console.log('Raw staff data from Supabase:', data);
-      
       // Filter out inactive users if is_active field exists, otherwise include all
       const activeStaff = (data || []).filter(user => 
         user.is_active === undefined || user.is_active === true
       );
       
-      console.log('Filtered active staff:', activeStaff);
       return activeStaff;
     } catch (error) {
       console.error('Error fetching staff members:', error);
@@ -68,8 +63,6 @@ export class UserManagementService {
    */
   static async syncStaffToCurrentShop(currentShopName: string): Promise<void> {
     try {
-      console.log('Syncing staff to current shop:', currentShopName);
-      
       // First check what's in Default Shop
       const { data: defaultStaff, error: checkError } = await supabase
         .from('users')
@@ -77,8 +70,6 @@ export class UserManagementService {
         .eq('shop_name', 'Default Shop')
         .neq('role', 'owner');
         
-      console.log('Staff in Default Shop:', defaultStaff);
-      
       if (checkError) {
         console.error('Error checking Default Shop staff:', checkError);
         return;
@@ -93,7 +84,6 @@ export class UserManagementService {
           .neq('role', 'owner')
           .select();
           
-        console.log('Updated staff records:', data);
         if (error) {
           console.error('Error updating staff shop names:', error);
         }
@@ -152,9 +142,9 @@ export class UserManagementService {
   }
 
   /**
-   * Promote staff member (barber <-> apprentice)
+   * Promote/demote staff member (apprentice <-> barber <-> manager)
    */
-  static async promoteStaffMember(shopName: string, userId: string, newRole: 'barber' | 'apprentice'): Promise<boolean> {
+  static async promoteStaffMember(shopName: string, userId: string, newRole: 'manager' | 'barber' | 'apprentice'): Promise<boolean> {
     return this.updateStaffMember(shopName, userId, { role: newRole });
   }
 

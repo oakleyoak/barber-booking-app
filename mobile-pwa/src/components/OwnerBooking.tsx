@@ -87,10 +87,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
 
     setLoading(true);
     
-    console.log('Current user:', currentUser);
-    console.log('Staff members:', staffMembers);
-    console.log('Booking data:', bookingData);
-    
     try {
       // First, check if customer exists in customers table
       let customerId = null;
@@ -102,9 +98,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
 
       if (existingCustomers && !customerError) {
         customerId = existingCustomers.id;
-        console.log('Found existing customer:', customerId);
       } else {
-        console.log('Customer not found, creating new customer...');
         // Create new customer if not exists
         const { data: newCustomer, error: createError } = await supabase
           .from('customers')
@@ -118,7 +112,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         
         if (newCustomer && !createError) {
           customerId = newCustomer.id;
-          console.log('Created new customer:', customerId);
         } else {
           console.error('Error creating customer:', createError);
         }
@@ -137,16 +130,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       if (!userId) {
         throw new Error('No valid user ID found for booking');
       }
-
-      console.log('Booking data:', {
-        userId,
-        customerId,
-        customer_name: bookingData.customer_name,
-        service: bookingData.service_type,
-        price: bookingData.amount,
-        date: bookingData.booking_date,
-        time: bookingData.booking_time
-      });
 
       // Generate a UUID for the booking ID
       const bookingId = crypto.randomUUID();
@@ -172,8 +155,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         console.error('Booking insertion error:', bookingError);
         throw bookingError;
       }
-
-      console.log('Booking created successfully:', bookingResult);
 
       // ALSO add to earnings service for immediate display and local tracking
       EarningsService.addTransaction(currentUser.id!, {

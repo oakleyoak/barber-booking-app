@@ -62,7 +62,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
     const updates: UserUpdate = {
       name: editingUser.name,
       email: editingUser.email,
-      role: editingUser.role as 'barber' | 'apprentice',
+      role: editingUser.role as 'manager' | 'barber' | 'apprentice',
       phone: editingUser.phone
     };
 
@@ -94,7 +94,17 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
   };
 
   const handlePromoteUser = async (userId: string, currentRole: string) => {
-    const newRole = currentRole === 'barber' ? 'apprentice' : 'barber';
+    let newRole: string;
+    if (currentRole === 'apprentice') {
+      newRole = 'barber';
+    } else if (currentRole === 'barber') {
+      newRole = 'manager';
+    } else if (currentRole === 'manager') {
+      newRole = 'barber';
+    } else {
+      newRole = 'apprentice';
+    }
+    
     const success = await UserManagementService.promoteStaffMember(
       currentUser.shop_name, 
       userId, 
@@ -104,7 +114,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
     if (success) {
       await loadStaffMembers();
     } else {
-      alert('Failed to update user role');
+      alert('Failed to promote staff member');
     }
   };
 
@@ -198,7 +208,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
                     <button
                       onClick={() => handlePromoteUser(staff.id, staff.role)}
                       className="text-blue-600 hover:text-blue-800 p-1"
-                      title={`Change to ${staff.role === 'barber' ? 'apprentice' : 'barber'}`}
+                      title={`Change to ${staff.role === 'apprentice' ? 'barber' : staff.role === 'barber' ? 'manager' : staff.role === 'manager' ? 'barber' : 'apprentice'}`}
                     >
                       <Crown className="w-4 h-4" />
                     </button>
@@ -268,9 +278,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'barber' | 'apprentice' })}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'manager' | 'barber' | 'apprentice' })}
                   className="w-full border border-gray-300 rounded-md px-3 py-2"
                 >
+                  <option value="manager">Manager</option>
                   <option value="barber">Barber</option>
                   <option value="apprentice">Apprentice</option>
                 </select>

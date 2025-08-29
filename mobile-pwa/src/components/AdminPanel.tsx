@@ -34,16 +34,12 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
-      console.log('AdminPanel - Starting data load for user:', currentUser.id);
-      
       // Try to load shop settings with better error handling
       try {
         const settings = await shopSettingsService.getSettings();
-        console.log('AdminPanel - Shop settings loaded:', settings);
         setShopSettings(settings);
       } catch (settingsError) {
         console.error('AdminPanel - Shop settings error:', settingsError);
-        console.log('AdminPanel - Using default settings due to error');
         // Use a default settings object if shop_settings table doesn't exist
         setShopSettings({
           shop_name: 'Edge & Co Barber Shop',
@@ -64,7 +60,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
       // Try to load users
       try {
         const allUsers = await userManagementService.getAllUsers();
-        console.log('AdminPanel - Users loaded:', allUsers.length);
         setUsers(allUsers);
       } catch (usersError) {
         console.error('AdminPanel - Users loading error:', usersError);
@@ -81,8 +76,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
         ]);
 
         const totalBookings = await bookingService.getAllBookings();
-        console.log('AdminPanel - Total bookings found:', totalBookings.length);
-        console.log('AdminPanel - All bookings data:', totalBookings);
 
         setStats({
           totalBookings: totalBookings.length,
@@ -164,7 +157,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
         type,
         bookings
       };
-      console.log('Report:', report);
     } catch (error) {
       console.error('Error exporting report:', error);
     }

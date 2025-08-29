@@ -129,7 +129,6 @@ export class SharedCustomerService {
         }
       }
       
-      console.log('Local customers synced to Supabase');
     } catch (error) {
       console.error('Error syncing customers to Supabase:', error);
     }

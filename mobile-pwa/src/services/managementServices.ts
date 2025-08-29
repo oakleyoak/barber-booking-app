@@ -16,7 +16,6 @@ class ShopSettingsService {
 
       // If no settings exist, return default settings
       if (!data || data.length === 0) {
-        console.log('No shop settings found, using defaults');
         return this.getDefaultSettings();
       }
 

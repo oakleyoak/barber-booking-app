@@ -27,7 +27,6 @@ export class DataCleanupService {
       
       keysToRemove.forEach(key => localStorage.removeItem(key));
       
-      console.log('All dummy data cleared successfully');
     } catch (error) {
       console.error('Error clearing dummy data:', error);
     }
@@ -54,6 +53,5 @@ export class DataCleanupService {
     this.clearAllDummyData(shopName);
     
     // Don't create any sample data - completely clean start
-    console.log('Application initialized for production use');
   }
 }

@@ -325,7 +325,22 @@ export class CustomerService {
       };
 
       const customersWithStats = await this.calculateCustomerStats([customerObj]);
-      return customersWithStats[0];
+      const updatedCustomer = customersWithStats[0];
+
+      // Update the customer's last_visit field in the database
+      const { error: updateError } = await supabase
+        .from('customers')
+        .update({
+          last_visit: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', customerId);
+
+      if (updateError) {
+        console.error('Error updating customer last visit:', updateError);
+      }
+
+      return updatedCustomer;
     } catch (error) {
       console.error('Error refreshing customer stats:', error);
       return null;

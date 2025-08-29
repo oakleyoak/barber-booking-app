@@ -14,7 +14,6 @@ export class DataCleanupService {
       // Clear earnings from localStorage (this can stay local)
       EarningsService.clearAllEarnings(shopName);
       
-      console.log(`Only dummy data cleared for shop: ${shopName}`);
     } catch (error) {
       console.error('Error clearing dummy data:', error);
     }
@@ -54,7 +53,6 @@ export class DataCleanupService {
         console.error('Error clearing dummy customers by email:', emailError);
       }
       
-      console.log('Dummy customers cleared from Supabase (real customers preserved)');
     } catch (error) {
       console.error('Error clearing dummy Supabase customers:', error);
     }
@@ -97,7 +95,6 @@ export class DataCleanupService {
     this.clearAllDummyData(shopName);
     
     // Initialize with empty state
-    console.log(`Production app initialized for shop: ${shopName}`);
   }
 
   /**
