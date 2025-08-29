@@ -1,378 +1,313 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Plus, Edit, Trash2, UserCheck, UserX, Crown } from 'lucide-react';
-import { UserManagementService, User, UserCreate, UserUpdate } from '../services/userManagementService';
+import { UserManagementService, User, UserCreate } from '../services/userManagementService';
 
 interface UserManagementProps {
-  currentUser: {
-    id?: string;
-    name: string;
-    email: string;
-    role: string;
-    shop_name: string;
-  };
+  shopName: string;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ currentUser }) => {
+interface NewStaffForm {
+  name: string;
+  email: string;
+  role: 'Manager' | 'Barber' | 'Apprentice';
+  commission_rate: number;
+  target_weekly: number;
+  target_monthly: number;
+}
+
+const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
   const [staffMembers, setStaffMembers] = useState<User[]>([]);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [newUser, setNewUser] = useState<UserCreate>({
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [newStaff, setNewStaff] = useState<NewStaffForm>({
     name: '',
     email: '',
-    role: 'barber',
-    phone: ''
+    role: 'Apprentice',
+    commission_rate: 0,
+    target_weekly: 0,
+    target_monthly: 0,
   });
 
-  // Load staff members on component mount
   useEffect(() => {
     loadStaffMembers();
-  }, [currentUser.shop_name]);
+  }, [shopName]);
 
   const loadStaffMembers = async () => {
-    const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
-    setStaffMembers(staff);
+    try {
+      const staff = await UserManagementService.getStaffMembers(shopName);
+      setStaffMembers(staff);
+    } catch (error) {
+      console.error('Error loading staff members:', error);
+      setError('Failed to load staff members');
+    }
   };
 
-  const handleAddUser = async () => {
-    if (!newUser.name.trim() || !newUser.email.trim()) {
-      alert('Name and email are required');
+  const handleCreateStaff = async () => {
+    if (!newStaff.name.trim() || !newStaff.email.trim()) {
+      setError('Name and email are required');
       return;
     }
 
-    // Check if email is already in use
-    const emailInUse = await UserManagementService.isEmailInUse(newUser.email, currentUser.shop_name);
-    if (emailInUse) {
-      alert('This email is already in use');
-      return;
-    }
+    setLoading(true);
+    setError('');
 
-    const success = await UserManagementService.addStaffMember(currentUser.shop_name, newUser);
-    if (success) {
-      await loadStaffMembers();
-      setShowAddModal(false);
-      setNewUser({ name: '', email: '', role: 'barber', phone: '' });
-    } else {
-      alert('Failed to add staff member');
-    }
-  };
+    try {
+      const staffData: UserCreate = {
+        name: newStaff.name.trim(),
+        email: newStaff.email.trim(),
+        role: newStaff.role,
+        shop_name: shopName,
+        commission_rate: newStaff.commission_rate,
+        target_weekly: newStaff.target_weekly,
+        target_monthly: newStaff.target_monthly,
+      };
 
-  const handleUpdateUser = async () => {
-    if (!editingUser) return;
+      const result = await UserManagementService.addStaffMember(shopName, staffData);
 
-    const updates: UserUpdate = {
-      name: editingUser.name,
-      email: editingUser.email,
-      role: editingUser.role as 'manager' | 'barber' | 'apprentice',
-      phone: editingUser.phone
-    };
-
-    // Check if email is already in use by another user
-    if (editingUser.email) {
-      const emailInUse = await UserManagementService.isEmailInUse(
-        editingUser.email, 
-        currentUser.shop_name, 
-        editingUser.id
-      );
-      if (emailInUse) {
-        alert('This email is already in use by another user');
-        return;
-      }
-    }
-
-    const success = await UserManagementService.updateStaffMember(
-      currentUser.shop_name, 
-      editingUser.id, 
-      updates
-    );
-    
-    if (success) {
-      await loadStaffMembers();
-      setEditingUser(null);
-    } else {
-      alert('Failed to update staff member');
-    }
-  };
-
-  const handlePromoteUser = async (userId: string, currentRole: string) => {
-    let newRole: 'manager' | 'barber' | 'apprentice';
-    if (currentRole === 'Apprentice') {
-      newRole = 'barber';
-    } else if (currentRole === 'Barber') {
-      newRole = 'manager';
-    } else if (currentRole === 'Manager') {
-      newRole = 'barber';
-    } else {
-      newRole = 'apprentice';
-    }
-    
-    const success = await UserManagementService.promoteStaffMember(
-      currentUser.shop_name, 
-      userId, 
-      newRole
-    );
-    
-    if (success) {
-      await loadStaffMembers();
-    } else {
-      alert('Failed to promote staff member');
-    }
-  };
-
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-      const success = await UserManagementService.deleteStaffMember(currentUser.shop_name, userId);
-      if (success) {
+      if (result) {
+        setSuccess('Staff member created successfully!');
+        setNewStaff({
+          name: '',
+          email: '',
+          role: 'Apprentice',
+          commission_rate: 0,
+          target_weekly: 0,
+          target_monthly: 0,
+        });
         await loadStaffMembers();
       } else {
-        alert('Failed to delete staff member');
+        setError('Failed to create staff member');
       }
+    } catch (error) {
+      console.error('Error creating staff member:', error);
+      setError('Failed to create staff member');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'barber':
-        return <UserCheck className="w-4 h-4 text-blue-600" />;
-      case 'apprentice':
-        return <Users className="w-4 h-4 text-orange-600" />;
-      default:
-        return <Users className="w-4 h-4 text-gray-600" />;
+  const handleUpdateStaff = async (userId: string, updates: Partial<User>) => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const success = await UserManagementService.updateStaffMember(shopName, userId, updates);
+      if (success) {
+        setSuccess('Staff member updated successfully!');
+        await loadStaffMembers();
+      } else {
+        setError('Failed to update staff member');
+      }
+    } catch (error) {
+      console.error('Error updating staff member:', error);
+      setError('Failed to update staff member');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'barber':
-        return 'bg-blue-100 text-blue-800';
-      case 'apprentice':
-        return 'bg-orange-100 text-orange-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+  const handleDeleteStaff = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this staff member?')) {
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const success = await UserManagementService.deleteStaffMember(shopName, userId);
+      if (success) {
+        setSuccess('Staff member deleted successfully!');
+        await loadStaffMembers();
+      } else {
+        setError('Failed to delete staff member');
+      }
+    } catch (error) {
+      console.error('Error deleting staff member:', error);
+      setError('Failed to delete staff member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePromoteStaff = async (userId: string, newRole: 'Manager' | 'Barber' | 'Apprentice') => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const success = await UserManagementService.promoteStaffMember(shopName, userId, newRole);
+      if (success) {
+        setSuccess('Staff member promoted successfully!');
+        await loadStaffMembers();
+      } else {
+        setError('Failed to promote staff member');
+      }
+    } catch (error) {
+      console.error('Error promoting staff member:', error);
+      setError('Failed to promote staff member');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Staff Management</h2>
-          <p className="text-gray-600">Manage your barbershop staff members</p>
+    <div className="max-w-6xl mx-auto p-6 bg-white rounded-lg shadow-lg">
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">Staff Management</h2>
+
+      {/* Success/Error Messages */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
         </div>
-        {currentUser.role === 'Owner' && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" />
-            Add Staff Member
-          </button>
-        )}
+      )}
+      {success && (
+        <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded">
+          {success}
+        </div>
+      )}
+
+      {/* Add New Staff Form */}
+      <div className="bg-gray-50 p-6 rounded-lg mb-6">
+        <h3 className="text-lg font-semibold mb-4 text-gray-700">Add New Staff Member</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              value={newStaff.name}
+              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter staff name"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              value={newStaff.email}
+              onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Enter email address"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select
+              value={newStaff.role}
+              onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value as 'Manager' | 'Barber' | 'Apprentice' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="Apprentice">Apprentice</option>
+              <option value="Barber">Barber</option>
+              <option value="Manager">Manager</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+            <input
+              type="number"
+              value={newStaff.commission_rate}
+              onChange={(e) => setNewStaff({ ...newStaff, commission_rate: parseFloat(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0"
+              min="0"
+              max="100"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Target</label>
+            <input
+              type="number"
+              value={newStaff.target_weekly}
+              onChange={(e) => setNewStaff({ ...newStaff, target_weekly: parseFloat(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0"
+              min="0"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Target</label>
+            <input
+              type="number"
+              value={newStaff.target_monthly}
+              onChange={(e) => setNewStaff({ ...newStaff, target_monthly: parseFloat(e.target.value) || 0 })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="0"
+              min="0"
+            />
+          </div>
+        </div>
+        <button
+          onClick={handleCreateStaff}
+          disabled={loading}
+          className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        >
+          {loading ? 'Creating...' : 'Add Staff Member'}
+        </button>
       </div>
 
       {/* Staff Members List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">Staff Members ({staffMembers.length})</h3>
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-700">Current Staff Members</h3>
         </div>
-        
-        {staffMembers.length === 0 ? (
-          <div className="px-6 py-8 text-center text-gray-500">
-            <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-            <p>No staff members found</p>
-            {currentUser.role === 'Owner' && (
-              <p className="text-sm">Add your first staff member to get started</p>
-            )}
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {staffMembers.map((staff) => (
-              <div key={staff.id} className="px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    {getRoleIcon(staff.role)}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">{staff.name}</h4>
-                    <p className="text-sm text-gray-500">{staff.email}</p>
-                    {staff.phone && (
-                      <p className="text-sm text-gray-500">{staff.phone}</p>
-                    )}
-                  </div>
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(staff.role)}`}>
-                    {staff.role}
-                  </span>
-                </div>
-                
-                {currentUser.role === 'Owner' && (
-                  <div className="flex items-center space-x-2">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Weekly Target</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Target</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {staffMembers.map((staff) => (
+                <tr key={staff.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{staff.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      staff.role === 'Manager' ? 'bg-purple-100 text-purple-800' :
+                      staff.role === 'Barber' ? 'bg-blue-100 text-blue-800' :
+                      'bg-green-100 text-green-800'
+                    }`}>
+                      {staff.role}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{staff.commission_rate}%</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${staff.target_weekly}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${staff.target_monthly}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                     <button
-                      onClick={() => handlePromoteUser(staff.id, staff.role)}
-                      className="text-blue-600 hover:text-blue-800 p-1"
-                      title={`Change to ${staff.role === 'Apprentice' ? 'Barber' : staff.role === 'Barber' ? 'Manager' : staff.role === 'Manager' ? 'Barber' : 'Apprentice'}`}
+                      onClick={() => handlePromoteStaff(staff.id, staff.role === 'Apprentice' ? 'Barber' : staff.role === 'Barber' ? 'Manager' : 'Apprentice')}
+                      className="text-blue-600 hover:text-blue-900"
+                      disabled={loading}
                     >
-                      <Crown className="w-4 h-4" />
+                      Promote
                     </button>
                     <button
-                      onClick={() => setEditingUser(staff)}
-                      className="text-gray-600 hover:text-gray-800 p-1"
-                      title="Edit user"
+                      onClick={() => handleDeleteStaff(staff.id)}
+                      className="text-red-600 hover:text-red-900"
+                      disabled={loading}
                     >
-                      <Edit className="w-4 h-4" />
+                      Delete
                     </button>
-                    <button
-                      onClick={() => handleDeleteUser(staff.id, staff.name)}
-                      className="text-red-600 hover:text-red-800 p-1"
-                      title="Delete user"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {staffMembers.length === 0 && (
+          <div className="px-6 py-4 text-center text-gray-500">
+            No staff members found. Add your first staff member above.
           </div>
         )}
       </div>
-
-      {/* Add Staff Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Staff Member</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="Enter full name"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="Enter email address"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={newUser.phone}
-                  onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                  placeholder="Enter phone number"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'manager' | 'barber' | 'apprentice' })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                >
-                  <option value="manager">Manager</option>
-                  <option value="barber">Barber</option>
-                  <option value="apprentice">Apprentice</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
-              >
-                Add Staff Member
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Staff Modal */}
-      {editingUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Staff Member</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input
-                  type="text"
-                  value={editingUser.name}
-                  onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                <input
-                  type="email"
-                  value={editingUser.email}
-                  onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={editingUser.phone || ''}
-                  onChange={(e) => setEditingUser({ ...editingUser, phone: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value as any })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2"
-                >
-                  <option value="barber">Barber</option>
-                  <option value="apprentice">Apprentice</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => setEditingUser(null)}
-                className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded-lg"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateUser}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg"
-              >
-                Update Staff Member
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

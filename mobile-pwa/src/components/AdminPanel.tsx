@@ -17,7 +17,15 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<{
+    name: string;
+    email: string;
+    role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
+    shop_name: string;
+    commission_rate: number;
+    target_weekly: number;
+    target_monthly: number;
+  }>({
     name: '',
     email: '',
     role: 'Barber',
@@ -609,7 +617,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string } }) => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={newUser.role}
-                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                  onChange={(e) => setNewUser({ ...newUser, role: e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice' })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                 >
                   <option value="Barber">Barber</option>

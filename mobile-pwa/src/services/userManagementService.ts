@@ -18,15 +18,21 @@ export interface User {
 export interface UserCreate {
   name: string;
   email: string;
-  role: 'manager' | 'barber' | 'apprentice';
-  phone?: string;
+  role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
+  shop_name: string;
+  commission_rate: number;
+  target_weekly: number;
+  target_monthly: number;
 }
 
 export interface UserUpdate {
   name?: string;
   email?: string;
-  role?: 'manager' | 'barber' | 'apprentice';
-  phone?: string;
+  role?: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
+  shop_name?: string;
+  commission_rate?: number;
+  target_weekly?: number;
+  target_monthly?: number;
   is_active?: boolean;
 }
 
@@ -147,7 +153,7 @@ export class UserManagementService {
   /**
    * Promote/demote staff member (apprentice <-> barber <-> manager)
    */
-  static async promoteStaffMember(shopName: string, userId: string, newRole: 'manager' | 'barber' | 'apprentice'): Promise<boolean> {
+  static async promoteStaffMember(shopName: string, userId: string, newRole: 'Manager' | 'Barber' | 'Apprentice'): Promise<boolean> {
     return this.updateStaffMember(shopName, userId, { role: newRole });
   }
 
