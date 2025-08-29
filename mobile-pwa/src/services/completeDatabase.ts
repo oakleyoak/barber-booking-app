@@ -3,19 +3,9 @@
 // This is your comprehensive Supabase service layer
 // ===================================================================
 
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 
-// Supabase Configuration
-const supabaseUrl = 'https://libpiqpetkiojiqzzlpa.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpYnBpcXBldGtpb2ppcXp6bHBhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYyMTkwMTMsImV4cCI6MjA3MTc5NTAxM30.7NCI5kRr0BHI-X1vW5Lb1YfOolVH0x-XvYVVjSCobhI';
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true
-  }
-});
 
 // ===================================================================
 // TYPES DEFINITIONS
@@ -200,7 +190,7 @@ export interface StaffAccountability {
 export const userService = {
   async getUsers(): Promise<User[]> {
     const { data, error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -210,7 +200,7 @@ export const userService = {
 
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .select('*')
       .eq('id', id)
       .single();
@@ -221,7 +211,7 @@ export const userService = {
 
   async getUserByEmail(email: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .select('*')
       .eq('email', email)
       .single();
@@ -232,7 +222,7 @@ export const userService = {
 
   async getUserByAuthId(authUserId: string): Promise<User | null> {
     const { data, error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .select('*')
       .eq('auth_user_id', authUserId)
       .single();
@@ -243,7 +233,7 @@ export const userService = {
 
   async updateUser(id: string, updates: Partial<User>): Promise<User> {
     const { data, error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .update(updates)
       .eq('id', id)
       .select()
@@ -255,7 +245,7 @@ export const userService = {
 
   async deleteUser(id: string): Promise<void> {
     const { error } = await supabase
-      .from('user_profiles')
+  .from('users')
       .delete()
       .eq('id', id);
     
@@ -674,11 +664,9 @@ export const suppliesService = {
       .from('supplies_inventory')
       .select('*')
       .eq('is_active', true)
-      .filter('current_stock', 'lte', 'minimum_stock')
       .order('item_name', { ascending: true });
-    
     if (error) throw error;
-    return data || [];
+    return (data || []).filter(item => item.current_stock <= item.minimum_stock);
   },
 
   async createSupply(supply: Omit<SuppliesInventory, 'id' | 'created_at' | 'updated_at'>): Promise<SuppliesInventory> {

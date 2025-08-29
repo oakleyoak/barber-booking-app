@@ -72,8 +72,10 @@ export interface SafetyCheckLog {
 }
 
 // Get current user/barber ID helper
+// TODO: Replace with real auth context/user session
 const getCurrentBarberId = () => {
-  return 'default-barber'; // In real app, get from auth context
+  // Use a real user id from your users table for now
+  return 'b399ed93-dae8-4939-b044-b9347d2be54e';
 };
 
 // Cleaning Tasks Operations
