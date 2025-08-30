@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { 
   Settings, 
   Users, 
@@ -65,6 +66,7 @@ interface Report {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
+  const modal = useModal();
   const [currentTab, setCurrentTab] = useState('overview');
   const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
   const [users, setUsers] = useState<UserType[]>([]);
@@ -134,11 +136,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
     if (!shopSettings) return;
     
     try {
-      await shopSettingsService.updateSettings(shopSettings);
-      alert('Settings saved successfully!');
+  await shopSettingsService.updateSettings(shopSettings);
+  modal.notify('Settings saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+  modal.notify('Failed to save settings', 'error');
     }
   };
 
@@ -180,21 +182,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
       });
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Failed to save user');
+      modal.notify('Failed to save user', 'error');
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser.id) {
-      alert('Cannot delete yourself!');
+      modal.notify('Cannot delete yourself!', 'info');
       return;
     }
-    
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      const success = await userManagementService.deleteUser(userId);
-      if (success) {
-        setUsers(prev => prev.filter(u => u.id !== userId));
-      }
+
+    const ok = await modal.confirm('Are you sure you want to delete this user?');
+    if (!ok) return;
+    const success = await userManagementService.deleteUser(userId);
+    if (success) {
+      setUsers(prev => prev.filter(u => u.id !== userId));
     }
   };
 

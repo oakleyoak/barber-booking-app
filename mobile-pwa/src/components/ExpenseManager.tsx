@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { expenseService, type Expense } from '../services/completeDatabase';
+import { useModal } from './ui/ModalProvider';
 
 interface Props {
   currentUserId: string;
 }
 
 export default function ExpenseManager({ currentUserId }: Props) {
+  const modal = useModal();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,7 +78,7 @@ export default function ExpenseManager({ currentUserId }: Props) {
       await loadExpenses();
     } catch (error) {
       console.error('Failed to save expense:', error);
-      alert('Failed to save expense. Please try again.');
+      modal.notify('Failed to save expense. Please try again.', 'error');
     }
   };
 
@@ -95,14 +97,15 @@ export default function ExpenseManager({ currentUserId }: Props) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this expense?')) return;
+    const ok = await modal.confirm('Are you sure you want to delete this expense?');
+    if (!ok) return;
     
     try {
       await expenseService.deleteExpense(id);
       await loadExpenses();
     } catch (error) {
       console.error('Failed to delete expense:', error);
-      alert('Failed to delete expense. Please try again.');
+      modal.notify('Failed to delete expense. Please try again.', 'error');
     }
   };
 

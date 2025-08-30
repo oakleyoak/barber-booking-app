@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { equipmentMaintenanceService, userService } from '../services/completeDatabase';
+import { useModal } from './ui/ModalProvider';
 
 export default function EquipmentMaintenance() {
+  const modal = useModal();
   const [logs, setLogs] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function EquipmentMaintenance() {
       await load();
     } catch (err) {
       console.error('Save failed', err);
-      alert('Failed to save maintenance log');
+      modal.notify('Failed to save maintenance log', 'error');
     }
   };
 
@@ -48,7 +50,8 @@ export default function EquipmentMaintenance() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this maintenance log?')) return;
+    const ok = await modal.confirm('Delete this maintenance log?');
+    if (!ok) return;
     await equipmentMaintenanceService.deleteLog(id);
     await load();
   };

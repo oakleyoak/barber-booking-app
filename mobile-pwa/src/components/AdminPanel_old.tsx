@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { 
   Settings, 
   Users, 
@@ -20,6 +21,7 @@ interface AdminPanelProps {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
+  const modal = useModal();
   const [currentTab, setCurrentTab] = useState('overview');
   const [shopSettings, setShopSettings] = useState<ShopSettings | null>(null);
   const [stats, setStats] = useState({
@@ -67,11 +69,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
     if (!shopSettings) return;
 
     try {
-      await shopSettingsService.updateSettings(shopSettings);
-      alert('Settings saved successfully!');
+  await shopSettingsService.updateSettings(shopSettings);
+  modal.notify('Settings saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+  modal.notify('Failed to save settings', 'error');
     }
   };
 
@@ -129,7 +131,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser }) => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error exporting report:', error);
-      alert('Failed to export report');
+      modal.notify('Failed to export report', 'error');
     }
   };
 

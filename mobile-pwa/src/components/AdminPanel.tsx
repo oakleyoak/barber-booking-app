@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { ShopSettingsService } from '../services/shopSettings';
 import { bookingService, customerService, expenseService } from '../services/supabaseServices';
 
 const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string } }) => {
+  const modal = useModal();
   const [currentTab, setCurrentTab] = useState<'overview' | 'users' | 'settings' | 'reports'>('overview');
   const [shopSettings, setShopSettings] = useState<any>(null);
   const [users, setUsers] = useState<any[]>([]);
@@ -120,11 +122,11 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
   const handleSaveSettings = async () => {
     if (!shopSettings) return;
     try {
-      await ShopSettingsService.saveSettings(shopSettings.shop_name, shopSettings);
-      alert('Settings saved successfully!');
+  await ShopSettingsService.saveSettings(shopSettings.shop_name, shopSettings);
+  modal.notify('Settings saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving settings:', error);
-      alert('Failed to save settings');
+  modal.notify('Failed to save settings', 'error');
     }
   };
 
@@ -147,20 +149,20 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
       setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Failed to save user');
+  modal.notify('Failed to save user', 'error');
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser.id) {
-      alert('Cannot delete yourself!');
+      modal.notify('Cannot delete yourself!', 'info');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      const success = await userManagementService.deleteUser(userId);
-      if (success) {
-        setUsers((prev) => prev.filter((u) => u.id !== userId));
-      }
+    const ok = await modal.confirm('Are you sure you want to delete this user?');
+    if (!ok) return;
+    const success = await userManagementService.deleteUser(userId);
+    if (success) {
+      setUsers((prev) => prev.filter((u) => u.id !== userId));
     }
   };
 

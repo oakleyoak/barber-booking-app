@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw } from 'lucide-react';
 import { bookingService, customerService } from '../services/supabaseServices';
 import { supabase } from '../lib/supabase';
@@ -10,6 +11,7 @@ interface BookingCalendarProps {
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
+  const modal = useModal();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'day' | 'list'>('calendar');
@@ -34,7 +36,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     { name: 'Face mask', duration: 30, price: 200 },
     { name: 'Colour', duration: 60, price: 1000 },
     { name: 'Wax', duration: 60, price: 500 },
-    { name: 'Massage', duration: 45, price: 900 },
+  { name: 'Massage', duration: 45, price: 700 },
     { name: 'Shave', duration: 30, price: 500 }
   ];
 
@@ -53,8 +55,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load bookings for selected date - always filter by current user
-      const userFilter = currentUser.id;
+      // Load bookings for selected date - for Owners/Managers show all staff bookings, otherwise filter by current user
+      const userFilter = (currentUser.role === 'Owner' || currentUser.role === 'Manager') ? undefined : currentUser.id;
 
       const dayBookings = await bookingService.getBookingsByDate(selectedDate, userFilter);
 
@@ -77,9 +79,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const startDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
       const endDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-      // Always filter by current user for calendar view
-      const userFilter = currentUser.id;
-      const monthBookings = await bookingService.getBookingsByDateRange(
+  // For Owners/Managers show all staff bookings for the month, otherwise filter by current user
+  const userFilter = (currentUser.role === 'Owner' || currentUser.role === 'Manager') ? undefined : currentUser.id;
+  const monthBookings = await bookingService.getBookingsByDateRange(
         startDate.toISOString().split('T')[0],
         endDate.toISOString().split('T')[0],
         userFilter
@@ -157,7 +159,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       await loadMonthlyBookings();
     } catch (error) {
       console.error('Error saving booking:', error);
-      alert('Failed to save booking. Please try again.');
+      modal.notify('Failed to save booking. Please try again.', 'error');
     }
   };
 
@@ -177,17 +179,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   };
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this booking?')) {
-      try {
-        const success = await bookingService.deleteBooking(id);
-        if (success) {
-          setBookings(prev => prev.filter(b => b.id !== id));
-          setMonthlyBookings(prev => prev.filter(b => b.id !== id));
-        }
-      } catch (error) {
-        console.error('Error deleting booking:', error);
-        alert('Failed to delete booking. Please try again.');
+  const ok = await modal.confirm('Are you sure you want to delete this booking?');
+    if (!ok) return;
+    try {
+      const success = await bookingService.deleteBooking(id);
+      if (success) {
+        setBookings(prev => prev.filter(b => b.id !== id));
+        setMonthlyBookings(prev => prev.filter(b => b.id !== id));
       }
+    } catch (error) {
+      console.error('Error deleting booking:', error);
+      modal.notify('Failed to delete booking. Please try again.', 'error');
     }
   };
 
@@ -217,7 +219,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       }
     } catch (error) {
       console.error('Error updating booking status:', error);
-      alert('Failed to update booking status. Please try again.');
+      modal.notify('Failed to update booking status. Please try again.', 'error');
     }
   };
 
@@ -259,9 +261,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const getBookingsForDate = (date: Date) => {
     const pad = (n: number) => n.toString().padStart(2, '0');
     const localDateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-    return monthlyBookings.filter(
-      booking => booking.date === localDateStr && booking.user_id === currentUser.id
-    );
+    return monthlyBookings.filter(booking => {
+      if (booking.date !== localDateStr) return false;
+      // If Owner/Manager, show all staff bookings; otherwise only show current user's bookings
+      if (currentUser.role === 'Owner' || currentUser.role === 'Manager') return true;
+      return booking.user_id === currentUser.id;
+    });
   };
 
   const formatCurrency = (amount: number) => {

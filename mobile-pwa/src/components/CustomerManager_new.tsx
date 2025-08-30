@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { Users, Phone, Mail, Plus, Search, Edit, Trash2, Calendar, CreditCard } from 'lucide-react';
 import { CustomerService, Customer, CustomerCreate } from '../services/supabaseCustomerService';
 import { DataCleanupService } from '../services/dataCleanupService';
@@ -55,9 +56,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     performSearch();
   }, [searchQuery, customers]);
 
+  const modal = useModal();
+
   const handleAddCustomer = async () => {
     if (!newCustomer.name.trim() || !newCustomer.phone.trim()) {
-      alert('Name and phone are required');
+      modal.notify('Name and phone are required', 'error');
       return;
     }
 
@@ -66,8 +69,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       await loadCustomers();
       setShowAddModal(false);
       setNewCustomer({ name: '', phone: '', email: '', notes: '', preferredBarber: '' });
+      modal.notify('Customer added', 'success');
     } catch (error) {
-      alert('Failed to add customer');
+      modal.notify('Failed to add customer', 'error');
     }
   };
 
@@ -79,18 +83,19 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       await loadCustomers();
       setEditingCustomer(null);
     } catch (error) {
-      alert('Failed to update customer');
+  modal.notify('Failed to update customer', 'error');
     }
   };
 
   const handleDeleteCustomer = async (customerId: string) => {
-    if (confirm('Are you sure you want to delete this customer?')) {
-      try {
-        await CustomerService.deleteCustomer(currentUser.shop_name, customerId);
-        await loadCustomers();
-      } catch (error) {
-        alert('Failed to delete customer');
-      }
+    const ok = await modal.confirm('Are you sure you want to delete this customer?');
+    if (!ok) return;
+    try {
+      await CustomerService.deleteCustomer(currentUser.shop_name, customerId);
+      await loadCustomers();
+      modal.notify('Customer deleted', 'success');
+    } catch (error) {
+      modal.notify('Failed to delete customer', 'error');
     }
   };
 

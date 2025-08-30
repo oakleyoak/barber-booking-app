@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { suppliesService, type SuppliesInventory } from '../services/completeDatabase';
 
 export default function SuppliesInventory() {
+  const modal = useModal();
   const [supplies, setSupplies] = useState<SuppliesInventory[]>([]);
   const [lowStockItems, setLowStockItems] = useState<SuppliesInventory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -83,8 +85,8 @@ export default function SuppliesInventory() {
       setShowAddForm(false);
       await loadSupplies();
     } catch (error) {
-      console.error('Failed to save supply item:', error);
-      alert('Failed to save supply item. Please try again.');
+  console.error('Failed to save supply item:', error);
+  modal.notify('Failed to save supply item. Please try again.', 'error');
     }
   };
 
@@ -110,19 +112,19 @@ export default function SuppliesInventory() {
       await loadSupplies();
     } catch (error) {
       console.error('Failed to update stock:', error);
-      alert('Failed to update stock. Please try again.');
+      modal.notify('Failed to update stock. Please try again.', 'error');
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this item from inventory?')) return;
-    
+  const ok = await modal.confirm('Are you sure you want to remove this item from inventory?');
+  if (!ok) return;
     try {
       await suppliesService.updateSupply(id, { is_active: false });
       await loadSupplies();
     } catch (error) {
-      console.error('Failed to delete supply item:', error);
-      alert('Failed to delete supply item. Please try again.');
+  console.error('Failed to delete supply item:', error);
+  modal.notify('Failed to delete supply item. Please try again.', 'error');
     }
   };
 

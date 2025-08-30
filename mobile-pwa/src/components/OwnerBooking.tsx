@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { UserPlus, Calendar, Clock, User, Phone, Mail, Save, X } from 'lucide-react';
 import { UserManagementService } from '../services/userManagementService';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
@@ -34,6 +35,7 @@ interface OwnerBookingProps {
 }
 
 const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreated }) => {
+  const modal = useModal();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,7 +45,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     staff_member: '',
     booking_date: new Date().toISOString().split('T')[0],
     booking_time: '09:00',
-    amount: 200
+  amount: ServicePricingService.getServicePrice('Haircut')
   });
 
   // Time slots for booking
@@ -81,7 +83,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   // Handle form submission
   const handleSubmit = async () => {
     if (!bookingData.customer_name.trim() || !bookingData.staff_member) {
-      alert('Please fill in customer name and select a staff member');
+      modal.notify('Please fill in customer name and select a staff member', 'info');
       return;
     }
 
@@ -174,13 +176,13 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         amount: 200
       });
 
-      setShowBookingForm(false);
-      onBookingCreated();
-      alert('Booking created successfully!');
+  setShowBookingForm(false);
+  onBookingCreated();
+  modal.notify('Booking created successfully!', 'success');
       
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert('Failed to create booking. Please try again.');
+  modal.notify('Failed to create booking. Please try again.', 'error');
     } finally {
       setLoading(false);
     }

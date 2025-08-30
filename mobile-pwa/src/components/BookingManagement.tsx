@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { 
   Calendar, 
   Clock, 
@@ -59,6 +60,7 @@ interface BookingManagementProps {
 }
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
+  const modal = useModal();
   // Handler to open delete modal for a booking
   const deleteBooking = (booking: Booking) => {
     setBookingToDelete(booking);
@@ -77,7 +79,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         await loadUpcomingBookings();
       }
     } catch (err) {
-      alert('Failed to delete booking');
+      modal.notify('Failed to delete booking', 'error');
     }
   };
   const services = ServicePricingService.getAllServices().map(s => s.name);
@@ -137,7 +139,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       // If owner creating from 'all' view, ensure a staff member is selected
       const assignedUserId = currentView === 'all' ? createForm.user_id : currentUser.id;
       if ((currentUser.role === 'Owner' || currentUser.role === 'Manager') && currentView === 'all' && !assignedUserId) {
-        alert('Please select a staff member for this booking.');
+        modal.notify('Please select a staff member for this booking.', 'info');
         setCreating(false);
         return;
       }
@@ -146,7 +148,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       const finalUserId = assignedUserId || currentUser.id;
       if (!finalUserId) {
         console.error('No valid user ID found. Current user:', currentUser);
-        alert('Unable to create booking: No valid user ID found.');
+        modal.notify('Unable to create booking: No valid user ID found.', 'error');
         setCreating(false);
         return;
       }
@@ -166,7 +168,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       // Validate required fields
       if (!bookingData.customer_name || !bookingData.service || !bookingData.date || !bookingData.time) {
-        alert('Please fill in all required fields.');
+        modal.notify('Please fill in all required fields.', 'info');
         setCreating(false);
         return;
       }
@@ -194,7 +196,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }
     } catch (err) {
       console.error('BookingManagement: Error creating booking:', err);
-      alert('Failed to create booking: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      modal.notify('Failed to create booking: ' + (err instanceof Error ? err.message : 'Unknown error'), 'error');
     } finally {
       setCreating(false);
     }
@@ -234,7 +236,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           setBookings(bookingsData || []);
         } catch (err) {
           console.error('BookingManagement: Error loading bookings:', err);
-          alert('Failed to load bookings');
+          modal.notify('Failed to load bookings', 'error');
         } finally {
           setLoading(false);
         }
@@ -279,7 +281,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         await loadUpcomingBookings();
       }
     } catch (error) {
-      alert('Failed to update booking');
+      modal.notify('Failed to update booking', 'error');
     }
   };
 
@@ -308,7 +310,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         await loadUpcomingBookings();
       }
     } catch (error) {
-      alert('Failed to update booking status');
+      modal.notify('Failed to update booking status', 'error');
     }
   };
 

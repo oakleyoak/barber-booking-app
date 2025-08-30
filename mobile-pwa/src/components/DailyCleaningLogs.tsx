@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useModal } from './ui/ModalProvider';
 import {
   dailyCleaningLogService,
   userService,
@@ -6,6 +7,7 @@ import {
 } from '../services/completeDatabase';
 
 export default function DailyCleaningLogs() {
+  const modal = useModal();
   const [logs, setLogs] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function DailyCleaningLogs() {
       await load();
     } catch (err) {
       console.error('Save failed', err);
-      alert('Failed to save cleaning log');
+      modal.notify('Failed to save cleaning log', 'error');
     }
   };
 
@@ -52,7 +54,8 @@ export default function DailyCleaningLogs() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this cleaning log?')) return;
+    const ok = await modal.confirm('Delete this cleaning log?');
+    if (!ok) return;
     await dailyCleaningLogService.deleteLog(id);
     await load();
   };

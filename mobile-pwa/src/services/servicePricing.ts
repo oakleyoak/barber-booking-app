@@ -12,7 +12,7 @@ export const SERVICES: ServiceOption[] = [
   { name: 'Face mask', price: 200, duration: 30, description: 'Facial treatment and mask' },
   { name: 'Colour', price: 1000, duration: 60, description: 'Hair coloring service' },
   { name: 'Wax', price: 500, duration: 60, description: 'Hair waxing and styling' },
-  { name: 'Massage', price: 900, duration: 45, description: 'Relaxing head and neck massage' },
+  { name: 'Massage', price: 700, duration: 45, description: 'Relaxing head and neck massage' },
   { name: 'Shave', price: 500, duration: 30, description: 'Traditional wet shave' }
 ];
 

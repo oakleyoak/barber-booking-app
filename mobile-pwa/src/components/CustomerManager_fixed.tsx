@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
 import { Customer, CustomerService } from '../services/supabaseCustomerService';
 import { supabase } from '../lib/supabase';
@@ -28,19 +29,21 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   // Booking form data
   const [bookingData, setBookingData] = useState({
     service: 'Haircut',
-    price: 700,
+  price: 700,
     notes: '',
     appointment_date: new Date().toISOString().split('T')[0],
     appointment_time: '09:00'
   });
 
   const services = [
-    { name: 'Haircut', price: 700, duration: 45 },
-    { name: 'Beard trim', price: 300, duration: 20 },
-    { name: 'Shave', price: 250, duration: 30 },
-    { name: 'Hair wash', price: 150, duration: 15 },
-    { name: 'Colour', price: 1000, duration: 60 },
-    { name: 'Styling', price: 400, duration: 30 }
+  { name: 'Haircut', price: 700, duration: 45 },
+  { name: 'Beard trim', price: 300, duration: 15 },
+  { name: 'Blowdry', price: 500, duration: 30 },
+  { name: 'Face mask', price: 200, duration: 30 },
+  { name: 'Colour', price: 1000, duration: 60 },
+  { name: 'Wax', price: 500, duration: 60 },
+  { name: 'Massage', price: 700, duration: 45 },
+  { name: 'Shave', price: 500, duration: 30 }
   ];
 
   const formatCurrency = (amount: number): string => {
@@ -89,18 +92,21 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     setShowForm(true);
   };
 
+  const modal = useModal();
+
   const handleDelete = async (customerId: string) => {
-    if (window.confirm('Are you sure you want to delete this customer?')) {
-      try {
-        setLoading(true);
-        await CustomerService.deleteCustomer(currentUser.id, customerId);
-        await loadCustomers();
-      } catch (error) {
-        console.error('Error deleting customer:', error);
-        alert('Failed to delete customer');
-      } finally {
-        setLoading(false);
-      }
+    const ok = await modal.confirm('Are you sure you want to delete this customer?');
+    if (!ok) return;
+    try {
+      setLoading(true);
+      await CustomerService.deleteCustomer(currentUser.id, customerId);
+      await loadCustomers();
+      modal.notify('Customer deleted', 'success');
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      modal.notify('Failed to delete customer', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -119,7 +125,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       resetForm();
     } catch (error) {
       console.error('Error saving customer:', error);
-      alert('Failed to save customer');
+  modal.notify('Failed to save customer', 'error');
     } finally {
       setLoading(false);
     }
@@ -157,9 +163,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         status: 'scheduled'
       }]);
 
-      if (error) throw error;
+  if (error) throw error;
 
-      alert('Booking created successfully!');
+  modal.notify('Booking created successfully!', 'success');
       setShowBookingModal(false);
       setSelectedCustomer(null);
       setBookingData({
@@ -171,7 +177,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       });
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert('Failed to create booking');
+      modal.notify('Failed to create booking', 'error');
     } finally {
       setLoading(false);
     }

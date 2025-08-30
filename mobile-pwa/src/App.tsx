@@ -13,6 +13,7 @@ import ExpenseManager from './components/ExpenseManager';
 import InventoryManager from './components/InventoryManager';
 import SuppliesInventory from './components/SuppliesInventory';
 import IncidentReports from './components/IncidentReports';
+import ModalProvider from './components/ui/ModalProvider';
 
 function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
@@ -130,7 +131,8 @@ function App() {
   // If user is logged in, show main app
   if (currentUser) {
     return (
-      <div
+      <ModalProvider>
+        <div
         className="min-h-screen w-full"
         style={{
           background: `url(${largeLogo}) center/cover no-repeat fixed`,
@@ -341,6 +343,7 @@ function App() {
           </div>
         </div>
       </div>
+      </ModalProvider>
     );
   }
 

@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { dailySafetyChecksService, userService } from '../services/completeDatabase';
+import { useModal } from './ui/ModalProvider';
 
 export default function DailySafetyChecks() {
+  const modal = useModal();
   const [checks, setChecks] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function DailySafetyChecks() {
       await load();
     } catch (err) {
       console.error('Save failed', err);
-      alert('Failed to save safety check');
+      modal.notify('Failed to save safety check', 'error');
     }
   };
 
@@ -48,7 +50,8 @@ export default function DailySafetyChecks() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this safety check?')) return;
+    const ok = await modal.confirm('Delete this safety check?');
+    if (!ok) return;
     await dailySafetyChecksService.deleteCheck(id);
     await load();
   };

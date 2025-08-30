@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { Users, Phone, Mail, Plus, Search, Edit, Trash2, Calendar, CalendarDays } from 'lucide-react';
 import { customerService, bookingService } from '../services/supabaseServices';
 import type { Customer, User as UserType } from '../lib/supabase';
@@ -30,14 +31,18 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     service: 'Haircut',
     date: new Date().toISOString().split('T')[0],
     time: '09:00',
-    price: 25
+  price: 700
   });
 
   const services = [
-    { name: 'Haircut', price: 25 },
-    { name: 'Beard Trim', price: 15 },
-    { name: 'Hair & Beard', price: 35 },
-    { name: 'Shave', price: 20 }
+    { name: 'Haircut', price: 700 },
+    { name: 'Beard trim', price: 300 },
+    { name: 'Blowdry', price: 500 },
+    { name: 'Face mask', price: 200 },
+    { name: 'Colour', price: 1000 },
+    { name: 'Wax', price: 500 },
+    { name: 'Massage', price: 700 },
+    { name: 'Shave', price: 500 }
   ];
 
   useEffect(() => {
@@ -73,9 +78,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     }
   };
 
+  const modal = useModal();
+
   const handleAddCustomer = async () => {
     if (!newCustomer.name.trim()) {
-      alert('Customer name is required');
+      modal.notify('Customer name is required', 'error');
       return;
     }
 
@@ -90,10 +97,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
           email: '',
           user_id: currentUser.id
         });
+        modal.notify('Customer added', 'success');
       }
     } catch (error) {
       console.error('Error adding customer:', error);
-      alert('Failed to add customer');
+      modal.notify('Failed to add customer', 'error');
     }
   };
 
@@ -108,7 +116,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       }
     } catch (error) {
       console.error('Error updating customer:', error);
-      alert('Failed to update customer');
+  modal.notify('Failed to update customer', 'error');
     }
   };
 
@@ -129,7 +137,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       }
     } catch (error) {
       console.error('Error deleting customer:', error);
-      alert('Failed to delete customer');
+  modal.notify('Failed to delete customer', 'error');
     }
   };
 
@@ -169,11 +177,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         });
 
         await loadCustomers();
-        alert('Appointment booked successfully!');
+    modal.notify('Appointment booked successfully!', 'success');
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-      alert('Failed to book appointment');
+      modal.notify('Failed to book appointment', 'error');
     }
   };
 

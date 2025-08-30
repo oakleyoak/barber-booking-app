@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { incidentService, userService, type IncidentReport, type User } from '../services/completeDatabase';
 
 interface Props {
@@ -6,6 +7,7 @@ interface Props {
 }
 
 export default function IncidentReports({ currentUserId }: Props) {
+  const modal = useModal();
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,21 +90,21 @@ export default function IncidentReports({ currentUserId }: Props) {
       setShowAddForm(false);
       await loadData();
     } catch (error) {
-      console.error('Failed to save incident:', error);
-      alert('Failed to save incident report. Please try again.');
+  console.error('Failed to save incident:', error);
+  modal.notify('Failed to save incident report. Please try again.', 'error');
     }
   };
 
   const handleResolve = async (incident: IncidentReport) => {
-    const resolutionNotes = prompt('Enter resolution notes:');
-    if (resolutionNotes === null) return;
+  const resolutionNotes = await modal.prompt('Enter resolution notes:');
+  if (resolutionNotes === null) return;
     
     try {
       await incidentService.resolveIncident(incident.id, resolutionNotes);
       await loadData();
     } catch (error) {
-      console.error('Failed to resolve incident:', error);
-      alert('Failed to resolve incident. Please try again.');
+  console.error('Failed to resolve incident:', error);
+  modal.notify('Failed to resolve incident. Please try again.', 'error');
     }
   };
 
@@ -375,7 +377,10 @@ export default function IncidentReports({ currentUserId }: Props) {
                   <td className="px-4 py-3 text-sm">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => alert(`Description: ${incident.description}\n\nImmediate Action: ${incident.immediate_action_taken || 'None'}\n\nWitnesses: ${incident.witnesses || 'None'}`)}
+                        onClick={async () => {
+                          const text = `Description: ${incident.description}\n\nImmediate Action: ${incident.immediate_action_taken || 'None'}\n\nWitnesses: ${incident.witnesses || 'None'}`;
+                          await modal.prompt(text, '');
+                        }}
                         className="text-blue-600 hover:text-blue-800"
                       >
                         View

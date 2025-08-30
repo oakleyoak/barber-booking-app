@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import {
   ClipboardList,
   Wrench,
@@ -50,6 +51,7 @@ interface OperationsData {
 }
 
 const OperationsManual: React.FC = () => {
+  const modal = useModal();
   const [activeTab, setActiveTab] = useState('cleaning');
   const [historyFilters, setHistoryFilters] = useState({ start: '', end: '' });
   const [logs, setLogs] = useState<{ cleaning: any[]; maintenance: any[]; safety: any[] }>({ cleaning: [], maintenance: [], safety: [] });
@@ -164,12 +166,13 @@ const OperationsManual: React.FC = () => {
       });
     } catch (error) {
       console.error('Failed to add task:', error);
-      alert('Failed to add task. Please try again.');
+      modal.notify('Failed to add task. Please try again.', 'error');
     }
   };
 
   const handleDeleteTask = async (type: string, id: string) => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+  const ok = await modal.confirm('Are you sure you want to delete this task?');
+  if (!ok) return;
     
     try {
       if (type === 'cleaning') {
@@ -183,7 +186,7 @@ const OperationsManual: React.FC = () => {
       await loadData();
     } catch (error) {
       console.error('Failed to delete task:', error);
-      alert('Failed to delete task. Please try again.');
+  modal.notify('Failed to delete task. Please try again.', 'error');
     }
   };
 
@@ -422,7 +425,7 @@ const OperationsManual: React.FC = () => {
                       acceptable_range: ''
                     });
                   } catch (error) {
-                    alert('Failed to add new task. Please try again.');
+                    modal.notify('Failed to add new task. Please try again.', 'error');
                   }
                 }}
                 className="space-y-4"

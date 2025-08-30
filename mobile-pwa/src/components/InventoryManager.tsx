@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { equipmentService, type EquipmentInventory } from '../services/completeDatabase';
 
 export default function InventoryManager() {
+  const modal = useModal();
   const [equipment, setEquipment] = useState<EquipmentInventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -85,8 +87,8 @@ export default function InventoryManager() {
       setShowAddForm(false);
       await loadEquipment();
     } catch (error) {
-      console.error('Failed to save equipment:', error);
-      alert('Failed to save equipment. Please try again.');
+  console.error('Failed to save equipment:', error);
+  modal.notify('Failed to save equipment. Please try again.', 'error');
     }
   };
 
@@ -107,14 +109,14 @@ export default function InventoryManager() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this equipment from inventory?')) return;
-    
+  const ok = await modal.confirm('Are you sure you want to remove this equipment from inventory?');
+  if (!ok) return;
     try {
       await equipmentService.deleteEquipment(id);
       await loadEquipment();
     } catch (error) {
-      console.error('Failed to delete equipment:', error);
-      alert('Failed to delete equipment. Please try again.');
+  console.error('Failed to delete equipment:', error);
+  modal.notify('Failed to delete equipment. Please try again.', 'error');
     }
   };
 

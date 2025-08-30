@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useModal } from './ui/ModalProvider';
 import { UserManagementService, User, UserCreate } from '../services/userManagementService';
 
 interface UserManagementProps {
@@ -106,10 +107,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
     }
   };
 
+  const modal = useModal();
+
   const handleDeleteStaff = async (userId: string) => {
-    if (!confirm('Are you sure you want to delete this staff member?')) {
-      return;
-    }
+    const ok = await modal.confirm('Are you sure you want to delete this staff member?');
+    if (!ok) return;
 
     setLoading(true);
     setError('');
@@ -117,14 +119,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
     try {
       const success = await UserManagementService.deleteStaffMember(shopName, userId);
       if (success) {
-        setSuccess('Staff member deleted successfully!');
+        modal.notify('Staff member deleted successfully!', 'success');
         await loadStaffMembers();
       } else {
-        setError('Failed to delete staff member');
+        modal.notify('Failed to delete staff member', 'error');
       }
     } catch (error) {
       console.error('Error deleting staff member:', error);
-      setError('Failed to delete staff member');
+      modal.notify('Failed to delete staff member', 'error');
     } finally {
       setLoading(false);
     }
