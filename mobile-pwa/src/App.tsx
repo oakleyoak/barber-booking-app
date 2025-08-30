@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
+import logoIcon from './assets/edgeandcologoicon.JPG';
+import largeLogo from './assets/edgeandcologo.JPG';
 import { authService, userService, type User as SupabaseUser } from './services/completeDatabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
@@ -128,16 +130,21 @@ function App() {
   // If user is logged in, show main app
   if (currentUser) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div
+        className="min-h-screen w-full"
+        style={{
+          background: `url(${largeLogo}) center/cover no-repeat fixed`,
+        }}
+      >
         {/* Header */}
-        <div className="bg-white shadow-sm border-b">
+  <div className="bg-white bg-opacity-90 shadow-sm border-b border-blue-700">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center">
-                <Building className="h-8 w-8 text-blue-600 mr-3" />
+                <img src={logoIcon} alt="Edge & Co Logo" className="h-12 w-12 object-contain mr-3 rounded-full border border-gray-200" />
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Edge & Co Barber Management</h1>
-                  <p className="text-sm text-gray-500">{currentUser.shop_name}</p>
+                  <h1 className="text-xl font-bold text-blue-900">Edge & Co Barber Management</h1>
+                  <p className="text-sm text-blue-700">{currentUser.shop_name}</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
@@ -146,7 +153,7 @@ function App() {
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                  className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors border border-blue-900"
                 >
                   Sign Out
                 </button>
@@ -156,15 +163,15 @@ function App() {
         </div>
 
         {/* Navigation */}
-        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
+  <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-1 sm:gap-2 mb-6">
             {/* Core Features - Available to All Users */}
             <button
               onClick={() => setCurrentView('calendar')}
               className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'calendar'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-blue-700 text-white border border-blue-900'
+                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
               }`}
             >
               <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -175,8 +182,8 @@ function App() {
               onClick={() => setCurrentView('earnings')}
               className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'earnings'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-red-700 text-white border border-red-900'
+                  : 'bg-white text-red-900 hover:bg-red-50 border border-red-200'
               }`}
             >
               <TrendingUp className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -187,8 +194,8 @@ function App() {
               onClick={() => setCurrentView('customers')}
               className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'customers'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-blue-700 text-white border border-blue-900'
+                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
               }`}
             >
               <Users className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -199,8 +206,8 @@ function App() {
               onClick={() => setCurrentView('operations')}
               className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'operations'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                  ? 'bg-blue-700 text-white border border-blue-900'
+                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
               }`}
             >
               <ClipboardList className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -214,8 +221,8 @@ function App() {
                   onClick={() => setCurrentView('expenses')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'expenses'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-700 text-white border border-blue-900'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <DollarSign className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -226,8 +233,8 @@ function App() {
                   onClick={() => setCurrentView('equipment')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'equipment'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-700 text-white border border-blue-900'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -238,8 +245,8 @@ function App() {
                   onClick={() => setCurrentView('supplies')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'supplies'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-700 text-white border border-blue-900'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -250,8 +257,8 @@ function App() {
                   onClick={() => setCurrentView('incidents')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'incidents'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-red-700 text-white border border-red-900'
+                      : 'bg-white text-red-900 hover:bg-red-50 border border-red-200'
                   }`}
                 >
                   <AlertTriangle className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -267,8 +274,8 @@ function App() {
                   onClick={() => setCurrentView('bookings')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'bookings'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-700 text-white border border-blue-900'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -279,8 +286,8 @@ function App() {
                   onClick={() => setCurrentView('admin')}
                   className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                     currentView === 'admin'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-50'
+                      ? 'bg-blue-700 text-white border border-blue-900'
+                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
                   }`}
                 >
                   <Shield className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
@@ -291,7 +298,7 @@ function App() {
           </div>
 
           {/* Content Area */}
-          <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="bg-white bg-opacity-90 rounded-xl shadow-sm p-6">
             {currentView === 'calendar' && (
               <BookingCalendar currentUser={currentUser} />
             )}
@@ -339,12 +346,16 @@ function App() {
 
   // Login/Register form
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-            <Building className="h-6 w-6 text-blue-600" />
-          </div>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div
+        className="rounded-xl shadow-lg p-8 w-full max-w-md relative z-10 flex flex-col items-center justify-center"
+        style={{
+          background: `url(${largeLogo}) center/cover no-repeat`,
+          backgroundColor: 'rgba(255,255,255,0.85)',
+          backgroundBlendMode: 'lighten',
+        }}
+      >
+        <div className="text-center mb-6 bg-white bg-opacity-80 rounded-xl p-2">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Edge & Co Management</h1>
           <p className="text-gray-600">
             {isLogin ? 'Sign in to your account' : 'Create your barber shop account'}
