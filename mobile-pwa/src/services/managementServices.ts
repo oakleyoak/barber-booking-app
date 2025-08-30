@@ -4,21 +4,19 @@ import type { ShopSettings, PayrollEntry, User } from '../lib/supabase';
 class ShopSettingsService {
   async getSettings(): Promise<ShopSettings | null> {
     try {
-      const { data, error } = await supabase
-        .from('shop_settings')
-        .select('*')
-        .limit(1);
+      // Fetch all settings and select the appropriate shop name if present.
+      const { data, error } = await supabase.from('shop_settings').select('*');
 
       if (error) {
         console.error('Error fetching shop settings:', error);
         return this.getDefaultSettings();
       }
 
-      // If no settings exist, return default settings
       if (!data || data.length === 0) {
         return this.getDefaultSettings();
       }
 
+      // If a shop-specific name is stored in the first settings row, use it.
       const settings = data[0];
       
       // Map database fields to expected ShopSettings interface with defaults for missing fields

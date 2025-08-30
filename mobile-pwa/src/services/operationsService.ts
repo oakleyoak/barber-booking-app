@@ -458,6 +458,57 @@ export const getComplianceReports = async (startDate: string, endDate: string) =
   }
 };
 
+// Fetch logs / history (cleaning, maintenance, safety). If startDate/endDate omitted, returns recent logs.
+export const getLogsHistory = async (startDate?: string, endDate?: string) => {
+  try {
+    const barberId = getCurrentBarberId();
+
+    const cleaningQuery = supabase
+      .from('cleaning_logs')
+      .select(`*, cleaning_tasks(task_name)`)
+      .eq('barber_id', barberId)
+      .order('created_at', { ascending: false });
+
+    const maintenanceQuery = supabase
+      .from('maintenance_logs')
+      .select(`*, maintenance_tasks(task_name, equipment_name)`)
+      .eq('barber_id', barberId)
+      .order('created_at', { ascending: false });
+
+    const safetyQuery = supabase
+      .from('safety_check_logs')
+      .select(`*, safety_check_items(check_name)`)
+      .eq('barber_id', barberId)
+      .order('created_at', { ascending: false });
+
+    if (startDate) {
+      cleaningQuery.gte('completed_date', startDate);
+      maintenanceQuery.gte('completed_date', startDate);
+      safetyQuery.gte('check_date', startDate);
+    }
+    if (endDate) {
+      cleaningQuery.lte('completed_date', endDate);
+      maintenanceQuery.lte('completed_date', endDate);
+      safetyQuery.lte('check_date', endDate);
+    }
+
+    const [cleaningRes, maintenanceRes, safetyRes] = await Promise.all([
+      cleaningQuery,
+      maintenanceQuery,
+      safetyQuery
+    ]);
+
+    return {
+      cleaning: cleaningRes.data || [],
+      maintenance: maintenanceRes.data || [],
+      safety: safetyRes.data || []
+    };
+  } catch (error) {
+    console.error('Error fetching logs history:', error);
+    return { cleaning: [], maintenance: [], safety: [] };
+  }
+};
+
 // Enhanced task fetching with completion status
 export const getCleaningTasksWithStatus = async (): Promise<(CleaningTask & { completed_today: boolean })[]> => {
   try {

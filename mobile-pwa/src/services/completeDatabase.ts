@@ -968,6 +968,197 @@ export const sessionService = {
   }
 };
 
+// ===================================================================
+// DAILY CLEANING LOG SERVICE
+// ===================================================================
+
+export const dailyCleaningLogService = {
+  async getLogsByDate(date: string, barberId?: string) {
+    try {
+      let query = supabase.from('daily_cleaning_log').select('*').eq('date', date);
+      if (barberId) query = query.eq('barber_id', barberId);
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching daily cleaning logs by date:', error);
+      return [];
+    }
+  },
+
+  async getLogsByDateRange(startDate: string, endDate: string, barberId?: string) {
+    try {
+      let query = supabase.from('daily_cleaning_log').select('*').gte('date', startDate).lte('date', endDate);
+      if (barberId) query = query.eq('barber_id', barberId);
+      const { data, error } = await query.order('date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching daily cleaning logs by range:', error);
+      return [];
+    }
+  },
+
+  async createLog(record: any) {
+    try {
+      const { data, error } = await supabase.from('daily_cleaning_log').insert([record]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating daily cleaning log:', error);
+      return null;
+    }
+  },
+
+  async updateLog(id: string, updates: any) {
+    try {
+      const { data, error } = await supabase.from('daily_cleaning_log').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating daily cleaning log:', error);
+      return null;
+    }
+  },
+
+  async deleteLog(id: string) {
+    try {
+      const { error } = await supabase.from('daily_cleaning_log').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting daily cleaning log:', error);
+      return false;
+    }
+  }
+};
+
+// ===================================================================
+// DAILY SAFETY CHECKS SERVICE
+// ===================================================================
+
+export const dailySafetyChecksService = {
+  async getChecksByDate(date: string, barberId?: string) {
+    try {
+      let query = supabase.from('daily_safety_checks').select('*').eq('date', date);
+      if (barberId) query = query.eq('barber_id', barberId);
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching daily safety checks by date:', error);
+      return [];
+    }
+  },
+
+  async getChecksByDateRange(startDate: string, endDate: string, barberId?: string) {
+    try {
+      let query = supabase.from('daily_safety_checks').select('*').gte('date', startDate).lte('date', endDate);
+      if (barberId) query = query.eq('barber_id', barberId);
+      const { data, error } = await query.order('date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching daily safety checks by range:', error);
+      return [];
+    }
+  },
+
+  async createCheck(record: any) {
+    try {
+      const { data, error } = await supabase.from('daily_safety_checks').insert([record]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating daily safety check:', error);
+      return null;
+    }
+  },
+
+  async updateCheck(id: string, updates: any) {
+    try {
+      const { data, error } = await supabase.from('daily_safety_checks').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating daily safety check:', error);
+      return null;
+    }
+  },
+
+  async deleteCheck(id: string) {
+    try {
+      const { error } = await supabase.from('daily_safety_checks').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting daily safety check:', error);
+      return false;
+    }
+  }
+};
+
+// ===================================================================
+// EQUIPMENT MAINTENANCE LOG SERVICE
+// ===================================================================
+
+export const equipmentMaintenanceService = {
+  async getLogsByDate(date: string) {
+    try {
+      const { data, error } = await supabase.from('equipment_maintenance_log').select('*').eq('date', date).order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching equipment maintenance logs by date:', error);
+      return [];
+    }
+  },
+
+  async getLogsByDateRange(startDate: string, endDate: string) {
+    try {
+      const { data, error } = await supabase.from('equipment_maintenance_log').select('*').gte('date', startDate).lte('date', endDate).order('date', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching equipment maintenance logs by range:', error);
+      return [];
+    }
+  },
+
+  async createLog(record: any) {
+    try {
+      const { data, error } = await supabase.from('equipment_maintenance_log').insert([record]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating equipment maintenance log:', error);
+      return null;
+    }
+  },
+
+  async updateLog(id: string, updates: any) {
+    try {
+      const { data, error } = await supabase.from('equipment_maintenance_log').update(updates).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating equipment maintenance log:', error);
+      return null;
+    }
+  },
+
+  async deleteLog(id: string) {
+    try {
+      const { error } = await supabase.from('equipment_maintenance_log').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting equipment maintenance log:', error);
+      return false;
+    }
+  }
+};
+
 export default {
   authService,
   userService,
@@ -981,5 +1172,8 @@ export default {
   suppliesService,
   incidentService,
   staffAccountabilityService,
-  sessionService
+  sessionService,
+  dailyCleaningLogService,
+  dailySafetyChecksService,
+  equipmentMaintenanceService
 };

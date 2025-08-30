@@ -468,33 +468,33 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     <div className="max-w-3xl mx-auto p-4">
       {/* Filters/Search Bar */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button onClick={() => setCurrentView('all')} className={`px-3 py-1 rounded ${currentView === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>All</button>
           <button onClick={() => setCurrentView('upcoming')} className={`px-3 py-1 rounded ${currentView === 'upcoming' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>Upcoming</button>
           <button onClick={() => setCurrentView('history')} className={`px-3 py-1 rounded ${currentView === 'history' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}>History</button>
         </div>
-        <div className="flex gap-2 items-center">
+        <div className="flex flex-wrap gap-2 items-center justify-end">
           <input
             type="text"
             placeholder="Search bookings..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-0"
           />
-          <button onClick={exportBookings} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center"><Download className="h-4 w-4 mr-1" />Export</button>
+          <button onClick={exportBookings} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center flex-shrink-0"><Download className="h-4 w-4 mr-1" />Export</button>
           <button
             onClick={async () => {
               if (currentView === 'upcoming') {
                 await loadUpcomingBookings();
               }
             }}
-            className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center"
+            className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center flex-shrink-0"
             title="Refresh data from Supabase"
           >
             <RefreshCw className="h-4 w-4 mr-1" />Refresh
           </button>
           {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-            <button onClick={() => setShowCreateBooking(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"><CalendarIcon className="h-4 w-4 mr-1" />New Booking</button>
+            <button onClick={() => setShowCreateBooking(true)} className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center flex-shrink-0"><CalendarIcon className="h-4 w-4 mr-1" />New Booking</button>
           )}
         </div>
       </div>

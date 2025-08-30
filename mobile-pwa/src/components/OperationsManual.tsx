@@ -24,6 +24,9 @@ import {
   Save,
   RotateCcw
 } from 'lucide-react';
+import DailyCleaningLogs from './DailyCleaningLogs';
+import DailySafetyChecks from './DailySafetyChecks';
+import EquipmentMaintenance from './EquipmentMaintenance';
 import { 
   getCleaningTasksWithStatus, 
   getMaintenanceTasksWithStatus, 
@@ -48,6 +51,8 @@ interface OperationsData {
 
 const OperationsManual: React.FC = () => {
   const [activeTab, setActiveTab] = useState('cleaning');
+  const [historyFilters, setHistoryFilters] = useState({ start: '', end: '' });
+  const [logs, setLogs] = useState<{ cleaning: any[]; maintenance: any[]; safety: any[] }>({ cleaning: [], maintenance: [], safety: [] });
   const [data, setData] = useState<OperationsData>({
     cleaningTasks: [],
     maintenanceTasks: [],
@@ -77,6 +82,13 @@ const OperationsManual: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    // Load history when switching to history tab
+    if (activeTab === 'history') {
+      loadHistory();
+    }
+  }, [activeTab]);
 
   const loadData = async () => {
     try {
@@ -181,6 +193,20 @@ const OperationsManual: React.FC = () => {
       await loadData();
     } catch (error) {
       console.error('Failed to update task completion:', error);
+    }
+  };
+
+  const loadHistory = async () => {
+    try {
+      setLoading(true);
+      const start = historyFilters.start || undefined;
+      const end = historyFilters.end || undefined;
+      const res = await (await import('../services/operationsService')).getLogsHistory(start, end);
+      setLogs(res);
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -630,10 +656,60 @@ const OperationsManual: React.FC = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
+      {/* Header: two-row responsive layout (title + controls on row 1, tabs full-width on row 2) */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Operations Manual</h1>
-        <p className="text-gray-600">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-3xl font-bold text-gray-900 truncate">Operations Manual</h1>
+            <p className="text-gray-600 mt-1">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
+          </div>
+
+          <div className="flex items-center space-x-2 flex-shrink-0">
+            <button onClick={() => loadData()} className="hidden sm:inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+              <RotateCcw size={16} className="mr-2" /> Refresh
+            </button>
+            <button className="hidden sm:inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
+              <Download size={16} className="mr-2" /> Export
+            </button>
+            <button onClick={() => setShowAddForm('cleaning')} className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+              <Plus size={14} className="mr-2" /> New Task
+            </button>
+          </div>
+
+          {/* Tabs forced to a new full-width row on tiny screens */}
+          <div className="w-full mt-3">
+            {/* Navigation Tabs */}
+            <div className="border-b border-gray-200">
+              <nav className="flex flex-wrap gap-6 pb-4">
+                {[
+                  { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
+                  { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
+                  { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length }
+                  , { id: 'history', label: 'Completion History', icon: Clock, count: 0 }
+                  , { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length }
+                  , { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length }
+                  , { id: 'equipment_maintenance', label: 'Equipment Logs', icon: Wrench, count: logs.maintenance.length }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center pb-4 border-b-2 transition-colors ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <tab.icon size={20} className="mr-2" />
+                    {tab.label}
+                    <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </nav>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -691,11 +767,15 @@ const OperationsManual: React.FC = () => {
 
       {/* Navigation Tabs */}
       <div className="border-b border-gray-200 mb-6">
-        <nav className="flex space-x-8">
+        <nav className="flex flex-wrap gap-6">
           {[
             { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
             { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
             { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length }
+            , { id: 'history', label: 'Completion History', icon: Clock, count: 0 }
+            , { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length }
+            , { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length }
+            , { id: 'equipment_maintenance', label: 'Equipment Logs', icon: Wrench, count: logs.maintenance.length }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -804,6 +884,130 @@ const OperationsManual: React.FC = () => {
               ) : (
                 data.safetyItems.map(task => renderTaskCard(task, 'safety'))
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Daily Cleaning Logs (new) */}
+        {activeTab === 'daily_cleaning_logs' && (
+          <div>
+            <DailyCleaningLogs />
+          </div>
+        )}
+
+        {/* Daily Safety Checks (new) */}
+        {activeTab === 'daily_safety_checks' && (
+          <div>
+            <DailySafetyChecks />
+          </div>
+        )}
+
+        {/* Equipment Maintenance Logs (new) */}
+        {activeTab === 'equipment_maintenance' && (
+          <div>
+            <EquipmentMaintenance />
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Clock className="mr-2" size={24} />
+                Completion & Incomplete History
+              </h2>
+              <div className="flex items-center space-x-2">
+                <input type="date" value={historyFilters.start} onChange={e => setHistoryFilters(prev => ({ ...prev, start: e.target.value }))} className="p-2 border rounded" />
+                <input type="date" value={historyFilters.end} onChange={e => setHistoryFilters(prev => ({ ...prev, end: e.target.value }))} className="p-2 border rounded" />
+                <button onClick={loadHistory} className="px-3 py-2 bg-blue-600 text-white rounded">Filter</button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-semibold mb-2">Cleaning Logs</h3>
+                <div className="overflow-x-auto bg-white rounded shadow">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-left">
+                      <tr>
+                        <th className="p-2">Task</th>
+                        <th className="p-2">Barber</th>
+                        <th className="p-2">Completed Date</th>
+                        <th className="p-2">Completed At</th>
+                        <th className="p-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.cleaning.map(l => (
+                        <tr key={l.id} className="border-t">
+                          <td className="p-2">{l.cleaning_tasks?.task_name || l.task_name}</td>
+                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{l.completed_date}</td>
+                          <td className="p-2">{l.completed_at}</td>
+                          <td className="p-2">{l.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Maintenance Logs</h3>
+                <div className="overflow-x-auto bg-white rounded shadow">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-left">
+                      <tr>
+                        <th className="p-2">Task</th>
+                        <th className="p-2">Equipment</th>
+                        <th className="p-2">Barber</th>
+                        <th className="p-2">Completed Date</th>
+                        <th className="p-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.maintenance.map(l => (
+                        <tr key={l.id} className="border-t">
+                          <td className="p-2">{l.maintenance_tasks?.task_name || l.task_name}</td>
+                          <td className="p-2">{l.maintenance_tasks?.equipment_name || l.equipment_name}</td>
+                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{l.completed_date}</td>
+                          <td className="p-2">{l.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-2">Safety Check Logs</h3>
+                <div className="overflow-x-auto bg-white rounded shadow">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-gray-50 text-left">
+                      <tr>
+                        <th className="p-2">Item</th>
+                        <th className="p-2">Status</th>
+                        <th className="p-2">Barber</th>
+                        <th className="p-2">Check Date</th>
+                        <th className="p-2">Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.safety.map(l => (
+                        <tr key={l.id} className="border-t">
+                          <td className="p-2">{l.safety_check_items?.check_name || l.item_name}</td>
+                          <td className="p-2">{l.status}</td>
+                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{l.check_date}</td>
+                          <td className="p-2">{l.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
         )}

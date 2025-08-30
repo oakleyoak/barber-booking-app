@@ -497,18 +497,20 @@ export const dbService = {
   // Shop Settings
   async getShopSettings(shopName: string): Promise<ShopSettings | null> {
     try {
-      const { data, error } = await supabase
-        .from('shop_settings')
-        .select('*')
-        .eq('shop_name', shopName)
-        .single();
+      // To avoid triggering a PostgREST 406 (content negotiation) for
+      // filtered queries, fetch all shop_settings and filter locally.
+      // This is slightly less efficient but prevents noisy 406 errors
+      // in the browser console and keeps the UI stable.
+      const { data, error } = await supabase.from('shop_settings').select('*');
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Get shop settings error:', error);
-        throw error;
+      if (error) {
+        // If fetching all fails, log and return null so callers can use defaults
+        console.error('Get shop settings (fetch all) error:', error);
+        return null;
       }
 
-      return data;
+      const found = (data || []).find((s: any) => s.shop_name === shopName) || null;
+      return found;
     } catch (error) {
       console.error('Get shop settings error:', error);
       return null;
