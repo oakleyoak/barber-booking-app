@@ -26,7 +26,8 @@ import {
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { CustomerService } from '../services/supabaseCustomerService';
-import { userService, customerService, bookingService } from '../services/completeDatabase';
+import { userService, customerService } from '../services/completeDatabase';
+import { bookingService } from '../services/supabaseServices';
 import { ServicePricingService } from '../services/servicePricing';
 
 interface Booking {
@@ -72,7 +73,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       if (error) throw error;
       setShowDeleteModal(false);
       setBookingToDelete(null);
-      await loadBookings();
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      }
     } catch (err) {
       alert('Failed to delete booking');
     }
@@ -84,6 +87,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const [filter, setFilter] = useState<'all' | 'today' | 'upcoming' | 'completed' | 'cancelled'>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month' | 'year' | 'custom'>('all');
   const [customDateRange, setCustomDateRange] = useState({ start: '', end: '' });
+  // For upcoming panel day view
+  const [upcomingDate, setUpcomingDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [isUpcomingLoading, setIsUpcomingLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -183,7 +189,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         user_id: '',
         status: 'scheduled',
       });
-      await loadBookings();
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      }
     } catch (err) {
       console.error('BookingManagement: Error creating booking:', err);
       alert('Failed to create booking: ' + (err instanceof Error ? err.message : 'Unknown error'));
@@ -191,30 +199,55 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       setCreating(false);
     }
   };  // Loads bookings from the backend
-  const loadBookings = async () => {
-    setLoading(true);
+  // For upcoming panel: fetch bookings for selected date only, using the same logic as calendar tab
+  const loadUpcomingBookings = async () => {
+    setIsUpcomingLoading(true);
     try {
-      // Owner sees all, staff see their own
-      let bookingsData: Booking[] = [];
-      if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
-        bookingsData = await bookingService.getBookings();
-      } else {
-        bookingsData = await bookingService.getBookings(currentUser.id);
+      let userId = undefined;
+      if (!(currentUser.role === 'Owner' || currentUser.role === 'Manager')) {
+        userId = currentUser.id;
       }
-
-      setBookings(bookingsData || []);
+      const dayBookings = await bookingService.getBookingsByDate(upcomingDate, userId);
+      setBookings(dayBookings || []);
     } catch (err) {
-      console.error('BookingManagement: Error loading bookings:', err);
-      alert('Failed to load bookings');
+      console.error('BookingManagement: Error loading upcoming bookings:', err);
+      setBookings([]);
     } finally {
-      setLoading(false);
+      setIsUpcomingLoading(false);
     }
   };
 
   // On mount, load bookings
+  // Only load all bookings for non-upcoming views
   useEffect(() => {
-    loadBookings();
-  }, [currentUser]);
+    if (currentView !== 'upcoming') {
+      // ...existing code...
+      (async () => {
+        setLoading(true);
+        try {
+          let bookingsData: Booking[] = [];
+          if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+            bookingsData = await bookingService.getAllBookings();
+          } else {
+            bookingsData = await bookingService.getAllBookings(currentUser.id);
+          }
+          setBookings(bookingsData || []);
+        } catch (err) {
+          console.error('BookingManagement: Error loading bookings:', err);
+          alert('Failed to load bookings');
+        } finally {
+          setLoading(false);
+        }
+      })();
+    }
+  }, [currentUser, currentView]);
+
+  // Load bookings for selected date in upcoming panel
+  useEffect(() => {
+    if (currentView === 'upcoming') {
+      loadUpcomingBookings();
+    }
+  }, [currentView, upcomingDate, currentUser]);
 
   const startEdit = (booking: Booking) => {
     setEditingBooking(booking);
@@ -242,7 +275,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }).eq('id', editingBooking.id);
       if (error) throw error;
       setEditingBooking(null);
-      await loadBookings();
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      }
     } catch (error) {
       alert('Failed to update booking');
     }
@@ -269,7 +304,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       if (status === 'completed' && booking) {
         await CustomerService.refreshCustomerStats(currentUser.shop_name, booking.customer_id);
       }
-      await loadBookings();
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      }
     } catch (error) {
       alert('Failed to update booking status');
     }
@@ -283,10 +320,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         if (!matchesSearch) return false;
       }
 
-      // Special handling for upcoming view - only show today's bookings
+      // Updated: Upcoming view shows all bookings from today onwards
       if (currentView === 'upcoming') {
         const today = new Date().toISOString().split('T')[0];
-        if (booking.date !== today) return false;
+        if (booking.date < today) return false;
       }
 
       if (filter !== 'all') {
@@ -331,6 +368,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             if (customDateRange.end && booking.date > customDateRange.end) return false;
             break;
         }
+      }
+      // For upcoming panel day view: filter by selected date if in upcoming view
+      if (currentView === 'upcoming' && upcomingDate) {
+        if (booking.date !== upcomingDate) return false;
       }
       return true;
     });
@@ -443,7 +484,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           <button onClick={exportBookings} className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center"><Download className="h-4 w-4 mr-1" />Export</button>
           <button
             onClick={async () => {
-              await loadBookings();
+              if (currentView === 'upcoming') {
+                await loadUpcomingBookings();
+              }
             }}
             className="px-3 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 flex items-center"
             title="Refresh data from Supabase"
@@ -459,39 +502,78 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       {/* Booking/Slot List: Only show slot list in 'upcoming' (calendar) view */}
       {currentView === 'upcoming' ? (
         <div className="space-y-2">
-          {timeSlots.map((slot) => {
-            const booking = filteredBookings.find(b => b.time === slot);
-            if (booking) {
+          {/* Date picker for day view */}
+          <div className="mb-4 flex items-center gap-2">
+            <label className="font-medium">Select Date:</label>
+            <input
+              type="date"
+              value={upcomingDate}
+              onChange={e => setUpcomingDate(e.target.value)}
+              className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              min={new Date().toISOString().split('T')[0]}
+            />
+          </div>
+          {isUpcomingLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+          ) : (
+            timeSlots.map(time => {
+              // Use same slot logic as calendar tab
+              const slotBookings = bookings.filter(b => {
+                const bookingTime = b.time.length > 5 ? b.time.substring(0, 5) : b.time;
+                return bookingTime === time;
+              });
               return (
-                <div key={slot} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900">{booking.customer_name}</div>
-                    <div className="text-sm text-gray-500">{booking.service}</div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status}</span>
-                    <span className="text-sm text-gray-500">{booking.time}</span>
-                    <button onClick={() => startEdit(booking)} className="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"><Edit2 className="h-4 w-4" /></button>
-                    <button onClick={() => deleteBooking(booking)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"><X className="h-4 w-4" /></button>
+                <div key={time} className="flex items-center p-3 border rounded-lg bg-gray-50">
+                  <div className="w-16 text-sm font-medium text-gray-600">{time}</div>
+                  <div className="flex-1 ml-4">
+                    {slotBookings.length > 0 ? (
+                      <div className="space-y-2">
+                        {slotBookings.map(booking => (
+                          <div key={booking.id} className="bg-white p-3 rounded-lg border shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
+                                <p className="text-sm text-gray-600">{booking.service}</p>
+                                <p className="text-sm font-medium text-gray-900">₺{booking.price.toLocaleString('tr-TR')}</p>
+                              </div>
+                              <div className="flex items-center gap-2 ml-4">
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status}</span>
+                                <div className="flex gap-1">
+                                  <button
+                                    onClick={() => startEdit(booking)}
+                                    className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                                    title="Edit booking"
+                                  >
+                                    <Edit2 className="h-4 w-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteBooking(booking)}
+                                    className="p-1 text-red-600 hover:bg-red-100 rounded"
+                                    title="Delete booking"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div
+                        className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors"
+                        onClick={() => openCreateBookingForSlot(upcomingDate, time)}
+                      >
+                        Click to book this slot
+                      </div>
+                    )}
                   </div>
                 </div>
               );
-            } else {
-              return (
-                <div
-                  key={slot}
-                  onClick={() => openCreateBookingForSlot(today, slot)}
-                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-center justify-between cursor-pointer hover:bg-gray-100 hover:border-gray-300 transition-colors"
-                >
-                  <span className="text-gray-500 font-mono text-base">{slot}</span>
-                  <div className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded">
-                    <span className="font-medium">Create Booking</span>
-                    <span className="inline-flex items-center justify-center"><CalendarIcon className="h-4 w-4" /></span>
-                  </div>
-                </div>
-              );
-            }
-          })}
+            })
+          )}
         </div>
       ) : (
         // Show regular booking list for 'all' and 'history' tabs

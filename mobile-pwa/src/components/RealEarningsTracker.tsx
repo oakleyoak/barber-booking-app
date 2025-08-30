@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import type { Booking } from '../lib/supabase';
 import { TrendingUp, Calendar, DollarSign, Users, Target, Download } from 'lucide-react';
 import { bookingService, expenseService } from '../services/supabaseServices';
 import { ShopSettingsService } from '../services/shopSettings';
@@ -13,6 +14,10 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
   const [weeklyEarnings, setWeeklyEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
   const [monthlyEarnings, setMonthlyEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
   const [expenses, setExpenses] = useState({ today: 0, week: 0, month: 0 });
+  const [weeklyBookings, setWeeklyBookings] = useState<Booking[]>([]);
+  const [monthlyBookings, setMonthlyBookings] = useState<Booking[]>([]);
+  const [expandedWeek, setExpandedWeek] = useState(false);
+  const [expandedMonth, setExpandedMonth] = useState(false);
   const [commissionRate, setCommissionRate] = useState(60);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +27,63 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
 
   useEffect(() => {
     loadEarnings();
+    loadDetailedBookings();
   }, [currentUser.id]);
+
+  const getWeekStart = (date: Date) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() - d.getDay());
+    d.setHours(0,0,0,0);
+    return d;
+  };
+
+  const getMonthStart = (date: Date) => {
+    const d = new Date(date);
+    d.setDate(1);
+    d.setHours(0,0,0,0);
+    return d;
+  };
+
+  const loadDetailedBookings = async () => {
+    const today = new Date();
+    const weekStart = getWeekStart(today);
+    const monthStart = getMonthStart(today);
+    const userId = currentUser.id;
+    // Get all bookings for week and month for this user
+    const [week, month] = await Promise.all([
+      bookingService.getBookingsByDateRange(
+        weekStart.toISOString().split('T')[0],
+        today.toISOString().split('T')[0],
+        userId
+      ),
+      bookingService.getBookingsByDateRange(
+        monthStart.toISOString().split('T')[0],
+        today.toISOString().split('T')[0],
+        userId
+      )
+    ]);
+    setWeeklyBookings(week);
+    setMonthlyBookings(month);
+  };
+  // Helper to summarize bookings
+  const summarizeBookings = (bookings: Booking[]) => {
+    const customerSet = new Set<string>(bookings.map((b: Booking) => b.customer_id || b.customer_name));
+    const gross = bookings.reduce((sum: number, b: Booking) => sum + (b.price || 0), 0);
+    const serviceCounts: Record<string, number> = {};
+    bookings.forEach((b: Booking) => {
+      serviceCounts[b.service] = (serviceCounts[b.service] || 0) + 1;
+    });
+    return {
+      customerCount: customerSet.size,
+      gross,
+      net: gross, // You can subtract expenses if needed
+      serviceCounts
+    };
+  };
+  // Weekly summary
+  const weekSummary = summarizeBookings(weeklyBookings);
+  // Monthly summary
+  const monthSummary = summarizeBookings(monthlyBookings);
 
   const loadEarnings = async () => {
     try {
@@ -175,33 +236,68 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         </div>
       </div>
 
-      {/* Performance Stats */}
+
+      {/* Weekly & Monthly Summaries */}
       <div className="bg-white rounded-lg shadow p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Summary</h3>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
-              ₺{monthlyEarnings.bookingCount > 0 ? (monthlyEarnings.totalAmount / monthlyEarnings.bookingCount).toFixed(0) : '0'}
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly & Monthly Summaries</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Weekly */}
+          <div className="border rounded-lg p-3">
+            <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedWeek(w => !w)}>
+              <div>
+                <div className="font-bold text-blue-700">This Week</div>
+                <div className="text-sm text-gray-600">{weeklyBookings.length} bookings, {weekSummary.customerCount} customers</div>
+                <div className="text-sm text-gray-600">Gross: {formatCurrency(weekSummary.gross)}</div>
+              </div>
+              <button className="text-blue-600 underline text-xs">{expandedWeek ? 'Hide' : 'Show'} details</button>
             </div>
-            <div className="text-sm text-gray-600">Avg per booking</div>
+            {expandedWeek && (
+              <div className="mt-2">
+                <div className="font-semibold mb-1">Service Breakdown:</div>
+                <ul className="mb-2">
+                  {Object.entries(weekSummary.serviceCounts).map(([service, count]) => (
+                    <li key={service} className="text-xs text-gray-700">{service}: {count}</li>
+                  ))}
+                </ul>
+                <div className="font-semibold mb-1">Bookings:</div>
+                <ul className="max-h-32 overflow-y-auto">
+                  {weeklyBookings.map(b => (
+                    <li key={b.id} className="text-xs text-gray-600 border-b last:border-b-0 py-1">
+                      {b.date} - {b.customer_name} - {b.service} - {formatCurrency(b.price)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {weeklyEarnings.bookingCount > 0 ? Math.round(weeklyEarnings.bookingCount / 7) : 0}
+          {/* Monthly */}
+          <div className="border rounded-lg p-3">
+            <div className="flex justify-between items-center cursor-pointer" onClick={() => setExpandedMonth(m => !m)}>
+              <div>
+                <div className="font-bold text-purple-700">This Month</div>
+                <div className="text-sm text-gray-600">{monthlyBookings.length} bookings, {monthSummary.customerCount} customers</div>
+                <div className="text-sm text-gray-600">Gross: {formatCurrency(monthSummary.gross)}</div>
+              </div>
+              <button className="text-purple-600 underline text-xs">{expandedMonth ? 'Hide' : 'Show'} details</button>
             </div>
-            <div className="text-sm text-gray-600">Daily average</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              ₺{expenses.month.toFixed(0)}
-            </div>
-            <div className="text-sm text-gray-600">Monthly expenses</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-yellow-600">
-              {monthlyEarnings.totalAmount > 0 ? ((monthlyEarnings.totalAmount - expenses.month) / monthlyEarnings.totalAmount * 100).toFixed(1) : '0'}%
-            </div>
-            <div className="text-sm text-gray-600">Profit margin</div>
+            {expandedMonth && (
+              <div className="mt-2">
+                <div className="font-semibold mb-1">Service Breakdown:</div>
+                <ul className="mb-2">
+                  {Object.entries(monthSummary.serviceCounts).map(([service, count]) => (
+                    <li key={service} className="text-xs text-gray-700">{service}: {count}</li>
+                  ))}
+                </ul>
+                <div className="font-semibold mb-1">Bookings:</div>
+                <ul className="max-h-32 overflow-y-auto">
+                  {monthlyBookings.map(b => (
+                    <li key={b.id} className="text-xs text-gray-600 border-b last:border-b-0 py-1">
+                      {b.date} - {b.customer_name} - {b.service} - {formatCurrency(b.price)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </div>

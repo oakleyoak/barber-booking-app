@@ -44,7 +44,7 @@ class ShopSettingsService {
 
   private getDefaultSettings(): ShopSettings {
     return {
-      shop_name: 'Edge & Co Barber Shop',
+      shop_name: 'Edge & Co',
       opening_time: '09:00:00',
       closing_time: '20:00:00',
       closed_days: ['Thursday', 'Sunday'],

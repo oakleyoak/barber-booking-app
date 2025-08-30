@@ -87,7 +87,7 @@ function App() {
         const userData = {
           name: formData.name,
           role: formData.role as 'Owner' | 'Manager' | 'Barber' | 'Apprentice',
-          shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co Barber Shop',
+          shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co',
           commission_rate: formData.role === 'Barber' ? 40 : formData.role === 'Manager' ? 50 : 30,
           target_weekly: formData.role === 'Owner' ? 3000 : formData.role === 'Manager' ? 2000 : 800,
           target_monthly: formData.role === 'Owner' ? 12000 : formData.role === 'Manager' ? 8000 : 3200
@@ -143,7 +143,7 @@ function App() {
               <div className="flex items-center">
                 <img src={logoIcon} alt="Edge & Co Logo" className="h-12 w-12 object-contain mr-3 rounded-full border border-gray-200" />
                 <div>
-                  <h1 className="text-xl font-bold text-blue-900">Edge & Co Barber Management</h1>
+                  <h1 className="text-xl font-bold text-blue-900">Edge & Co Management</h1>
                   <p className="text-sm text-blue-700">{currentUser.shop_name}</p>
                 </div>
               </div>
@@ -358,11 +358,11 @@ function App() {
         <div className="text-center mb-6 bg-white bg-opacity-80 rounded-xl p-2">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Edge & Co Management</h1>
           <p className="text-gray-600">
-            {isLogin ? 'Sign in to your account' : 'Create your barber shop account'}
+            {isLogin ? 'Sign in to your account' : 'Create your shop account'}
           </p>
           {!isLogin && (
             <p className="text-sm text-gray-500 mt-2">
-              Complete barber shop management system with operations tracking.
+              Complete shop management system with operations tracking.
             </p>
           )}
         </div>

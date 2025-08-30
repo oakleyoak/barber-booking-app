@@ -257,8 +257,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   };
 
   const getBookingsForDate = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    return monthlyBookings.filter(booking => booking.date === dateStr);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const localDateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    return monthlyBookings.filter(
+      booking => booking.date === localDateStr && booking.user_id === currentUser.id
+    );
   };
 
   const formatCurrency = (amount: number) => {
@@ -412,24 +415,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     <div className="text-xs sm:text-sm font-medium mb-1">
                       {date.getDate()}
                     </div>
-                    <div className="space-y-1">
-                      {dayBookings.slice(0, 2).map((booking, idx) => (
-                        <div
-                          key={idx}
-                          className={`text-xs p-1 rounded truncate ${
-                            booking.status === 'completed'
-                              ? 'bg-green-100 text-green-800'
-                              : booking.status === 'cancelled'
-                                ? 'bg-red-100 text-red-800'
-                                : 'bg-blue-100 text-blue-800'
-                          }`}
-                        >
-                          {booking.customer_name}
-                        </div>
-                      ))}
-                      {dayBookings.length > 2 && (
-                        <div className="text-xs text-gray-500">
-                          +{dayBookings.length - 2} more
+                    <div className="space-y-1 flex items-center">
+                      {dayBookings.length > 0 && (
+                        <div className="text-xs font-semibold text-blue-700 bg-blue-100 rounded px-2 py-1 inline-block">
+                          {dayBookings.length} booking{dayBookings.length > 1 ? 's' : ''}
                         </div>
                       )}
                     </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User } from '../lib/supabase';
 import { Customer, CustomerService } from '../services/supabaseCustomerService';
 import { supabase } from '../lib/supabase';
+import { userService } from '../services/completeDatabase';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -31,8 +32,20 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     price: 700,
     notes: '',
     appointment_date: new Date().toISOString().split('T')[0],
-    appointment_time: '09:00'
+    appointment_time: '09:00',
+    user_id: currentUser.id // default to current user
   });
+
+  const [allStaff, setAllStaff] = useState<{id: string, name: string}[]>([]);
+
+  useEffect(() => {
+    // Only fetch staff if owner/manager
+    if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+      userService.getUsers().then(users => {
+        setAllStaff(users.map(u => ({ id: u.id, name: u.name })));
+      });
+    }
+  }, [currentUser.role]);
 
   const services = [
     { name: 'Haircut', price: 700, duration: 45 },
@@ -142,12 +155,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCustomer) return;
-    
     try {
       setLoading(true);
-      
+      const bookingUserId = (currentUser.role === 'Owner' || currentUser.role === 'Manager') ? bookingData.user_id : currentUser.id;
       const { error } = await supabase.from('bookings').insert([{
-        user_id: currentUser.id,
+        user_id: bookingUserId,
         customer_id: selectedCustomer.id,
         customer_name: selectedCustomer.name,
         service: bookingData.service,
@@ -156,9 +168,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         time: bookingData.appointment_time,
         status: 'scheduled'
       }]);
-
       if (error) throw error;
-
       alert('Booking created successfully!');
       setShowBookingModal(false);
       setSelectedCustomer(null);
@@ -167,7 +177,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         price: 700,
         notes: '',
         appointment_date: new Date().toISOString().split('T')[0],
-        appointment_time: '09:00'
+        appointment_time: '09:00',
+        user_id: currentUser.id
       });
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -384,8 +395,23 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
               <h3 className="text-lg sm:text-xl font-bold mb-4">
                 Create Booking for {selectedCustomer.name}
               </h3>
-              
               <form onSubmit={handleBookingSubmit} className="space-y-4">
+                {/* Staff selector for owner/manager */}
+                {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Staff</label>
+                    <select
+                      value={bookingData.user_id}
+                      onChange={e => setBookingData(prev => ({ ...prev, user_id: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    >
+                      <option value="">Select staff</option>
+                      {allStaff.map(staff => (
+                        <option key={staff.id} value={staff.id}>{staff.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Service
@@ -402,7 +428,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                     ))}
                   </select>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Price (₺)
@@ -414,7 +439,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                   />
                 </div>
-
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -427,7 +451,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Time
@@ -440,7 +463,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                     />
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Notes
@@ -452,7 +474,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                     rows={2}
                   />
                 </div>
-
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 pt-4">
                   <button
                     type="submit"
