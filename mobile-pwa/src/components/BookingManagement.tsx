@@ -185,7 +185,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             name: bookingData.customer_name,
             email: '', // Default empty email
             phone: '', // Default empty phone
-            notes: 'Created automatically from booking',
             user_id: finalUserId
           });
           bookingData.customer_id = newCustomer.id;
