@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
 import logoIcon from './assets/edgeandcologoicon.JPG';
 import largeLogo from './assets/edgeandcologo.JPG';
+import { supabase } from './lib/supabase';
 import { authService, userService, type User as SupabaseUser } from './services/completeDatabase';
 import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
@@ -28,6 +29,7 @@ function App() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailVerificationWarning, setShowEmailVerificationWarning] = useState(false);
 
   // Check for saved user session on load using Supabase session service
   useEffect(() => {
@@ -36,6 +38,8 @@ function App() {
         const user = await authService.getCurrentUser();
         if (user) {
           setCurrentUser(user);
+          // Check if email is verified
+          await checkEmailVerification();
         }
       } catch (error) {
         console.error('Error loading user session:', error);
@@ -43,6 +47,20 @@ function App() {
     };
     initializeApp();
   }, []);
+
+  // Check email verification status
+  const checkEmailVerification = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user && !session.user.email_confirmed_at) {
+        setShowEmailVerificationWarning(true);
+      } else {
+        setShowEmailVerificationWarning(false);
+      }
+    } catch (error) {
+      console.error('Error checking email verification:', error);
+    }
+  };
 
   // Authentication handler with Supabase integration
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +83,8 @@ function App() {
         const user = await authService.loginUser(formData.email, formData.password);
         setCurrentUser(user);
         setError(''); // Clear any previous errors
+        // Check email verification after successful login
+        await checkEmailVerification();
       } else {
         // Registration using Supabase Auth
         if (!formData.email.includes('@') || formData.email.length < 5) {
@@ -160,6 +180,25 @@ function App() {
             </div>
           </div>
         </div>
+
+        {/* Email Verification Warning */}
+        {showEmailVerificationWarning && (
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
+            <div className="bg-orange-100 border-l-4 border-orange-500 p-4 rounded-r-lg">
+              <div className="flex items-center">
+                <AlertTriangle className="h-5 w-5 text-orange-500 mr-3" />
+                <div>
+                  <p className="text-sm text-orange-800">
+                    <strong>Email verification required:</strong> Please check your email and click the verification link to access all features.
+                  </p>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Some features may be limited until your email is verified.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Navigation */}
   <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
