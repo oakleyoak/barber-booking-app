@@ -337,7 +337,7 @@ export const customerService = {
 
 export const bookingService = {
   async getBookings(userId?: string): Promise<Booking[]> {
-    let query = supabase.from('bookings').select('*');
+    let query = supabase.from('bookings').select('*, users(name)');
     
     if (userId) {
       query = query.eq('user_id', userId);
@@ -350,7 +350,7 @@ export const bookingService = {
   },
 
   async getBookingsByDate(date: string, userId?: string): Promise<Booking[]> {
-    let query = supabase.from('bookings').select('*').eq('date', date);
+    let query = supabase.from('bookings').select('*, users(name)').eq('date', date);
     
     if (userId) {
       query = query.eq('user_id', userId);
@@ -396,7 +396,7 @@ export const bookingService = {
 
   async getBookingsByDateRange(startDate: string, endDate: string, userId?: string): Promise<Booking[]> {
     let query = supabase.from('bookings')
-      .select('*')
+      .select('*, users(name)')
       .gte('date', startDate)
       .lte('date', endDate);
     

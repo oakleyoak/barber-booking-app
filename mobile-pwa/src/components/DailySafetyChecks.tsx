@@ -77,7 +77,7 @@ export default function DailySafetyChecks() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Barber</label>
               <select value={form.barber_id} onChange={e => setForm({...form, barber_id: e.target.value})} className="w-full p-2 border rounded">
                 <option value="">Select Barber</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                {users.map(u => <option key={u.id} value={u.auth_user_id}>{u.name}</option>)}
               </select>
             </div>
             <div>
@@ -125,7 +125,7 @@ export default function DailySafetyChecks() {
               {checks.map(row => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{new Date(row.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">{users.find(u => u.id === row.barber_id)?.name || '—'}</td>
+                  <td className="px-4 py-3">{users.find(u => u.auth_user_id === row.barber_id)?.name || '—'}</td>
                   <td className="px-4 py-3">{row.item_id || '—'}</td>
                   <td className="px-4 py-3">{row.status}</td>
                   <td className="px-4 py-3">{row.reading_value || row.notes || ''}</td>
