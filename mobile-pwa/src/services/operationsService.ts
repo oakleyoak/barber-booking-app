@@ -73,9 +73,36 @@ export interface SafetyCheckLog {
 
 // Get current user/barber ID helper
 // TODO: Replace with real auth context/user session
-const getCurrentBarberId = () => {
-  // Use a real user id from your users table for now
-  return 'b399ed93-dae8-4939-b044-b9347d2be54e';
+const getCurrentBarberId = async () => {
+  try {
+    // Get current user from Supabase Auth session
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error('Error getting auth session:', error);
+      return null;
+    }
+    
+    if (session?.user) {
+      // Get the user profile from the users table using the auth user ID
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', session.user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Error getting user profile:', profileError);
+        return null;
+      }
+      
+      return profile?.id || null;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Error in getCurrentBarberId:', error);
+    return null;
+  }
 };
 
 // Cleaning Tasks Operations
@@ -284,7 +311,11 @@ export const deleteSafetyCheckItem = async (id: string): Promise<void> => {
 // Task Completion Operations
 export const updateTaskCompletion = async (type: string, taskId: string, completed: boolean): Promise<void> => {
   try {
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
+    if (!barberId) {
+      throw new Error('No current user found. Please log in again.');
+    }
+    
     const today = new Date().toISOString().split('T')[0];
     
     if (type === 'cleaning') {
@@ -369,7 +400,7 @@ export const updateTaskCompletion = async (type: string, taskId: string, complet
 export const getOperationsStatistics = async () => {
   try {
     const today = new Date().toISOString().split('T')[0];
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     // Get total tasks
     const [cleaningTasks, maintenanceTasks, safetyItems] = await Promise.all([
@@ -409,7 +440,7 @@ export const getOperationsStatistics = async () => {
 
 export const getComplianceReports = async (startDate: string, endDate: string) => {
   try {
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     const [cleaningCompliance, maintenanceCompliance, safetyCompliance] = await Promise.all([
       supabase
@@ -461,7 +492,7 @@ export const getComplianceReports = async (startDate: string, endDate: string) =
 // Fetch logs / history (cleaning, maintenance, safety). If startDate/endDate omitted, returns recent logs.
 export const getLogsHistory = async (startDate?: string, endDate?: string) => {
   try {
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     const cleaningQuery = supabase
       .from('cleaning_logs')
@@ -514,7 +545,7 @@ export const getCleaningTasksWithStatus = async (): Promise<(CleaningTask & { co
   try {
     const tasks = await getCleaningTasks();
     const today = new Date().toISOString().split('T')[0];
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     const { data: logs } = await supabase
       .from('cleaning_logs')
@@ -538,7 +569,7 @@ export const getMaintenanceTasksWithStatus = async (): Promise<(MaintenanceTask 
   try {
     const tasks = await getMaintenanceTasks();
     const today = new Date().toISOString().split('T')[0];
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     const { data: logs } = await supabase
       .from('maintenance_logs')
@@ -562,7 +593,7 @@ export const getSafetyCheckItemsWithStatus = async (): Promise<(SafetyCheckItem 
   try {
     const items = await getSafetyCheckItems();
     const today = new Date().toISOString().split('T')[0];
-    const barberId = getCurrentBarberId();
+    const barberId = await getCurrentBarberId();
 
     const { data: logs } = await supabase
       .from('safety_check_logs')
