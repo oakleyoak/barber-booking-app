@@ -26,9 +26,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
-import { CustomerService } from '../services/supabaseCustomerService';
-import { userService, customerService } from '../services/completeDatabase';
-import { bookingService } from '../services/supabaseServices';
+import { userService, customerService, bookingService } from '../services/completeDatabase';
 import { ServicePricingService } from '../services/servicePricing';
 
 interface Booking {
@@ -229,9 +227,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         try {
           let bookingsData: Booking[] = [];
           if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
-            bookingsData = await bookingService.getAllBookings();
+            bookingsData = await bookingService.getBookings();
           } else {
-            bookingsData = await bookingService.getAllBookings(currentUser.id);
+            bookingsData = await bookingService.getBookings(currentUser.id);
           }
           setBookings(bookingsData || []);
         } catch (err) {
@@ -303,9 +301,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       if (fetchError) throw fetchError;
       const { error } = await supabase.from('bookings').update({ status: status as 'scheduled' | 'completed' | 'cancelled', updated_at: new Date().toISOString() }).eq('id', bookingId);
       if (error) throw error;
-      if (status === 'completed' && booking) {
-        await CustomerService.refreshCustomerStats(currentUser.shop_name, booking.customer_id);
-      }
       if (currentView === 'upcoming') {
         await loadUpcomingBookings();
       }

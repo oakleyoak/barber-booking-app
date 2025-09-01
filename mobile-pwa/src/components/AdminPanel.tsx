@@ -3,7 +3,7 @@ import { useModal } from './ui/ModalProvider';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { ShopSettingsService } from '../services/shopSettings';
-import { bookingService, customerService, expenseService } from '../services/supabaseServices';
+import { bookingService, customerService, expenseService } from '../services/completeDatabase';
 
 const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string } }) => {
   const modal = useModal();
@@ -87,13 +87,13 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
       // Load stats with better error handling
       try {
         const [customers, monthlyEarnings, weeklyEarnings, dailyEarnings] = await Promise.all([
-          customerService.getAllCustomers(),
+          customerService.getCustomers(),
           bookingService.getMonthlyEarnings(),
           bookingService.getWeeklyEarnings(),
           bookingService.getDailyEarnings(new Date().toISOString().split('T')[0])
         ]);
 
-        const totalBookings = await bookingService.getAllBookings();
+        const totalBookings = await bookingService.getBookings();
 
         setStats({
           totalBookings: totalBookings.length,

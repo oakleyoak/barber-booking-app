@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
-import { Customer, CustomerService } from '../services/supabaseCustomerService';
+import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
 
@@ -70,7 +70,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   useEffect(() => {
     const filtered = customers.filter(customer =>
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      customer.phone.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      customer.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     setFilteredCustomers(filtered);
@@ -79,7 +79,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const loadCustomers = async () => {
     setLoading(true);
     try {
-      const data = await CustomerService.getCustomers(currentUser.id);
+      const data = await customerService.getCustomers(currentUser.id);
       setCustomers(data);
     } catch (error) {
       console.error('Error loading customers:', error);
@@ -98,7 +98,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     setEditingCustomer(customer);
     setFormData({
       name: customer.name,
-      phone: customer.phone,
+      phone: customer.phone || '',
       email: customer.email || '',
       notes: customer.notes || ''
     });
@@ -112,7 +112,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     if (!ok) return;
     try {
       setLoading(true);
-      await CustomerService.deleteCustomer(currentUser.id, customerId);
+      await customerService.deleteCustomer(customerId);
       await loadCustomers();
       modal.notify('Customer deleted', 'success');
     } catch (error) {
@@ -129,9 +129,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       setLoading(true);
       
       if (editingCustomer) {
-        await CustomerService.updateCustomer(currentUser.id, editingCustomer.id, formData);
+        await customerService.updateCustomer(editingCustomer.id, formData);
       } else {
-        await CustomerService.addCustomer(currentUser.id, formData);
+        await customerService.createCustomer({ ...formData, user_id: currentUser.id });
       }
       
       await loadCustomers();
@@ -261,9 +261,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                             <div className="text-xs text-gray-500 md:hidden">
                               {customer.phone} {customer.email && `• ${customer.email}`}
                             </div>
-                            <div className="text-xs text-gray-500 lg:hidden">
-                              {customer.totalVisits} visits • {formatCurrency(customer.totalSpent)}
-                            </div>
                           </td>
                           <td className="px-3 sm:px-6 py-4 whitespace-nowrap hidden md:table-cell">
                             <div className="text-sm text-gray-900">{customer.phone}</div>
@@ -273,10 +270,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                           </td>
                           <td className="px-3 sm:px-6 py-4 hidden lg:table-cell">
                             <div className="text-sm text-gray-900">
-                              {customer.totalVisits} visits
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {formatCurrency(customer.totalSpent)} spent
+                              Last visit: {customer.last_visit || 'Never'}
                             </div>
                           </td>
                           <td className="px-3 sm:px-6 py-4 hidden xl:table-cell">

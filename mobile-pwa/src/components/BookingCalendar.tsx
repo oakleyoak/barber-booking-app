@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw } from 'lucide-react';
-import { bookingService, customerService } from '../services/supabaseServices';
+import { bookingService, customerService } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
-import { CustomerService } from '../services/supabaseCustomerService';
 import type { Booking, Customer, User as UserType } from '../lib/supabase';
 
 interface BookingCalendarProps {
@@ -61,7 +60,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const dayBookings = await bookingService.getBookingsByDate(selectedDate, userFilter);
 
       // Load customers for the current user
-      const allCustomers = await customerService.getAllCustomers(userFilter);
+      const allCustomers = await customerService.getCustomers(userFilter);
 
       setBookings(dayBookings);
       setCustomers(allCustomers);
@@ -182,11 +181,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const ok = await modal.confirm('Are you sure you want to delete this booking?');
     if (!ok) return;
     try {
-      const success = await bookingService.deleteBooking(id);
-      if (success) {
-        setBookings(prev => prev.filter(b => b.id !== id));
-        setMonthlyBookings(prev => prev.filter(b => b.id !== id));
-      }
+      await bookingService.deleteBooking(id);
+      setBookings(prev => prev.filter(b => b.id !== id));
+      setMonthlyBookings(prev => prev.filter(b => b.id !== id));
     } catch (error) {
       console.error('Error deleting booking:', error);
       modal.notify('Failed to delete booking. Please try again.', 'error');
@@ -211,11 +208,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       if (updated) {
         setBookings(prev => prev.map(b => b.id === id ? updated : b));
         setMonthlyBookings(prev => prev.map(b => b.id === id ? updated : b));
-
-        // If booking was completed, refresh customer stats
-        if (status === 'completed' && booking?.customer_id) {
-          await CustomerService.refreshCustomerStats(currentUser.shop_name, booking.customer_id);
-        }
       }
     } catch (error) {
       console.error('Error updating booking status:', error);
