@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Booking } from '../lib/supabase';
 import { TrendingUp, Calendar, DollarSign, Users, Target, Download } from 'lucide-react';
-import { bookingService, expenseService } from '../services/supabaseServices';
+import { bookingService, expenseService } from '../services/completeDatabase';
 import { ShopSettingsService } from '../services/shopSettings';
 import type { User as UserType } from '../lib/supabase';
 

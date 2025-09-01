@@ -23,8 +23,7 @@ function App() {
     email: '',
     password: '',
     name: '',
-    role: 'Barber',
-    shopName: ''
+    role: 'Barber'
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -80,15 +79,12 @@ function App() {
           setError('Please enter your full name');
           return;
         }
-        if (formData.role === 'Owner' && formData.shopName.length < 2) {
-          setError('Please enter your shop name');
-          return;
-        }
 
         const userData = {
           name: formData.name,
+          email: formData.email,
           role: formData.role as 'Owner' | 'Manager' | 'Barber' | 'Apprentice',
-          shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co',
+          shop_name: 'Edge & Co', // Always Edge & Co since this is shop-specific app
           // Commission rates are percentages (not fractions)
           commission_rate: formData.role === 'Owner' ? 70 : formData.role === 'Manager' ? 60 : formData.role === 'Barber' ? 40 : 30,
           target_weekly: formData.role === 'Owner' ? 3000 : formData.role === 'Manager' ? 2000 : 800,
@@ -118,14 +114,14 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      await authService.logoutUser();
+      await authService.logout();
       setCurrentUser(null);
-      setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
+      setFormData({ email: '', password: '', name: '', role: 'Barber' });
     } catch (error) {
       console.error('Sign out error:', error);
       // Still clear the local state even if logout fails
       setCurrentUser(null);
-      setFormData({ email: '', password: '', name: '', role: 'Barber', shopName: '' });
+      setFormData({ email: '', password: '', name: '', role: 'Barber' });
     }
   };
 
@@ -402,20 +398,6 @@ function App() {
                   <option value="Apprentice">Apprentice</option>
                 </select>
               </div>
-
-              {formData.role === 'Owner' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Enter your shop name"
-                    value={formData.shopName}
-                    onChange={(e) => setFormData({ ...formData, shopName: e.target.value })}
-                    required
-                  />
-                </div>
-              )}
             </>
           )}
 

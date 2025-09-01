@@ -196,7 +196,19 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
             <select
               value={newStaff.role}
-              onChange={(e) => setNewStaff({ ...newStaff, role: e.target.value as 'Manager' | 'Barber' | 'Apprentice' })}
+              onChange={(e) => {
+                const role = e.target.value as 'Manager' | 'Barber' | 'Apprentice';
+                const defaultCommissionRates = {
+                  'Apprentice': 40,  // Staff gets 40%, Owner gets 60%
+                  'Barber': 60,      // Staff gets 60%, Owner gets 40%
+                  'Manager': 70      // Staff gets 70%, Owner gets 30%
+                };
+                setNewStaff({ 
+                  ...newStaff, 
+                  role, 
+                  commission_rate: defaultCommissionRates[role] 
+                });
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="Apprentice">Apprentice</option>
@@ -206,15 +218,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
-            <input
-              type="number"
+            <select
               value={newStaff.commission_rate}
               onChange={(e) => setNewStaff({ ...newStaff, commission_rate: parseFloat(e.target.value) || 0 })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="0"
-              min="0"
-              max="100"
-            />
+            >
+              <option value="40">40% (Apprentice)</option>
+              <option value="60">60% (Barber)</option>
+              <option value="70">70% (Manager)</option>
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Target</label>

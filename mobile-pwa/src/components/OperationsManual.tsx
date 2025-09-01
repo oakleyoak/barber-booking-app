@@ -659,60 +659,10 @@ const OperationsManual: React.FC = () => {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Header: two-row responsive layout (title + controls on row 1, tabs full-width on row 2) */}
+      {/* Header */}
       <div className="mb-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-3xl font-bold text-gray-900 truncate">Operations Manual</h1>
-            <p className="text-gray-600 mt-1">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
-          </div>
-
-          <div className="flex items-center space-x-2 flex-shrink-0">
-            <button onClick={() => loadData()} className="hidden sm:inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-              <RotateCcw size={16} className="mr-2" /> Refresh
-            </button>
-            <button className="hidden sm:inline-flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200">
-              <Download size={16} className="mr-2" /> Export
-            </button>
-            <button onClick={() => setShowAddForm('cleaning')} className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
-              <Plus size={14} className="mr-2" /> New Task
-            </button>
-          </div>
-
-          {/* Tabs forced to a new full-width row on tiny screens */}
-          <div className="w-full mt-3">
-            {/* Navigation Tabs */}
-            <div className="border-b border-gray-200">
-              <nav className="flex flex-wrap gap-6 pb-4">
-                {[
-                  { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
-                  { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
-                  { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length }
-                  , { id: 'history', label: 'Completion History', icon: Clock, count: 0 }
-                  , { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length }
-                  , { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length }
-                  , { id: 'equipment_maintenance', label: 'Equipment Logs', icon: Wrench, count: logs.maintenance.length }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center pb-4 border-b-2 transition-colors ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
-                  >
-                    <tab.icon size={20} className="mr-2" />
-                    {tab.label}
-                    <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                      {tab.count}
-                    </span>
-                  </button>
-                ))}
-              </nav>
-            </div>
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-gray-900">Operations Manual</h1>
+        <p className="text-gray-600 mt-1">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
       </div>
 
       {/* Stats Cards */}
