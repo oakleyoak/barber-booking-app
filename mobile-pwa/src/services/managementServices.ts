@@ -268,7 +268,31 @@ class UserManagementService {
     target_monthly?: number;
   }): Promise<User | null> {
     try {
-      const newUser: Omit<User, 'id'> = {
+      // First create the Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            shop_name: userData.shop_name
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('Auth user creation error:', authError);
+        throw new Error(`Failed to create auth user: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('No auth user data returned');
+      }
+
+      // Then create the profile in users table with the auth user ID
+      const newUser: Omit<User, 'id'> & { id: string } = {
+        id: authData.user.id, // Use the auth user ID!
         name: userData.name,
         email: userData.email,
         role: userData.role as 'Owner' | 'Barber',

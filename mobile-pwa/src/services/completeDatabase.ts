@@ -1111,8 +1111,13 @@ export const authService = {
         throw new Error(signUpError.message || 'Registration failed');
       }
 
-      // Create profile in users table (do NOT store password)
+      if (!signUpData.user) {
+        throw new Error('No user data returned from auth signup');
+      }
+
+      // Create profile in users table using the auth user ID
       const newProfile = {
+        id: signUpData.user.id, // Use the auth user ID here!
         email,
         name: userData.name || '',
         role: userData.role || 'Barber',

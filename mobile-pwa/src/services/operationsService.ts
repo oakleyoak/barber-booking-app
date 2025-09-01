@@ -402,6 +402,17 @@ export const getOperationsStatistics = async () => {
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
+    // If no user is authenticated, return empty statistics
+    if (!barberId) {
+      console.warn('No authenticated user found for operations statistics');
+      return {
+        total_tasks: 0,
+        tasks_completed_today: 0,
+        tasks_pending: 0,
+        compliance_rate: '0%'
+      };
+    }
+
     // Get total tasks
     const [cleaningTasks, maintenanceTasks, safetyItems] = await Promise.all([
       getCleaningTasks(),
@@ -441,6 +452,17 @@ export const getOperationsStatistics = async () => {
 export const getComplianceReports = async (startDate: string, endDate: string) => {
   try {
     const barberId = await getCurrentBarberId();
+    
+    // If no user is authenticated, return empty compliance report
+    if (!barberId) {
+      console.warn('No authenticated user found for compliance reports');
+      return {
+        cleaning_compliance: [],
+        maintenance_compliance: [],
+        safety_compliance: [],
+        overall_compliance_rate: 0
+      };
+    }
 
     const [cleaningCompliance, maintenanceCompliance, safetyCompliance] = await Promise.all([
       supabase
@@ -493,6 +515,16 @@ export const getComplianceReports = async (startDate: string, endDate: string) =
 export const getLogsHistory = async (startDate?: string, endDate?: string) => {
   try {
     const barberId = await getCurrentBarberId();
+    
+    // If no user is authenticated, return empty logs
+    if (!barberId) {
+      console.warn('No authenticated user found for logs history');
+      return {
+        cleaning: [],
+        maintenance: [],
+        safety: []
+      };
+    }
 
     const cleaningQuery = supabase
       .from('cleaning_logs')
@@ -547,6 +579,15 @@ export const getCleaningTasksWithStatus = async (): Promise<(CleaningTask & { co
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
+    // If no user is authenticated, return tasks without completion status
+    if (!barberId) {
+      console.warn('No authenticated user found for cleaning tasks with status');
+      return tasks.map(task => ({
+        ...task,
+        completed_today: false
+      }));
+    }
+
     const { data: logs } = await supabase
       .from('cleaning_logs')
       .select('task_id')
@@ -571,6 +612,15 @@ export const getMaintenanceTasksWithStatus = async (): Promise<(MaintenanceTask 
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
+    // If no user is authenticated, return tasks without completion status
+    if (!barberId) {
+      console.warn('No authenticated user found for maintenance tasks with status');
+      return tasks.map(task => ({
+        ...task,
+        completed_today: false
+      }));
+    }
+
     const { data: logs } = await supabase
       .from('maintenance_logs')
       .select('task_id')
@@ -594,6 +644,15 @@ export const getSafetyCheckItemsWithStatus = async (): Promise<(SafetyCheckItem 
     const items = await getSafetyCheckItems();
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
+
+    // If no user is authenticated, return items without completion status
+    if (!barberId) {
+      console.warn('No authenticated user found for safety check items with status');
+      return items.map(item => ({
+        ...item,
+        completed_today: false
+      }));
+    }
 
     const { data: logs } = await supabase
       .from('safety_check_logs')

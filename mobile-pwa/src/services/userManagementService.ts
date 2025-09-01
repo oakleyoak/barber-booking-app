@@ -107,9 +107,34 @@ export class UserManagementService {
    */
   static async addStaffMember(shopName: string, userData: UserCreate): Promise<User | null> {
     try {
+      // First create the Supabase Auth user
+      const tempPassword = `temp${Math.random().toString(36).slice(-8)}`;
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: tempPassword,
+        options: {
+          data: {
+            name: userData.name,
+            role: userData.role,
+            shop_name: shopName
+          }
+        }
+      });
+
+      if (authError) {
+        console.error('Auth user creation error:', authError);
+        throw new Error(`Failed to create auth user: ${authError.message}`);
+      }
+
+      if (!authData.user) {
+        throw new Error('No auth user data returned');
+      }
+
+      // Then create the profile in users table with the auth user ID
       const { data, error } = await supabase
         .from('users')
         .insert({
+          id: authData.user.id, // Use the auth user ID!
           ...userData,
           shop_name: shopName,
           is_active: true,
