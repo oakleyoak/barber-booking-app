@@ -4,7 +4,6 @@ import { User } from '../lib/supabase';
 import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
-import { sendAdhocEmail, sendBookingEmail } from '../services/email';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -189,39 +188,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         user_id: currentUser.id
       });
       
-      // Send email notification using the booking ID
-      try {
-        if (selectedCustomer.email && data && data[0]) {
-          console.log('Sending booking email for booking ID:', data[0].id);
-          await sendBookingEmail(data[0].id);
-          console.log('Booking email sent successfully');
-        } else {
-          console.warn('Cannot send email: missing email or booking data');
-        }
-      } catch (e) {
-        console.error('Email send failed:', e);
-        // Fallback to adhoc email if booking email fails
-        try {
-          if (selectedCustomer.email) {
-            await sendAdhocEmail(
-              selectedCustomer.email,
-              `Appointment Confirmation - ${bookingData.service}`,
-              `<h2>Appointment Confirmed</h2>
-               <p>Dear ${selectedCustomer.name},</p>
-               <p>Your appointment has been successfully booked:</p>
-               <ul>
-                 <li><strong>Service:</strong> ${bookingData.service}</li>
-                 <li><strong>Date:</strong> ${bookingData.appointment_date}</li>
-                 <li><strong>Time:</strong> ${bookingData.appointment_time}</li>
-                 <li><strong>Price:</strong> R${bookingData.price}</li>
-               </ul>
-               <p>We look forward to seeing you!</p>`
-            );
-          }
-        } catch (fallbackError) {
-          console.error('Fallback email also failed:', fallbackError);
-        }
-      }
+      modal.notify('Booking created successfully!', 'success');
     } catch (error) {
       console.error('Error creating booking:', error);
       modal.notify('Failed to create booking', 'error');
@@ -326,31 +293,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                               >
                                 Edit
                               </button>
-                              {customer.email && (
-                                <button
-                                  onClick={async () => {
-                                    try {
-                                      if (!customer.email) throw new Error('customer has no email');
-                                      setLoading(true);
-                                      const resp = await sendAdhocEmail(
-                                        customer.email,
-                                        `Reminder: your appointment`,
-                                        `<p>Hi ${customer.name},</p><p>This is a reminder about your upcoming appointment.</p>`
-                                      );
-                                      console.log('email resp', resp);
-                                      modal.notify('Email sent', 'success');
-                                    } catch (err) {
-                                      console.error('send email error', err);
-                                      modal.notify('Failed to send email', 'error');
-                                    } finally {
-                                      setLoading(false);
-                                    }
-                                  }}
-                                  className="bg-indigo-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-indigo-700 transition text-xs"
-                                >
-                                  Email
-                                </button>
-                              )}
                               <button
                                 onClick={() => handleDelete(customer.id)}
                                 className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-red-700 transition text-xs"

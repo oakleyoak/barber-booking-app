@@ -28,7 +28,6 @@ import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
 import { ServicePricingService } from '../services/servicePricing';
-import { sendBookingEmail } from '../services/email';
 
 interface Booking {
   id: string;
@@ -205,26 +204,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         throw new Error('Create booking failed - no data returned');
       }
 
-      console.log('Booking created successfully, attempting to send email notification...');
-      console.log('Created booking ID:', created.id);
-      console.log('Final user ID (booking assigned to):', finalUserId);
-      console.log('Current user ID (person creating):', currentUser.id);
-      console.log('Should send email?', finalUserId !== currentUser.id);
+      console.log('Booking created successfully');
       
-      // Send email notification if booking was created for a staff member (owner creating for staff)
-      if (created.id && finalUserId !== currentUser.id) {
-        try {
-          console.log('Sending email notification for booking ID:', created.id);
-          await sendBookingEmail(created.id);
-          console.log('Email notification sent successfully');
-        } catch (emailError) {
-          console.error('Failed to send email notification:', emailError);
-          // Don't fail the booking creation if email fails, just log it
-        }
-      } else {
-        console.log('Email not sent - either no booking ID or user creating booking for themselves');
-      }
-
       setShowCreateBooking(false);
       setCreateForm({
         customer_id: '',
