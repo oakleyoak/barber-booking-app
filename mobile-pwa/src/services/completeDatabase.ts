@@ -1094,10 +1094,7 @@ export const authService = {
         shop_name: userData.shop_name || '',
         commission_rate: userData.commission_rate ?? 60,
         target_weekly: userData.target_weekly ?? 800,
-        target_monthly: userData.target_monthly ?? 3200,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        target_monthly: userData.target_monthly ?? 3200
       };
 
       const { data: profile, error: profileError } = await supabase
