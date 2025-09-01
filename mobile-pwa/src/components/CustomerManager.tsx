@@ -80,7 +80,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const loadCustomers = async () => {
     setLoading(true);
     try {
-      const data = await customerService.getCustomers(currentUser.id);
+      // All customers are shared across the barbershop
+      const data = await customerService.getCustomers();
       setCustomers(data);
     } catch (error) {
       console.error('Error loading customers:', error);
