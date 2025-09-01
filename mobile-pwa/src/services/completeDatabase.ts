@@ -247,12 +247,25 @@ export const userService = {
   },
 
   async deleteUser(id: string): Promise<void> {
-    const { error } = await supabase
-  .from('users')
+    // First, delete from the users table
+    const { error: dbError } = await supabase
+      .from('users')
       .delete()
       .eq('id', id);
     
-    if (error) throw error;
+    if (dbError) throw dbError;
+
+    // Then delete from Supabase Auth
+    // Note: This requires admin privileges. For now, we'll call a database function
+    // that can delete the auth user server-side
+    const { error: authError } = await supabase.rpc('delete_auth_user', {
+      user_id: id
+    });
+
+    if (authError) {
+      console.warn('Warning: User deleted from database but auth deletion failed:', authError);
+      // Don't throw error - user is still functionally deleted from app perspective
+    }
   }
 };
 
