@@ -123,8 +123,7 @@ export default function DailyCleaningLogs() {
               {logs.map(row => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{new Date(row.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">{users.find(u => u.auth_user_id === row.barber_id)?.name || '—'}</td>
-                    <td className="px-4 py-3">{users.find(u => (u.auth_user_id === row.barber_id) || (u.id === row.barber_id))?.name || '—'}</td>
+                  <td className="px-4 py-3">{users.find(u => (u.auth_user_id === row.barber_id) || (u.id === row.barber_id))?.name || '—'}</td>
                   <td className="px-4 py-3">{row.task_id || '—'}</td>
                   <td className="px-4 py-3">{row.completed ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3">{row.notes || ''}</td>
