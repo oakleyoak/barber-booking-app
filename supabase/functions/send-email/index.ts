@@ -12,6 +12,7 @@ export default async (req: Request) => {
     const SUPABASE_URL = Deno.env.get('PROJECT_URL');
     const SERVICE_KEY = Deno.env.get('SERVICE_ROLE_KEY');
     const RESEND_KEY = Deno.env.get('RESEND_API_KEY');
+    const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'onboarding@resend.dev'; // Default to Resend's testing domain
 
     if (!SUPABASE_URL || !SERVICE_KEY || !RESEND_KEY) {
       return new Response('Missing environment configuration', { status: 500 });
@@ -23,8 +24,9 @@ export default async (req: Request) => {
 
     if (bookingId) {
       // fetch booking + customer + staff using REST endpoint
+      // Note: our schema uses user_id for staff, customer_id for customer
       const supabaseRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/bookings?id=eq.${encodeURIComponent(bookingId)}&select=id,price,date,time,customer:customer_id(name,email),staff:staff_id(name)`,
+        `${SUPABASE_URL}/rest/v1/bookings?id=eq.${encodeURIComponent(bookingId)}&select=id,price,date,time,service,customer_name,customer:customer_id(name,email),staff:user_id(name,email)`,
         {
           headers: {
             apikey: SERVICE_KEY,
@@ -45,18 +47,38 @@ export default async (req: Request) => {
       const customer = booking.customer ?? {};
       const staff = booking.staff ?? {};
 
-      if (!customer.email) return new Response('Customer missing email', { status: 400 });
+      // If customer doesn't have email, send to staff email as fallback
+      to = customer.email || staff.email;
+      if (!to) return new Response('No email found for customer or staff', { status: 400 });
 
-      to = customer.email;
-      subject = `Appointment booked: ${booking.date} ${booking.time}`;
+      subject = `New Appointment: ${booking.service || 'Service'} - ${booking.date} ${booking.time}`;
       html = `
-        <p>Hi ${customer.name || 'there'},</p>
-        <p>Your appointment with ${staff.name || 'our staff'} is booked for ${booking.date} ${booking.time}.</p>
-        <p>Booking ID: ${booking.id} — Price: ${booking.price}</p>
+        <h2>New Appointment Booked</h2>
+        <p><strong>Customer:</strong> ${booking.customer_name || customer.name || 'Unknown'}</p>
+        <p><strong>Staff:</strong> ${staff.name || 'Staff Member'}</p>
+        <p><strong>Service:</strong> ${booking.service || 'Service'}</p>
+        <p><strong>Date & Time:</strong> ${booking.date} at ${booking.time}</p>
+        <p><strong>Price:</strong> ₺${booking.price || 0}</p>
+        <p><strong>Booking ID:</strong> ${booking.id}</p>
+        <hr>
+        <p><em>This is an automated notification from Edge & Co Barbershop.</em></p>
+      `;
+    } else if (body?.to && body?.html) {
+      subject = `New Appointment: ${booking.service || 'Service'} - ${booking.date} ${booking.time}`;
+      html = `
+        <h2>New Appointment Booked</h2>
+        <p><strong>Customer:</strong> ${booking.customer_name || customer.name || 'Unknown'}</p>
+        <p><strong>Staff:</strong> ${staff.name || 'Staff Member'}</p>
+        <p><strong>Service:</strong> ${booking.service || 'Service'}</p>
+        <p><strong>Date & Time:</strong> ${booking.date} at ${booking.time}</p>
+        <p><strong>Price:</strong> ₺${booking.price || 0}</p>
+        <p><strong>Booking ID:</strong> ${booking.id}</p>
+        <hr>
+        <p><em>This is an automated notification from Edge & Co Barbershop.</em></p>
       `;
     } else if (body?.to && body?.html) {
       to = body.to;
-      subject = body.subject || 'Message from booking app';
+      subject = body.subject || 'Message from Edge & Co Barbershop';
       html = body.html;
     } else {
       return new Response('Missing bookingId or to/html', { status: 400 });
@@ -70,7 +92,7 @@ export default async (req: Request) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'you@yourdomain.com', // replace with a verified from address in Resend
+        from: FROM_EMAIL,
         to,
         subject,
         html

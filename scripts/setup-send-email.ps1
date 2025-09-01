@@ -27,17 +27,18 @@ param(
     [string]$ResendKey,
     [string]$ServiceRoleKey,
     [string]$SupabaseUrl,
+    [string]$FromEmail,
     [switch]$Deploy,
     [switch]$NonInteractive
 )
 
 function Write-Usage {
-    Write-Host "\nThis script will set Supabase secrets (RESEND_API_KEY, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL) and optionally deploy the 'send-email' Edge Function."
+    Write-Host "\nThis script will set Supabase secrets (RESEND_API_KEY, SERVICE_ROLE_KEY, PROJECT_URL, FROM_EMAIL) and optionally deploy the 'send-email' Edge Function."
     Write-Host "You must have the Supabase CLI installed and be logged-in (run: supabase login)."
     Write-Host "If you don't want the script to deploy the function, omit the -Deploy switch and the script will only set secrets."
     Write-Host "\nExamples:";
     Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\setup-send-email.ps1"
-    Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\setup-send-email.ps1 -ProjectRef myproj -ResendKey sk_xxx -ServiceRoleKey srk_xxx -SupabaseUrl https://myproj.supabase.co -Deploy"
+    Write-Host "  powershell -ExecutionPolicy Bypass -File .\scripts\setup-send-email.ps1 -ProjectRef myproj -ResendKey sk_xxx -ServiceRoleKey srk_xxx -SupabaseUrl https://myproj.supabase.co -FromEmail noreply@yourdomain.com -Deploy"
 }
 
 # Resolve script directory reliably (works regardless of current working dir)
@@ -45,7 +46,7 @@ $scriptPath = $MyInvocation.MyCommand.Definition
 $scriptDir = Split-Path -Parent $scriptPath
 $repoRoot = Split-Path -Parent $scriptDir
 
-if (-not $ProjectRef -or -not $ResendKey -or -not $ServiceRoleKey -or -not $SupabaseUrl) {
+if (-not $ProjectRef -or -not $ResendKey -or -not $ServiceRoleKey -or -not $SupabaseUrl -or -not $FromEmail) {
     if ($NonInteractive) {
         Write-Host "Missing required parameters in non-interactive mode. Use -Help for usage." -ForegroundColor Red
         Write-Usage
@@ -69,6 +70,15 @@ if (-not $ServiceRoleKey) {
 if (-not $SupabaseUrl) {
     $SupabaseUrl = Read-Host "Enter your SUPABASE_URL (e.g. https://<project-ref>.supabase.co)"
 }
+if (-not $FromEmail) {
+    Write-Host "\nFor FROM email, you can use:" -ForegroundColor Yellow
+    Write-Host "  1. 'onboarding@resend.dev' (Resend's testing domain - works immediately)"
+    Write-Host "  2. Your own verified domain from Resend dashboard (e.g. noreply@yourdomain.com)"
+    $FromEmail = Read-Host "Enter FROM email address (or press Enter for default: onboarding@resend.dev)"
+    if ([string]::IsNullOrWhiteSpace($FromEmail)) {
+        $FromEmail = "onboarding@resend.dev"
+    }
+}
 
 # Check supabase CLI exists
 $supabaseCmd = Get-Command supabase -ErrorAction SilentlyContinue
@@ -82,8 +92,9 @@ if (-not $supabaseCmd) {
 # Show plan
 Write-Host "\nWill set the following Supabase secrets for project ref: $ProjectRef" -ForegroundColor Cyan
 Write-Host "  RESEND_API_KEY = (hidden)"
-Write-Host "  SUPABASE_SERVICE_ROLE_KEY = (hidden)"
-Write-Host "  SUPABASE_URL = $SupabaseUrl"
+Write-Host "  SERVICE_ROLE_KEY = (hidden)"
+Write-Host "  PROJECT_URL = $SupabaseUrl"
+Write-Host "  FROM_EMAIL = $FromEmail"
 $ok = Read-Host "Proceed? (y/n)"
 if ($ok -ne 'y' -and $ok -ne 'Y') {
     Write-Host "Aborting at user request." -ForegroundColor Yellow
@@ -91,11 +102,9 @@ if ($ok -ne 'y' -and $ok -ne 'Y') {
 }
 
 # Build secret set command
-$secretsCmd = "supabase secrets set RESEND_API_KEY=\"$ResendKey\" SUPABASE_SERVICE_ROLE_KEY=\"$ServiceRoleKey\" SUPABASE_URL=\"$SupabaseUrl\" --project-ref $ProjectRef"
-
 Write-Host "\nRunning: supabase secrets set ..." -ForegroundColor Green
 try {
-    & supabase secrets set RESEND_API_KEY="$ResendKey" SUPABASE_SERVICE_ROLE_KEY="$ServiceRoleKey" SUPABASE_URL="$SupabaseUrl" --project-ref $ProjectRef
+    & supabase secrets set RESEND_API_KEY="$ResendKey" SERVICE_ROLE_KEY="$ServiceRoleKey" PROJECT_URL="$SupabaseUrl" FROM_EMAIL="$FromEmail" --project-ref $ProjectRef
     if ($LASTEXITCODE -ne 0) {
         Write-Host "supabase secrets set returned a non-zero exit code: $LASTEXITCODE" -ForegroundColor Red
     } else {
