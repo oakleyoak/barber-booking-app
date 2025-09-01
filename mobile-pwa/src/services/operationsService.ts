@@ -402,9 +402,8 @@ export const getOperationsStatistics = async () => {
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
-    // If no user is authenticated, return empty statistics
+    // If no user is authenticated, return empty statistics (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for operations statistics');
       return {
         total_tasks: 0,
         tasks_completed_today: 0,
@@ -453,9 +452,8 @@ export const getComplianceReports = async (startDate: string, endDate: string) =
   try {
     const barberId = await getCurrentBarberId();
     
-    // If no user is authenticated, return empty compliance report
+    // If no user is authenticated, return empty compliance report (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for compliance reports');
       return {
         cleaning_compliance: [],
         maintenance_compliance: [],
@@ -516,9 +514,8 @@ export const getLogsHistory = async (startDate?: string, endDate?: string) => {
   try {
     const barberId = await getCurrentBarberId();
     
-    // If no user is authenticated, return empty logs
+    // If no user is authenticated, return empty logs (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for logs history');
       return {
         cleaning: [],
         maintenance: [],
@@ -579,9 +576,8 @@ export const getCleaningTasksWithStatus = async (): Promise<(CleaningTask & { co
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
-    // If no user is authenticated, return tasks without completion status
+    // If no user is authenticated, return tasks without completion status (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for cleaning tasks with status');
       return tasks.map(task => ({
         ...task,
         completed_today: false
@@ -612,9 +608,8 @@ export const getMaintenanceTasksWithStatus = async (): Promise<(MaintenanceTask 
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
-    // If no user is authenticated, return tasks without completion status
+    // If no user is authenticated, return tasks without completion status (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for maintenance tasks with status');
       return tasks.map(task => ({
         ...task,
         completed_today: false
@@ -645,9 +640,8 @@ export const getSafetyCheckItemsWithStatus = async (): Promise<(SafetyCheckItem 
     const today = new Date().toISOString().split('T')[0];
     const barberId = await getCurrentBarberId();
 
-    // If no user is authenticated, return items without completion status
+    // If no user is authenticated, return items without completion status (silently)
     if (!barberId) {
-      console.warn('No authenticated user found for safety check items with status');
       return items.map(item => ({
         ...item,
         completed_today: false
