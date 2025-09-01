@@ -77,7 +77,7 @@ export default function EquipmentMaintenance() {
               <label className="block text-sm font-medium text-gray-700 mb-1">Performed By</label>
               <select value={form.barber_id} onChange={e => setForm({...form, barber_id: e.target.value})} className="w-full p-2 border rounded">
                 <option value="">Select User</option>
-                {users.map(u => <option key={u.id} value={u.auth_user_id}>{u.name}</option>)}
+                {users.map(u => <option key={u.id} value={u.auth_user_id || u.id}>{u.name}</option>)}
               </select>
             </div>
             <div>
@@ -127,7 +127,7 @@ export default function EquipmentMaintenance() {
               {logs.map(row => (
                 <tr key={row.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">{new Date(row.date).toLocaleDateString()}</td>
-                  <td className="px-4 py-3">{users.find(u => u.auth_user_id === row.barber_id)?.name || '—'}</td>
+                  <td className="px-4 py-3">{users.find(u => (u.auth_user_id === row.barber_id) || (u.id === row.barber_id))?.name || '—'}</td>
                   <td className="px-4 py-3">{row.task_id || '—'}</td>
                   <td className="px-4 py-3">{row.completed ? 'Yes' : 'No'}</td>
                   <td className="px-4 py-3">{row.next_due_date ? new Date(row.next_due_date).toLocaleDateString() : '—'}</td>
