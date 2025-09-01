@@ -4,6 +4,7 @@ import { User } from '../lib/supabase';
 import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
+import { sendAdhocEmail } from '../services/email';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -186,6 +187,18 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         appointment_time: '09:00',
         user_id: currentUser.id
       });
+      // send an email notification to the customer (server-side function should be used in prod)
+      try {
+        if (selectedCustomer.email) {
+          await sendAdhocEmail(
+            selectedCustomer.email,
+            `Appointment booked: ${bookingData.appointment_date} ${bookingData.appointment_time}`,
+            `<p>Hi ${selectedCustomer.name},</p><p>Your appointment for ${bookingData.service} is booked for ${bookingData.appointment_date} ${bookingData.appointment_time}.</p>`
+          );
+        }
+      } catch (e) {
+        console.warn('Email send failed (client proxy):', e);
+      }
     } catch (error) {
       console.error('Error creating booking:', error);
   modal.notify('Failed to create booking', 'error');
@@ -290,6 +303,31 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                               >
                                 Edit
                               </button>
+                              {customer.email && (
+                                <button
+                                  onClick={async () => {
+                                    try {
+                                      if (!customer.email) throw new Error('customer has no email');
+                                      setLoading(true);
+                                      const resp = await sendAdhocEmail(
+                                        customer.email,
+                                        `Reminder: your appointment`,
+                                        `<p>Hi ${customer.name},</p><p>This is a reminder about your upcoming appointment.</p>`
+                                      );
+                                      console.log('email resp', resp);
+                                      modal.notify('Email sent', 'success');
+                                    } catch (err) {
+                                      console.error('send email error', err);
+                                      modal.notify('Failed to send email', 'error');
+                                    } finally {
+                                      setLoading(false);
+                                    }
+                                  }}
+                                  className="bg-indigo-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-indigo-700 transition text-xs"
+                                >
+                                  Email
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleDelete(customer.id)}
                                 className="bg-red-600 text-white px-2 sm:px-3 py-1 rounded hover:bg-red-700 transition text-xs"
