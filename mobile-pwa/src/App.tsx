@@ -89,7 +89,8 @@ function App() {
           name: formData.name,
           role: formData.role as 'Owner' | 'Manager' | 'Barber' | 'Apprentice',
           shop_name: formData.role === 'Owner' ? formData.shopName : 'Edge & Co',
-          commission_rate: formData.role === 'Barber' ? 40 : formData.role === 'Manager' ? 50 : 30,
+          // Commission rates are percentages (not fractions)
+          commission_rate: formData.role === 'Owner' ? 70 : formData.role === 'Manager' ? 60 : formData.role === 'Barber' ? 40 : 30,
           target_weekly: formData.role === 'Owner' ? 3000 : formData.role === 'Manager' ? 2000 : 800,
           target_monthly: formData.role === 'Owner' ? 12000 : formData.role === 'Manager' ? 8000 : 3200
         };
@@ -397,6 +398,7 @@ function App() {
                 >
                   <option value="Barber">Barber</option>
                   <option value="Owner">Owner</option>
+                  <option value="Manager">Manager</option>
                   <option value="Apprentice">Apprentice</option>
                 </select>
               </div>

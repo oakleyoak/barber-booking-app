@@ -28,14 +28,17 @@ CREATE TABLE IF NOT EXISTS public.users (
   password text not null,
   role text not null,
   shop_name text not null,
-  commission_rate numeric(5, 2) default 0.40,
+  commission_rate numeric(5, 2) default 60,
   target_weekly numeric(10, 2) default 800,
   target_monthly numeric(10, 2) default 3200,
+  is_active boolean default true,
+  auth_user_id uuid null,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null default now(),
   shop_settings text null,
   constraint users_pkey primary key (id),
   constraint users_email_key unique (email),
+  constraint users_auth_user_id_key unique (auth_user_id),
   constraint users_role_check check (
     (
       role = any (
@@ -48,9 +51,6 @@ CREATE TABLE IF NOT EXISTS public.users (
 -- Create index on email for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users USING btree (email) TABLESPACE pg_default;
 
--- Create trigger for updated_at
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON public.users
-FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Customers table (existing)
 CREATE TABLE IF NOT EXISTS public.customers (
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   )
 ) TABLESPACE pg_default;
 
--- Transactions table (existing)
+-- Transactions table (existing) - UPDATED with owner-share fields
 CREATE TABLE IF NOT EXISTS public.transactions (
   id uuid not null default gen_random_uuid (),
   booking_id uuid null,
@@ -112,10 +112,15 @@ CREATE TABLE IF NOT EXISTS public.transactions (
   status text not null default 'completed'::text,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null default now(),
+  owner_id uuid null,
+  owner_share_percentage numeric(5,2) not null default 0,
+  owner_share_amount numeric(10,2) not null default 0,
   constraint transactions_pkey primary key (id),
   constraint transactions_booking_id_fkey foreign KEY (booking_id) references bookings (id) on delete set null,
-  constraint transactions_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE
+  constraint transactions_user_id_fkey foreign KEY (user_id) references users (id) on delete CASCADE,
+  constraint transactions_owner_id_fkey foreign KEY (owner_id) references users (id) on delete set null
 ) TABLESPACE pg_default;
+
 
 -- ===================================================================
 -- FINANCIAL MANAGEMENT TABLES
@@ -198,9 +203,9 @@ CREATE TABLE IF NOT EXISTS public.shop_settings (
   daily_target numeric(10, 2) not null default 1500,
   weekly_target numeric(10, 2) not null default 9000,
   monthly_target numeric(10, 2) not null default 45000,
-  barber_commission numeric(5, 2) not null default 60,
-  manager_commission numeric(5, 2) not null default 70,
-  apprentice_commission numeric(5, 2) not null default 40,
+  barber_commission numeric(5, 2) not null default 40,
+  manager_commission numeric(5, 2) not null default 60,
+  apprentice_commission numeric(5, 2) not null default 30,
   social_insurance_rate numeric(5, 2) not null default 20,
   income_tax_rate numeric(5, 2) not null default 15,
   income_tax_threshold numeric(10, 2) not null default 3000,
@@ -305,7 +310,10 @@ CREATE TABLE IF NOT EXISTS public.safety_check_items (
   id uuid not null default gen_random_uuid (),
   check_name character varying(255) not null,
   description text null,
+  category character varying(100) null,
+  check_type character varying(50) null,
   frequency character varying(50) not null,
+  acceptable_range text null,
   compliance_requirement boolean null default false,
   instructions text null,
   is_active boolean null default true,
@@ -449,26 +457,49 @@ create index IF not exists idx_incident_reports_date on public.incident_reports 
 -- TRIGGERS FOR UPDATED_AT
 -- ===================================================================
 
-create trigger update_users_updated_at BEFORE update on users for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_customers_updated_at BEFORE update on customers for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_bookings_updated_at BEFORE update on bookings for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_transactions_updated_at BEFORE update on transactions for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_expenses_updated_at BEFORE update on expenses for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_payroll_updated_at BEFORE update on payroll for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_staff_targets_updated_at BEFORE update on staff_targets for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_shop_settings_updated_at BEFORE update on shop_settings for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_daily_operations_updated_at BEFORE update on daily_operations for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_cleaning_tasks_updated_at BEFORE update on cleaning_tasks for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_maintenance_tasks_updated_at BEFORE update on maintenance_tasks for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_safety_check_items_updated_at BEFORE update on safety_check_items for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_equipment_inventory_updated_at BEFORE update on equipment_inventory for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_supplies_inventory_updated_at BEFORE update on supplies_inventory for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_staff_accountability_updated_at BEFORE update on staff_accountability for EACH row execute FUNCTION update_updated_at_column ();
-create trigger update_incident_reports_updated_at BEFORE update on incident_reports for EACH row execute FUNCTION update_updated_at_column ();
+-- Drop existing triggers if they exist and recreate them
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+DROP TRIGGER IF EXISTS update_customers_updated_at ON customers;
+DROP TRIGGER IF EXISTS update_bookings_updated_at ON bookings;
+DROP TRIGGER IF EXISTS update_transactions_updated_at ON transactions;
+DROP TRIGGER IF EXISTS update_expenses_updated_at ON expenses;
+DROP TRIGGER IF EXISTS update_payroll_updated_at ON payroll;
+DROP TRIGGER IF EXISTS update_staff_targets_updated_at ON staff_targets;
+DROP TRIGGER IF EXISTS update_shop_settings_updated_at ON shop_settings;
+DROP TRIGGER IF EXISTS update_daily_operations_updated_at ON daily_operations;
+DROP TRIGGER IF EXISTS update_cleaning_tasks_updated_at ON cleaning_tasks;
+DROP TRIGGER IF EXISTS update_maintenance_tasks_updated_at ON maintenance_tasks;
+DROP TRIGGER IF EXISTS update_safety_check_items_updated_at ON safety_check_items;
+DROP TRIGGER IF EXISTS update_equipment_inventory_updated_at ON equipment_inventory;
+DROP TRIGGER IF EXISTS update_supplies_inventory_updated_at ON supplies_inventory;
+DROP TRIGGER IF EXISTS update_staff_accountability_updated_at ON staff_accountability;
+DROP TRIGGER IF EXISTS update_incident_reports_updated_at ON incident_reports;
+
+-- Create triggers
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_bookings_updated_at BEFORE UPDATE ON bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_transactions_updated_at BEFORE UPDATE ON transactions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON expenses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_payroll_updated_at BEFORE UPDATE ON payroll FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_staff_targets_updated_at BEFORE UPDATE ON staff_targets FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_shop_settings_updated_at BEFORE UPDATE ON shop_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_daily_operations_updated_at BEFORE UPDATE ON daily_operations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_cleaning_tasks_updated_at BEFORE UPDATE ON cleaning_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_maintenance_tasks_updated_at BEFORE UPDATE ON maintenance_tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_safety_check_items_updated_at BEFORE UPDATE ON safety_check_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_equipment_inventory_updated_at BEFORE UPDATE ON equipment_inventory FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_supplies_inventory_updated_at BEFORE UPDATE ON supplies_inventory FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_staff_accountability_updated_at BEFORE UPDATE ON staff_accountability FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_incident_reports_updated_at BEFORE UPDATE ON incident_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ===================================================================
 -- DEFAULT DATA
 -- ===================================================================
+
+-- NOTE: triggers are created once in the consolidated block above. If you re-run portions of this
+-- script and see a "trigger ... already exists" error, it's safe to ignore or remove the earlier
+-- trigger statements. The script is idempotent where possible.
 
 -- Insert default shop settings
 INSERT INTO public.shop_settings (
@@ -535,13 +566,13 @@ INSERT INTO public.maintenance_tasks (equipment_name, task_name, frequency, esti
 ON CONFLICT DO NOTHING;
 
 -- Insert default safety check items
-INSERT INTO public.safety_check_items (check_name, description, frequency, compliance_requirement, instructions) VALUES
-('Electrical outlets', 'Check for exposed wires or damage', 'daily', true, 'Visual inspection of all electrical outlets'),
-('Fire extinguisher', 'Verify gauge is in green zone', 'daily', true, 'Check pressure gauge and accessibility'),
-('First aid kit', 'Ensure supplies are stocked', 'weekly', true, 'Check expiry dates and restock as needed'),
-('Emergency exits', 'Ensure paths are clear', 'daily', true, 'Verify exits are unobstructed'),
-('Sterilization equipment', 'Check proper operation', 'daily', true, 'Test sterilizer cycle completion'),
-('Water temperature', 'Verify safe temperature range', 'daily', true, 'Check hot water does not exceed 60°C')
+INSERT INTO public.safety_check_items (check_name, description, category, check_type, frequency, compliance_requirement, instructions) VALUES
+('Electrical outlets', 'Check for exposed wires or damage', 'electrical', 'visual', 'daily', true, 'Visual inspection of all electrical outlets'),
+('Fire extinguisher', 'Verify gauge is in green zone', 'safety', 'gauge', 'daily', true, 'Check pressure gauge and accessibility'),
+('First aid kit', 'Ensure supplies are stocked', 'safety', 'inventory', 'weekly', true, 'Check expiry dates and restock as needed'),
+('Emergency exits', 'Ensure paths are clear', 'safety', 'visual', 'daily', true, 'Verify exits are unobstructed'),
+('Sterilization equipment', 'Check proper operation', 'equipment', 'functional', 'daily', true, 'Test sterilizer cycle completion'),
+('Water temperature', 'Verify safe temperature range', 'plumbing', 'measurement', 'daily', true, 'Check hot water does not exceed 60°C')
 ON CONFLICT DO NOTHING;
 
 -- Insert default expense categories
@@ -573,6 +604,9 @@ ON CONFLICT DO NOTHING;
 -- SETUP COMPLETE
 -- ===================================================================
 
+-- Add missing indexes for performance
+create index IF not exists idx_transactions_owner_id on public.transactions using btree (owner_id) TABLESPACE pg_default;
+
 -- Verify table creation
 SELECT 
     table_name,
@@ -588,3 +622,34 @@ WHERE table_schema = 'public'
         'staff_accountability', 'incident_reports'
     )
 ORDER BY table_name;
+
+-- ===================================================================
+-- BACKFILL OWNER SHARE FOR EXISTING TRANSACTIONS
+-- This updates only transactions where owner_share_percentage or owner_share_amount is zero.
+-- It assigns owner_id to the first user with role = 'Owner' (single-shop assumption).
+-- Owner-share mapping: Apprentice -> 60, Barber -> 40, Manager -> 30, Owner -> 100
+-- Safe to re-run.
+WITH owner_row AS (
+  SELECT id AS owner_id FROM public.users WHERE role = 'Owner' LIMIT 1
+)
+UPDATE public.transactions t
+SET
+  owner_share_percentage = CASE u.role
+    WHEN 'Apprentice' THEN 60
+    WHEN 'Barber' THEN 40
+    WHEN 'Manager' THEN 30
+    WHEN 'Owner' THEN 100
+    ELSE 0
+  END,
+  owner_share_amount = ROUND(t.amount * (CASE u.role
+    WHEN 'Apprentice' THEN 60
+    WHEN 'Barber' THEN 40
+    WHEN 'Manager' THEN 30
+    WHEN 'Owner' THEN 100
+    ELSE 0
+  END) / 100.0, 2),
+  owner_id = (SELECT owner_id FROM owner_row)
+FROM public.users u
+WHERE t.user_id = u.id
+  AND (t.owner_share_percentage = 0 OR t.owner_share_amount = 0 OR t.owner_id IS NULL);
+

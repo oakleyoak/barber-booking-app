@@ -47,7 +47,7 @@ export class UserManagementService {
         .from('users')
         .select('*')
         .eq('shop_name', shopName)
-        .neq('role', 'owner')
+  .neq('role', 'Owner')
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -77,7 +77,7 @@ export class UserManagementService {
         .from('users')
         .select('*')
         .eq('shop_name', 'Default Shop')
-        .neq('role', 'owner');
+  .neq('role', 'Owner');
         
       if (checkError) {
         console.error('Error checking Default Shop staff:', checkError);
@@ -90,7 +90,7 @@ export class UserManagementService {
           .from('users')
           .update({ shop_name: currentShopName })
           .eq('shop_name', 'Default Shop')
-          .neq('role', 'owner')
+          .neq('role', 'Owner')
           .select();
           
         if (error) {
@@ -140,7 +140,7 @@ export class UserManagementService {
         })
         .eq('id', userId)
         .eq('shop_name', shopName)
-        .neq('role', 'owner'); // Prevent updating owners
+  .neq('role', 'Owner'); // Prevent updating owners
 
       if (error) throw error;
       return true;
@@ -174,7 +174,7 @@ export class UserManagementService {
         .delete()
         .eq('id', userId)
         .eq('shop_name', shopName)
-        .neq('role', 'owner'); // Prevent deleting owners
+  .neq('role', 'Owner'); // Prevent deleting owners
 
       if (error) throw error;
       return true;
@@ -194,7 +194,7 @@ export class UserManagementService {
         .select('*')
         .eq('id', userId)
         .eq('shop_name', shopName)
-        .neq('role', 'owner')
+  .neq('role', 'Owner')
         .single();
 
       if (error) throw error;

@@ -45,11 +45,11 @@ export class CustomerService {
         name: customer.name,
         phone: customer.phone || '',
         email: customer.email,
-        notes: '', // No notes field in new schema
+        notes: customer.notes || '',
         lastVisit: customer.last_visit,
         totalVisits: 0, // Will be calculated from bookings
         totalSpent: 0, // Will be calculated from bookings
-        preferredBarber: '', // No preferred_barber field in new schema
+        preferredBarber: customer.preferred_barber || '',
         shopName: shopName,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at || customer.created_at
@@ -74,6 +74,8 @@ export class CustomerService {
           name: customerData.name,
           phone: customerData.phone,
           email: customerData.email,
+          notes: customerData.notes,
+          preferred_barber: customerData.preferredBarber,
           user_id: shopName
         }])
         .select()
@@ -89,11 +91,11 @@ export class CustomerService {
         name: data.name,
         phone: data.phone || '',
         email: data.email,
-        notes: '', // No notes field in new schema
+        notes: data.notes || '',
         lastVisit: data.last_visit,
         totalVisits: 0, // Will be calculated from bookings
         totalSpent: 0, // Will be calculated from bookings
-        preferredBarber: '', // No preferred_barber field in new schema
+        preferredBarber: data.preferred_barber || '',
         shopName: shopName,
         createdAt: data.created_at,
         updatedAt: data.updated_at || data.created_at
@@ -119,6 +121,8 @@ export class CustomerService {
           name: updates.name,
           phone: updates.phone,
           email: updates.email,
+          notes: updates.notes,
+          preferred_barber: updates.preferredBarber,
           updated_at: new Date().toISOString()
         })
         .eq('id', customerId)
@@ -135,11 +139,11 @@ export class CustomerService {
         name: data.name,
         phone: data.phone || '',
         email: data.email,
-        notes: '', // No notes field in new schema
+        notes: data.notes || '',
         lastVisit: data.last_visit,
         totalVisits: 0, // Will be calculated from bookings
         totalSpent: 0, // Will be calculated from bookings
-        preferredBarber: '', // No preferred_barber field in new schema
+        preferredBarber: data.preferred_barber || '',
         shopName: shopName,
         createdAt: data.created_at,
         updatedAt: data.updated_at
@@ -193,11 +197,11 @@ export class CustomerService {
         name: customer.name,
         phone: customer.phone || '',
         email: customer.email,
-        notes: '', // No notes field in new schema
+        notes: customer.notes || '',
         lastVisit: customer.last_visit,
         totalVisits: 0, // Will be calculated from bookings
         totalSpent: 0, // Will be calculated from bookings
-        preferredBarber: '', // No preferred_barber field in new schema
+        preferredBarber: customer.preferred_barber || '',
         shopName: shopName,
         createdAt: customer.created_at,
         updatedAt: customer.updated_at || customer.created_at

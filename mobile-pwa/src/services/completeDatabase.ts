@@ -15,7 +15,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string;
   role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
@@ -63,6 +63,9 @@ export interface Transaction {
   amount: number;
   commission: number;
   commission_amount: number;
+  owner_id?: string;
+  owner_share_percentage?: number;
+  owner_share_amount?: number;
   date: string;
   status: string;
   created_at?: string;
@@ -384,7 +387,7 @@ export const bookingService = {
 // ===================================================================
 
 export const transactionService = {
-  async getTransactions(userId?: string): Promise<Transaction[]> {
+  async getTransactions(userId?: string, currentUserRole?: string): Promise<Transaction[]> {
     let query = supabase.from('transactions').select('*');
     
     if (userId) {
@@ -394,10 +397,18 @@ export const transactionService = {
     const { data, error } = await query.order('date', { ascending: false });
     
     if (error) throw error;
-    return data || [];
+    const rows: Transaction[] = (data || []);
+    if (currentUserRole && currentUserRole !== 'Owner') {
+      // strip owner fields
+      return rows.map(r => {
+        const { owner_id, owner_share_percentage, owner_share_amount, ...rest } = r as any;
+        return rest as Transaction;
+      });
+    }
+    return rows;
   },
 
-  async getTransactionsByDateRange(startDate: string, endDate: string, userId?: string): Promise<Transaction[]> {
+  async getTransactionsByDateRange(startDate: string, endDate: string, userId?: string, currentUserRole?: string): Promise<Transaction[]> {
     let query = supabase.from('transactions')
       .select('*')
       .gte('date', startDate)
@@ -409,17 +420,49 @@ export const transactionService = {
     
     const { data, error } = await query.order('date', { ascending: false });
     
-    if (error) throw error;
-    return data || [];
+    const rows: Transaction[] = (data || []);
+    if (currentUserRole && currentUserRole !== 'Owner') {
+      return rows.map(r => {
+        const { owner_id, owner_share_percentage, owner_share_amount, ...rest } = r as any;
+        return rest as Transaction;
+      });
+    }
+    return rows;
   },
 
   async createTransaction(transaction: Omit<Transaction, 'id' | 'created_at' | 'updated_at'>): Promise<Transaction> {
+    // Compute owner-share based on staff role
+    const OWNER_SHARE_PCT_BY_ROLE: Record<string, number> = {
+      Apprentice: 60,
+      Barber: 40,
+      Manager: 30,
+      Owner: 100
+    };
+
+    // Fetch performing user's role
+    const { data: userData } = await supabase.from('users').select('id, role').eq('id', transaction.user_id).single();
+    const staffRole = (userData && userData.role) ? userData.role : null;
+    const ownerPct = staffRole ? (OWNER_SHARE_PCT_BY_ROLE[staffRole] ?? 0) : 0;
+
+    // Choose owner_id: first Owner user (single-shop assumption)
+    const { data: ownerRow } = await supabase.from('users').select('id').eq('role', 'Owner').limit(1).single();
+    const ownerId = ownerRow ? ownerRow.id : null;
+
+    const ownerShareAmount = Math.round((Number(transaction.amount) * ownerPct / 100) * 100) / 100;
+
+    const toInsert = {
+      ...transaction,
+      owner_id: ownerId,
+      owner_share_percentage: ownerPct,
+      owner_share_amount: ownerShareAmount
+    };
+
     const { data, error } = await supabase
       .from('transactions')
-      .insert([transaction])
+      .insert([toInsert])
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   },
@@ -852,76 +895,110 @@ export const staffAccountabilityService = {
 // ===================================================================
 
 export const authService = {
+  // Simple database-only login (bypasses Supabase Auth)
+  async loginUserSimple(email: string, password: string): Promise<User> {
+    try {
+      // Check if user exists in users table with email/password
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
+      if (error || !users) {
+        throw new Error('Invalid login credentials');
+      }
+
+      localStorage.setItem('currentUser', JSON.stringify(users));
+      return users;
+    } catch (error: any) {
+      console.error('Simple login error:', error);
+      throw new Error('Invalid login credentials');
+    }
+  },
+
   // Login with existing users table
   async loginUser(email: string, password: string): Promise<User> {
     try {
-      // First, let's check if user exists by email
-      const { data: userCheck, error: checkError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email);
+      // First try simple database login
+      return await this.loginUserSimple(email, password);
+    } catch (simpleError) {
+      // If simple login fails, try Supabase Auth as fallback
+      try {
+        // Use Supabase Auth to sign in
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
-      if (checkError) {
-        console.error('Database error:', checkError);
-        throw new Error('Database connection failed');
+        if (signInError) {
+          console.error('Auth sign-in error:', signInError);
+          throw new Error(signInError.message || 'Authentication failed');
+        }
+
+        const supaUser = signInData.user;
+        if (!supaUser || !supaUser.email) throw new Error('Authentication failed');
+
+        // Fetch profile from users table
+        const { data: profile, error: profileError } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', supaUser.email)
+          .single();
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw profileError;
+        }
+
+        localStorage.setItem('currentUser', JSON.stringify(profile));
+        return profile;
+      } catch (error: any) {
+        console.error('Login error:', error);
+        throw new Error('Invalid login credentials');
       }
-
-      if (!userCheck || userCheck.length === 0) {
-        throw new Error('User not found');
-      }
-
-      // Check password match
-      const user = userCheck.find(u => u.password === password);
-      if (!user) {
-        throw new Error('Invalid password');
-      }
-
-      // Store in localStorage for session management
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      return user;
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw new Error(error.message || 'Login failed');
     }
   },
 
   // Register new user in existing users table
   async registerUser(email: string, password: string, userData: Partial<User>): Promise<User> {
     try {
-      // Check if email already exists
-      const { data: existing } = await supabase
-        .from('users')
-        .select('email')
-        .eq('email', email)
-        .single();
+      // Sign up via Supabase Auth
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password
+      });
 
-      if (existing) {
-        throw new Error('Email already exists');
+      if (signUpError) {
+        console.error('Auth sign-up error:', signUpError);
+        throw new Error(signUpError.message || 'Registration failed');
       }
 
-      // Create new user record
-      const newUser = {
+      // Create profile in users table (do NOT store password)
+      const newProfile = {
         email,
-        password,
         name: userData.name || '',
         role: userData.role || 'Barber',
         shop_name: userData.shop_name || '',
-        commission_rate: userData.commission_rate || 0.40,
-        target_weekly: userData.target_weekly || 800,
-        target_monthly: userData.target_monthly || 3200,
+        commission_rate: userData.commission_rate ?? 60,
+        target_weekly: userData.target_weekly ?? 800,
+        target_monthly: userData.target_monthly ?? 3200,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('users')
-        .insert([newUser])
+        .insert([newProfile])
         .select()
         .single();
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      // Store in localStorage for session management
-      localStorage.setItem('currentUser', JSON.stringify(data));
-      return data;
+      localStorage.setItem('currentUser', JSON.stringify(profile));
+      return profile;
     } catch (error: any) {
       console.error('Registration error:', error);
       throw new Error(error.message || 'Registration failed');
@@ -931,9 +1008,29 @@ export const authService = {
   // Get current user from localStorage
   async getCurrentUser(): Promise<User | null> {
     try {
-      const stored = localStorage.getItem('currentUser');
-      if (!stored) return null;
-      return JSON.parse(stored);
+      // Prefer Supabase auth session when available
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData?.user?.email) {
+        const stored = localStorage.getItem('currentUser');
+        if (!stored) return null;
+        return JSON.parse(stored);
+      }
+
+      const email = userData.user.email;
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (profileError) {
+        const stored = localStorage.getItem('currentUser');
+        if (!stored) return null;
+        return JSON.parse(stored);
+      }
+
+      localStorage.setItem('currentUser', JSON.stringify(profile));
+      return profile;
     } catch (error) {
       console.error('Get current user error:', error);
       return null;
@@ -943,6 +1040,7 @@ export const authService = {
   // Logout user
   async logoutUser(): Promise<void> {
     try {
+      await supabase.auth.signOut();
       localStorage.removeItem('currentUser');
     } catch (error) {
       console.error('Logout error:', error);
