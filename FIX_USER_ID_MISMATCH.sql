@@ -2,9 +2,9 @@
 -- This will update the existing user record to match the auth user ID
 
 -- Update the existing user to use the correct auth user ID
--- Note: Please double-check the exact UUID from your Supabase Auth dashboard
+-- Note: The correct auth user ID from the error is: afaba36e-21f7-4d2e-b4bf-791e4b8acefd
 UPDATE users 
-SET id = 'afaba3ee-21f7-4d2e-b4bf-791b48acefd4'::uuid 
+SET id = 'afaba36e-21f7-4d2e-b4bf-791e4b8acefd'::uuid 
 WHERE email = 'omustafa2@googlemail.com';
 
 -- Verify the update
