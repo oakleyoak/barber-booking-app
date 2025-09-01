@@ -1065,7 +1065,7 @@ export const authService = {
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', supaUser.id)
+        .eq('auth_user_id', supaUser.id)
         .single();
 
       if (profileError) {
@@ -1100,7 +1100,7 @@ export const authService = {
 
       // Create profile in users table using the auth user ID
       const newProfile = {
-        id: signUpData.user.id, // Use the auth user ID here!
+        auth_user_id: signUpData.user.id, // Link to auth user
         email,
         name: userData.name || '',
         role: userData.role || 'Barber',
@@ -1138,7 +1138,7 @@ export const authService = {
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', userData.user.id)
+        .eq('auth_user_id', userData.user.id)
         .single();
 
       if (profileError) {
