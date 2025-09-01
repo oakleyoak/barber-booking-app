@@ -71,8 +71,7 @@ export interface SafetyCheckLog {
   created_at: string;
 }
 
-// Get current user/barber ID helper
-// TODO: Replace with real auth context/user session
+// Get current user/barber ID helper with better error handling
 const getCurrentBarberId = async () => {
   try {
     // Get current user from Supabase Auth session
@@ -82,26 +81,34 @@ const getCurrentBarberId = async () => {
       return null;
     }
     
-    if (session?.user) {
-      // Get the user profile from the users table using the auth user ID
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (profileError) {
-        console.error('Error getting user profile:', profileError);
-        return null;
-      }
-      
-      return profile?.id || null;
+    if (!session?.user) {
+      return null;
+    }
+
+    // Check if email is verified
+    if (!session.user.email_confirmed_at) {
+      throw new Error('Please verify your email address before completing tasks. Check your email for a verification link.');
     }
     
-    return null;
+    // Get the user profile from the users table using the auth user ID
+    const { data: profile, error: profileError } = await supabase
+      .from('users')
+      .select('id')
+      .eq('id', session.user.id)
+      .single();
+    
+    if (profileError) {
+      console.error('Error getting user profile:', profileError);
+      if (profileError.code === 'PGRST116') {
+        throw new Error('User profile not found. Please contact support.');
+      }
+      return null;
+    }
+    
+    return profile?.id || null;
   } catch (error) {
     console.error('Error in getCurrentBarberId:', error);
-    return null;
+    throw error; // Re-throw to preserve the specific error message
   }
 };
 
