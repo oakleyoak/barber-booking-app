@@ -52,13 +52,11 @@ function App() {
   const checkEmailVerification = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      // TEMPORARILY DISABLED FOR EMERGENCY FIX
-      // if (session?.user && !session.user.email_confirmed_at) {
-      //   setShowEmailVerificationWarning(true);
-      // } else {
-      //   setShowEmailVerificationWarning(false);
-      // }
-      setShowEmailVerificationWarning(false); // Always false for now
+      if (session?.user && !session.user.email_confirmed_at) {
+        setShowEmailVerificationWarning(true);
+      } else {
+        setShowEmailVerificationWarning(false);
+      }
     } catch (error) {
       console.error('Error checking email verification:', error);
     }

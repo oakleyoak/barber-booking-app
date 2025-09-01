@@ -85,11 +85,10 @@ const getCurrentBarberId = async () => {
       return null;
     }
 
-    // TEMPORARILY REMOVED EMAIL VERIFICATION CHECK FOR EMERGENCY FIX
     // Check if email is verified
-    // if (!session.user.email_confirmed_at) {
-    //   throw new Error('Please verify your email address before completing tasks. Check your email for a verification link.');
-    // }
+    if (!session.user.email_confirmed_at) {
+      throw new Error('Please verify your email address before completing tasks. Check your email for a verification link.');
+    }
     
     // Get the user profile from the users table using the auth user ID
     const { data: profile, error: profileError } = await supabase
