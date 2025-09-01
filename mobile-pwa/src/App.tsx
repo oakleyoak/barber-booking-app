@@ -114,7 +114,7 @@ function App() {
 
   const handleSignOut = async () => {
     try {
-      await authService.logout();
+      await authService.logoutUser();
       setCurrentUser(null);
       setFormData({ email: '', password: '', name: '', role: 'Barber' });
     } catch (error) {

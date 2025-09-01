@@ -379,6 +379,88 @@ export const bookingService = {
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  async getBookingsByDateRange(startDate: string, endDate: string, userId?: string): Promise<Booking[]> {
+    let query = supabase.from('bookings')
+      .select('*')
+      .gte('date', startDate)
+      .lte('date', endDate);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query.order('date', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getDailyEarnings(date: string, userId?: string): Promise<{ totalAmount: number; bookingCount: number }> {
+    let query = supabase.from('bookings')
+      .select('price')
+      .eq('date', date);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    const bookings = data || [];
+    return {
+      totalAmount: bookings.reduce((sum, booking) => sum + (booking.price || 0), 0),
+      bookingCount: bookings.length
+    };
+  },
+
+  async getWeeklyEarnings(userId?: string): Promise<{ totalAmount: number; bookingCount: number }> {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    
+    let query = supabase.from('bookings')
+      .select('price')
+      .gte('date', weekStart.toISOString().split('T')[0])
+      .lte('date', today.toISOString().split('T')[0]);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    const bookings = data || [];
+    return {
+      totalAmount: bookings.reduce((sum, booking) => sum + (booking.price || 0), 0),
+      bookingCount: bookings.length
+    };
+  },
+
+  async getMonthlyEarnings(userId?: string): Promise<{ totalAmount: number; bookingCount: number }> {
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    let query = supabase.from('bookings')
+      .select('price')
+      .gte('date', monthStart.toISOString().split('T')[0])
+      .lte('date', today.toISOString().split('T')[0]);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    const bookings = data || [];
+    return {
+      totalAmount: bookings.reduce((sum, booking) => sum + (booking.price || 0), 0),
+      bookingCount: bookings.length
+    };
   }
 };
 
@@ -537,6 +619,60 @@ export const expenseService = {
       .eq('id', id);
     
     if (error) throw error;
+  },
+
+  async getDailyExpenses(date: string, userId?: string): Promise<number> {
+    let query = supabase.from('expenses')
+      .select('amount')
+      .eq('date', date);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return (data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+  },
+
+  async getWeeklyExpenses(userId?: string): Promise<number> {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    
+    let query = supabase.from('expenses')
+      .select('amount')
+      .gte('date', weekStart.toISOString().split('T')[0])
+      .lte('date', today.toISOString().split('T')[0]);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return (data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
+  },
+
+  async getMonthlyExpenses(userId?: string): Promise<number> {
+    const today = new Date();
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    
+    let query = supabase.from('expenses')
+      .select('amount')
+      .gte('date', monthStart.toISOString().split('T')[0])
+      .lte('date', today.toISOString().split('T')[0]);
+    
+    if (userId) {
+      query = query.eq('user_id', userId);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return (data || []).reduce((sum, expense) => sum + (expense.amount || 0), 0);
   }
 };
 
