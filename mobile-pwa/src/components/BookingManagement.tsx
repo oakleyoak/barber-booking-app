@@ -663,6 +663,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   onChange={e => setCreateForm(prev => ({ ...prev, service: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="">Select service</option>
                   {services.map(service => (
                     <option key={service} value={service}>{service}</option>
                   ))}
@@ -755,6 +756,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   onChange={e => setEditForm(prev => ({ ...prev, service: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
+                  <option value="">Select service</option>
                   {services.map(service => (
                     <option key={service} value={service}>{service}</option>
                   ))}
