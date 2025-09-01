@@ -4,7 +4,7 @@ import { User } from '../lib/supabase';
 import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
-import { sendAdhocEmail } from '../services/email';
+import { sendAdhocEmail, sendBookingEmail } from '../services/email';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -165,7 +165,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     try {
       setLoading(true);
       const bookingUserId = (currentUser.role === 'Owner' || currentUser.role === 'Manager') ? bookingData.user_id : currentUser.id;
-      const { error } = await supabase.from('bookings').insert([{
+      const { data, error } = await supabase.from('bookings').insert([{
         user_id: bookingUserId,
         customer_id: selectedCustomer.id,
         customer_name: selectedCustomer.name,
@@ -174,7 +174,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         date: bookingData.appointment_date,
         time: bookingData.appointment_time,
         status: 'scheduled'
-      }]);
+      }]).select();
       if (error) throw error;
   modal.notify('Booking created successfully!', 'success');
       setShowBookingModal(false);
@@ -187,21 +187,43 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         appointment_time: '09:00',
         user_id: currentUser.id
       });
-      // send an email notification to the customer (server-side function should be used in prod)
+      
+      // Send email notification using the booking ID
       try {
-        if (selectedCustomer.email) {
-          await sendAdhocEmail(
-            selectedCustomer.email,
-            `Appointment booked: ${bookingData.appointment_date} ${bookingData.appointment_time}`,
-            `<p>Hi ${selectedCustomer.name},</p><p>Your appointment for ${bookingData.service} is booked for ${bookingData.appointment_date} ${bookingData.appointment_time}.</p>`
-          );
+        if (selectedCustomer.email && data && data[0]) {
+          console.log('Sending booking email for booking ID:', data[0].id);
+          await sendBookingEmail(data[0].id);
+          console.log('Booking email sent successfully');
+        } else {
+          console.warn('Cannot send email: missing email or booking data');
         }
       } catch (e) {
-        console.warn('Email send failed (client proxy):', e);
+        console.error('Email send failed:', e);
+        // Fallback to adhoc email if booking email fails
+        try {
+          if (selectedCustomer.email) {
+            await sendAdhocEmail(
+              selectedCustomer.email,
+              `Appointment Confirmation - ${bookingData.service}`,
+              `<h2>Appointment Confirmed</h2>
+               <p>Dear ${selectedCustomer.name},</p>
+               <p>Your appointment has been successfully booked:</p>
+               <ul>
+                 <li><strong>Service:</strong> ${bookingData.service}</li>
+                 <li><strong>Date:</strong> ${bookingData.appointment_date}</li>
+                 <li><strong>Time:</strong> ${bookingData.appointment_time}</li>
+                 <li><strong>Price:</strong> R${bookingData.price}</li>
+               </ul>
+               <p>We look forward to seeing you!</p>`
+            );
+          }
+        } catch (fallbackError) {
+          console.error('Fallback email also failed:', fallbackError);
+        }
       }
     } catch (error) {
       console.error('Error creating booking:', error);
-  modal.notify('Failed to create booking', 'error');
+      modal.notify('Failed to create booking', 'error');
     } finally {
       setLoading(false);
     }
