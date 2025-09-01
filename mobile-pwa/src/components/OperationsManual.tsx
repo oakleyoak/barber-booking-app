@@ -28,6 +28,7 @@ import {
 import DailyCleaningLogs from './DailyCleaningLogs';
 import DailySafetyChecks from './DailySafetyChecks';
 import EquipmentMaintenance from './EquipmentMaintenance';
+import { userService } from '../services/completeDatabase';
 import { 
   getCleaningTasksWithStatus, 
   getMaintenanceTasksWithStatus, 
@@ -62,6 +63,7 @@ const OperationsManual: React.FC = () => {
     statistics: null
   });
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
   const [showAddForm, setShowAddForm] = useState('');
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -101,6 +103,14 @@ const OperationsManual: React.FC = () => {
         getSafetyCheckItemsWithStatus(),
         getOperationsStatistics()
       ]);
+      // fetch users for name lookup
+      try {
+        const u = await userService.getUsers();
+        setUsers(u || []);
+      } catch (e) {
+        console.warn('Failed to load users for OperationsManual:', e);
+        setUsers([]);
+      }
       
       setData({
         cleaningTasks: cleaning || [],
@@ -206,6 +216,15 @@ const OperationsManual: React.FC = () => {
       const end = historyFilters.end || undefined;
       const res = await (await import('../services/operationsService')).getLogsHistory(start, end);
       setLogs(res);
+      // ensure users are available for name lookup
+      if (!users || users.length === 0) {
+        try {
+          const u = await userService.getUsers();
+          setUsers(u || []);
+        } catch (e) {
+          console.warn('Failed to load users for history view:', e);
+        }
+      }
     } catch (error) {
       console.error('Failed to load history:', error);
     } finally {
@@ -895,7 +914,7 @@ const OperationsManual: React.FC = () => {
                       {logs.cleaning.map(l => (
                         <tr key={l.id} className="border-t">
                           <td className="p-2">{l.cleaning_tasks?.task_name || l.task_name}</td>
-                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || l.barber_id}</td>
                           <td className="p-2">{l.completed_date}</td>
                           <td className="p-2">{l.completed_at}</td>
                           <td className="p-2">{l.notes}</td>
@@ -924,7 +943,7 @@ const OperationsManual: React.FC = () => {
                         <tr key={l.id} className="border-t">
                           <td className="p-2">{l.maintenance_tasks?.task_name || l.task_name}</td>
                           <td className="p-2">{l.maintenance_tasks?.equipment_name || l.equipment_name}</td>
-                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || l.barber_id}</td>
                           <td className="p-2">{l.completed_date}</td>
                           <td className="p-2">{l.notes}</td>
                         </tr>
@@ -952,7 +971,7 @@ const OperationsManual: React.FC = () => {
                         <tr key={l.id} className="border-t">
                           <td className="p-2">{l.safety_check_items?.check_name || l.item_name}</td>
                           <td className="p-2">{l.status}</td>
-                          <td className="p-2">{l.barber_id}</td>
+                          <td className="p-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || l.barber_id}</td>
                           <td className="p-2">{l.check_date}</td>
                           <td className="p-2">{l.notes}</td>
                         </tr>
