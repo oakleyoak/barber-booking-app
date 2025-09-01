@@ -1031,69 +1031,39 @@ export const staffAccountabilityService = {
 // ===================================================================
 
 export const authService = {
-  // Simple database-only login (bypasses Supabase Auth)
-  async loginUserSimple(email: string, password: string): Promise<User> {
-    try {
-      // Check if user exists in users table with email/password
-      const { data: users, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .single();
-
-      if (error || !users) {
-        throw new Error('Invalid login credentials');
-      }
-
-      localStorage.setItem('currentUser', JSON.stringify(users));
-      return users;
-    } catch (error: any) {
-      console.error('Simple login error:', error);
-      throw new Error('Invalid login credentials');
-    }
-  },
-
-  // Login with existing users table
+  // Login using Supabase Auth (primary method)
   async loginUser(email: string, password: string): Promise<User> {
     try {
-      // First try simple database login
-      return await this.loginUserSimple(email, password);
-    } catch (simpleError) {
-      // If simple login fails, try Supabase Auth as fallback
-      try {
-        // Use Supabase Auth to sign in
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password
-        });
+      // Use Supabase Auth to sign in
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
 
-        if (signInError) {
-          console.error('Auth sign-in error:', signInError);
-          throw new Error(signInError.message || 'Authentication failed');
-        }
-
-        const supaUser = signInData.user;
-        if (!supaUser || !supaUser.email) throw new Error('Authentication failed');
-
-        // Fetch profile from users table
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', supaUser.email)
-          .single();
-
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-          throw profileError;
-        }
-
-        localStorage.setItem('currentUser', JSON.stringify(profile));
-        return profile;
-      } catch (error: any) {
-        console.error('Login error:', error);
-        throw new Error('Invalid login credentials');
+      if (signInError) {
+        console.error('Auth sign-in error:', signInError);
+        throw new Error(signInError.message || 'Authentication failed');
       }
+
+      const supaUser = signInData.user;
+      if (!supaUser || !supaUser.email) throw new Error('Authentication failed');
+
+      // Fetch profile from users table using auth user ID
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', supaUser.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw profileError;
+      }
+
+      return profile;
+    } catch (error: any) {
+      console.error('Login error:', error);
+      throw new Error('Invalid login credentials');
     }
   },
 
@@ -1138,7 +1108,6 @@ export const authService = {
 
       if (profileError) throw profileError;
 
-      localStorage.setItem('currentUser', JSON.stringify(profile));
       return profile;
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -1146,31 +1115,27 @@ export const authService = {
     }
   },
 
-  // Get current user from localStorage
+  // Get current user from Supabase Auth session
   async getCurrentUser(): Promise<User | null> {
     try {
-      // Prefer Supabase auth session when available
+      // Get current user from Supabase auth session
       const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user?.email) {
-        const stored = localStorage.getItem('currentUser');
-        if (!stored) return null;
-        return JSON.parse(stored);
+      if (userError || !userData?.user) {
+        return null;
       }
 
-      const email = userData.user.email;
+      // Get the user profile from users table using the auth user ID
       const { data: profile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .eq('id', userData.user.id)
         .single();
 
       if (profileError) {
-        const stored = localStorage.getItem('currentUser');
-        if (!stored) return null;
-        return JSON.parse(stored);
+        console.error('Profile fetch error:', profileError);
+        return null;
       }
 
-      localStorage.setItem('currentUser', JSON.stringify(profile));
       return profile;
     } catch (error) {
       console.error('Get current user error:', error);
