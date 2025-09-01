@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
 import logoIcon from './assets/edgeandcologoicon.JPG';
-import largeLogo from './assets/edgeandcologo.JPG';
+import largeLogo from './assets/edgeandcoblackandwhitelogobackground.png';
 import { supabase } from './lib/supabase';
 import { authService, userService, type User as SupabaseUser } from './services/completeDatabase';
 import BookingCalendar from './components/BookingCalendar';
