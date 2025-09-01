@@ -153,8 +153,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       const bookingData = {
         customer_id: createForm.customer_id || undefined, // Convert empty string to undefined
-        customer_name: createForm.customer_name,
-        service: createForm.service,
+        customer_name: createForm.customer_name.trim(),
+        service: createForm.service.trim(),
         price: createForm.price,
         date: createForm.date,
         time: createForm.time,
@@ -164,11 +164,38 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       console.log('Final booking data:', bookingData);
 
-      // Validate required fields
+      // Validate required fields with trimmed values
       if (!bookingData.customer_name || !bookingData.service || !bookingData.date || !bookingData.time) {
+        console.log('Validation failed:', {
+          customer_name: bookingData.customer_name,
+          service: bookingData.service,
+          date: bookingData.date,
+          time: bookingData.time
+        });
         modal.notify('Please fill in all required fields.', 'info');
         setCreating(false);
         return;
+      }
+
+      // If no customer_id provided, create customer profile first
+      if (!bookingData.customer_id && bookingData.customer_name) {
+        try {
+          console.log('Creating new customer profile for:', bookingData.customer_name);
+          const newCustomer = await customerService.createCustomer({
+            name: bookingData.customer_name,
+            email: '', // Default empty email
+            phone: '', // Default empty phone
+            notes: 'Created automatically from booking',
+            user_id: finalUserId
+          });
+          bookingData.customer_id = newCustomer.id;
+          console.log('Created customer with ID:', newCustomer.id);
+        } catch (customerError) {
+          console.error('Failed to create customer:', customerError);
+          modal.notify('Failed to create customer profile', 'error');
+          setCreating(false);
+          return;
+        }
       }
 
       // createBooking throws on error (completeDatabase service), so await directly
