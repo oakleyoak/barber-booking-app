@@ -1,0 +1,28 @@
+{
+  "name": "barber-booking-app",
+  "version": "1.0.0",
+  "description": "Professional barbershop booking and management system",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd mobile-pwa && npm ci && npm run build",
+    "start": "cd mobile-pwa && npm start",
+    "dev": "cd mobile-pwa && npm run dev"
+  },
+  "dependencies": {
+    "nodemailer": "^6.9.8"
+  },
+  "keywords": [
+    "barbershop",
+    "booking",
+    "appointments",
+    "react",
+    "typescript",
+    "netlify"
+  ],
+  "author": "Edge & Co Barbershop",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/oakleyoak/barber-booking-app.git"
+  }
+}
