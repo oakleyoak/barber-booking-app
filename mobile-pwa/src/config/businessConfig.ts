@@ -27,7 +27,7 @@ export const BusinessConfig = {
   },
   
   // Online Payment Links (when you set them up)
-  paypalLink: 'https://paypal.me/yourpaypallink', // Replace when ready
+  // paypalLink: '', // PayPal removed
   
   // Invoice Settings
   invoicePrefix: 'EC', // Edge & Co prefix for invoice numbers

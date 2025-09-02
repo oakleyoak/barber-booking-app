@@ -92,13 +92,7 @@ export const InvoiceService = {
         details: stripeUrl || 'Pay securely with your card',
         icon: '💳'
       },
-      {
-        id: 'paypal',
-        name: 'PayPal',
-        type: 'online',
-        details: BusinessConfig.paypalLink,
-        icon: '🟡'
-      }
+  // PayPal removed
     ];
   },
 
