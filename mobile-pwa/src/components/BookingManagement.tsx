@@ -199,16 +199,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Load upcoming bookings
   const loadUpcomingBookings = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           users(name)
         `)
-        .gte('date', today)
-        .order('date', { ascending: true })
-        .order('time', { ascending: true });
+        .order('date', { ascending: false })
+        .order('time', { ascending: false });
 
       if (error) throw error;
       setBookings(data || []);
@@ -221,14 +219,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Load booking history
   const loadBookingHistory = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           users(name)
         `)
-        .lt('date', today)
         .order('date', { ascending: false })
         .order('time', { ascending: false });
 
