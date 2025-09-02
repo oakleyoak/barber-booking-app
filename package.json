@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "nodemailer": "^6.9.8",
-    "stripe": "^14.21.0"
+    "stripe": "^14.21.0",
+    "@supabase/supabase-js": "^2.39.0"
   },
   "keywords": [
     "barbershop",
