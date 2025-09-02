@@ -27,6 +27,7 @@ import {
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
+import { NotificationsService } from '../services/notifications';
 import { ServicePricingService } from '../services/servicePricing';
 
 interface Booking {
@@ -205,6 +206,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }
 
       console.log('Booking created successfully');
+      // Send notification via Edge Function (non-blocking)
+      try {
+        NotificationsService.sendNotification({ type: 'booking_created', booking_id: created.id }).then(r => console.log('notification send result', r));
+      } catch (notifyErr) {
+        console.error('Failed to trigger notification', notifyErr);
+      }
       
       setShowCreateBooking(false);
       setCreateForm({
