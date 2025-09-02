@@ -9,6 +9,7 @@ export interface InvoiceData {
   customer_email: string;
   service: string;
   price: number;
+  card_processing_fee: number;
   date: string;
   time: string;
   invoice_number: string;
@@ -52,7 +53,7 @@ export const InvoiceService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: Math.round(invoice.price * 100), // Convert to kuruş
+          amount: Math.round((invoice.price + invoice.card_processing_fee) * 100), // Convert to kuruş
           currency: 'TRY',
           description: `${invoice.service} - Edge & Co Barbershop`,
           invoiceNumber: invoice.invoice_number,
@@ -84,7 +85,7 @@ export const InvoiceService = {
           invoice_sent_at: new Date().toISOString(),
           stripe_payment_id: stripePaymentId || null,
           payment_status: 'pending',
-          payment_amount: invoiceData.price
+          payment_amount: invoiceData.price + invoiceData.card_processing_fee
         })
         .eq('id', bookingId);
 
@@ -170,12 +171,18 @@ export const InvoiceService = {
                 <td style="padding: 12px; border: 1px solid #ddd;">${invoice.barber_name}</td>
                 <td style="padding: 12px; border: 1px solid #ddd; text-align: right; font-weight: bold;">₺${invoice.price.toLocaleString('tr-TR')}</td>
               </tr>
+              <tr>
+                <td style="padding: 12px; border: 1px solid #ddd;">Card Processing Fee</td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: right;">₺${invoice.card_processing_fee.toLocaleString('tr-TR')}</td>
+              </tr>
             </tbody>
+            <tfoot>
+              <tr>
+                <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold;">Total</td>
+                <td style="padding: 12px; border: 1px solid #ddd; text-align: right; font-weight: bold;">₺${(invoice.price + invoice.card_processing_fee).toLocaleString('tr-TR')}</td>
+              </tr>
+            </tfoot>
           </table>
-          
-          <div style="text-align: right; margin-top: 20px; padding: 15px; background-color: #e8f5e8; border-radius: 8px;">
-            <h3 style="color: #27ae60; margin: 0; font-size: 24px;">Total: ₺${invoice.price.toLocaleString('tr-TR')}</h3>
-          </div>
         </div>
 
         <!-- Payment Methods -->
@@ -254,6 +261,7 @@ export const InvoiceService = {
         customer_email: booking.customer_email || '',
         service: booking.service,
         price: booking.price,
+        card_processing_fee: 50,
         date: booking.date,
         time: booking.time,
         invoice_number: InvoiceService.generateInvoiceNumber(),
