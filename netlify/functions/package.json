@@ -1,8 +1,9 @@
 {
   "name": "netlify-email-functions",
   "version": "1.0.0",
-  "description": "Netlify Functions for email sending",
+  "description": "Netlify Functions for email sending and Stripe payments",
   "dependencies": {
-    "nodemailer": "^6.9.8"
+    "nodemailer": "^6.9.8",
+    "stripe": "^14.21.0"
   }
 }

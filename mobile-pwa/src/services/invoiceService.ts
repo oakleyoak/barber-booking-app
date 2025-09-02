@@ -1,5 +1,6 @@
 import { NotificationsService } from './notifications';
 import { BusinessConfig } from '../config/businessConfig';
+import { StripePaymentLinks } from './stripeService';
 
 export interface InvoiceData {
   booking_id: string;
@@ -12,6 +13,7 @@ export interface InvoiceData {
   invoice_number: string;
   due_date: string;
   barber_name: string;
+  stripe_payment_url?: string; // Add Stripe payment URL
 }
 
 export interface PaymentMethod {
@@ -40,30 +42,65 @@ export const InvoiceService = {
     return dueDate.toISOString().split('T')[0];
   },
 
-  // Available payment methods
-  getPaymentMethods: (): PaymentMethod[] => [
-    {
-      id: 'iban_tr',
-      name: 'Bank Transfer (IBAN)',
-      type: 'iban',
-      details: BusinessConfig.iban,
-      icon: '🏦'
-    },
-    {
-      id: 'paypal',
-      name: 'PayPal',
-      type: 'online',
-      details: 'Secure online payment via PayPal',
-      icon: '💳'
-    },
-    {
-      id: 'stripe',
-      name: 'Credit/Debit Card',
-      type: 'online',
-      details: 'Pay securely with your card',
-      icon: '💳'
+  // Create Stripe payment link for invoice
+  createStripePaymentLink: async (invoice: InvoiceData): Promise<string | null> => {
+    try {
+      const response = await fetch('/.netlify/functions/create-stripe-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: Math.round(invoice.price * 100), // Convert to kuruş
+          currency: 'TRY',
+          description: `${invoice.service} - Edge & Co Barbershop`,
+          invoiceNumber: invoice.invoice_number,
+          customerEmail: invoice.customer_email,
+          customerName: invoice.customer_name
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        return result.url;
+      } else {
+        console.error('Failed to create Stripe payment link:', response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error creating Stripe payment link:', error);
+      return null;
     }
-  ],
+  },
+
+  // Available payment methods
+  getPaymentMethods: async (invoice: InvoiceData): Promise<PaymentMethod[]> => {
+    const stripeUrl = await InvoiceService.createStripePaymentLink(invoice);
+    
+    return [
+      {
+        id: 'iban_tr',
+        name: 'Bank Transfer (IBAN)',
+        type: 'iban',
+        details: BusinessConfig.iban,
+        icon: '🏦'
+      },
+      {
+        id: 'stripe',
+        name: 'Credit/Debit Card (Stripe)',
+        type: 'online',
+        details: stripeUrl || 'Pay securely with your card',
+        icon: '💳'
+      },
+      {
+        id: 'paypal',
+        name: 'PayPal',
+        type: 'online',
+        details: BusinessConfig.paypalLink,
+        icon: '🟡'
+      }
+    ];
+  },
 
   // Generate invoice HTML template
   generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[]): string => {
@@ -147,10 +184,14 @@ export const InvoiceService = {
             ${onlineMethods.map(method => `
               <div style="background-color: white; padding: 15px; border-radius: 8px; margin: 10px 0; border: 1px solid #ddd;">
                 <p style="margin: 0; font-weight: bold;">${method.icon} ${method.name}</p>
-                <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">${method.details}</p>
-                <button style="background-color: #27ae60; color: white; padding: 8px 16px; border: none; border-radius: 4px; margin-top: 10px; cursor: pointer;">
-                  Pay with ${method.name}
-                </button>
+                <p style="margin: 5px 0 10px 0; color: #666; font-size: 14px;">
+                  ${method.id === 'stripe' ? 'Secure payment with credit/debit card via Stripe' : method.details}
+                </p>
+                <a href="${method.details}" target="_blank" style="display: inline-block; text-decoration: none;">
+                  <button style="background-color: ${method.id === 'stripe' ? '#6772e5' : '#27ae60'}; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                    ${method.id === 'stripe' ? '💳 Pay with Card' : `Pay with ${method.name}`}
+                  </button>
+                </a>
               </div>
             `).join('')}
           </div>
@@ -199,7 +240,7 @@ export const InvoiceService = {
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
-      const paymentMethods = InvoiceService.getPaymentMethods();
+      const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
       const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods);
 
       // Send via NotificationsService

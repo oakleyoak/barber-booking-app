@@ -8,7 +8,7 @@ import BookingCalendar from './components/BookingCalendar';
 import RealEarningsTracker from './components/RealEarningsTracker';
 import CustomerManager from './components/CustomerManager';
 import AdminPanel from './components/AdminPanel';
-import BookingManagement from './components/BookingManagement';
+import BookingManagement from './components/BookingManagement_final';
 import OperationsManual from './components/OperationsManual';
 import ExpenseManager from './components/ExpenseManager';
 import InventoryManager from './components/InventoryManager';

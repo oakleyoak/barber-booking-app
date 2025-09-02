@@ -17,9 +17,17 @@ export const BusinessConfig = {
   invoiceDueDays: 7, // Days until payment is due
   lateFeePercentage: 5, // Late fee percentage if needed
   
+  // Stripe Configuration (PUBLIC keys only - never put secret keys here!)
+  stripe: {
+    // Your actual Stripe publishable key
+    publishableKey: 'pk_live_51S2uCgIyRLJZciJjHt6zrvEGMc8YfQGDsGo2vCDzE0E0KRpTWYRGnqQ26An4VfJkFOmPswYV8tTJxTQYKNep1pzJ00brzV4vsy',
+    // Payment success/cancel URLs
+    successUrl: 'https://edgeandco.netlify.app/payment-success',
+    cancelUrl: 'https://edgeandco.netlify.app/payment-cancel',
+  },
+  
   // Online Payment Links (when you set them up)
   paypalLink: 'https://paypal.me/yourpaypallink', // Replace when ready
-  stripeLink: 'https://checkout.stripe.com/yourlink', // Replace when ready
   
   // Invoice Settings
   invoicePrefix: 'EC', // Edge & Co prefix for invoice numbers
