@@ -360,15 +360,27 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
               <h3 className="text-lg font-semibold text-gray-900">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
               <button onClick={() => navigateMonth('next')} className="p-2 hover:bg-gray-100 rounded-lg transition"><ChevronRight className="h-5 w-5" /></button>
             </div>
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="p-2 text-center text-sm font-medium text-gray-500">{day}</div>)}
+            <div className="grid grid-cols-7 gap-1">
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500">{day}</div>)}
               {getDaysInMonth(currentMonth).map((date, index) => {
                 const dayBookings = getBookingsForDate(date);
                 const isCurrentMonth = date.getMonth() === currentMonth.getMonth();
                 return (
-                  <button key={index} onClick={() => selectDate(date)} className={`min-h-[60px] sm:min-h-[80px] p-1 sm:p-2 border rounded-lg text-left transition ${isCurrentMonth ? 'bg-white border-gray-200 hover:bg-gray-50' : 'bg-gray-50 border-gray-100 text-gray-400'}`}>
-                    <div className="text-xs sm:text-sm font-medium mb-1">{date.getDate()}</div>
-                    {dayBookings.length > 0 && <div className="text-xs font-semibold text-blue-700 bg-blue-100 rounded px-2 py-1 inline-block">{dayBookings.length} booking{dayBookings.length > 1 ? 's' : ''}</div>}
+                  <button
+                    key={index}
+                    onClick={() => selectDate(date)}
+                    className={`relative min-h-[80px] p-2 border rounded-lg text-left transition flex flex-col ${
+                      isCurrentMonth
+                        ? 'bg-white border-gray-200 hover:bg-gray-50'
+                        : 'bg-gray-50 border-gray-100 text-gray-400'
+                    }`}
+                  >
+                    <div className={`text-sm font-medium ${new Date().toDateString() === date.toDateString() ? 'bg-blue-600 text-white rounded-full h-6 w-6 flex items-center justify-center' : ''}`}>{date.getDate()}</div>
+                    {dayBookings.length > 0 && (
+                      <div className="absolute bottom-2 right-2 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full h-5 w-5 flex items-center justify-center">
+                        {dayBookings.length}
+                      </div>
+                    )}
                   </button>
                 );
               })}
