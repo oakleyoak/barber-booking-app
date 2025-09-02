@@ -36,6 +36,11 @@ const generateBookingNotificationForBarber = (booking: any) => {
           <p><strong>Edge & Co Barbershop</strong></p>
           <p>Professional barber services</p>
           <p>Login to your app to see all your appointments</p>
+          <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #999;">
+            You received this email because you are a team member at Edge & Co Barbershop.<br>
+            Contact management if you have any questions: <a href="mailto:edgeandcobarber@gmail.com" style="color: #666;">edgeandcobarber@gmail.com</a>
+          </p>
         </div>
       </div>
     `
@@ -71,6 +76,11 @@ const generateBookingConfirmationEmail = (booking: any) => {
           <p><strong>Edge & Co Barbershop</strong></p>
           <p>Professional barber services in your area</p>
           <p>Email: edgeandcobarber@gmail.com</p>
+          <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #999;">
+            You received this email because you booked an appointment with Edge & Co Barbershop.<br>
+            If you no longer wish to receive these emails, please <a href="mailto:edgeandcobarber@gmail.com?subject=Unsubscribe" style="color: #666;">unsubscribe here</a>.
+          </p>
         </div>
       </div>
     `
@@ -93,7 +103,7 @@ const generateAppointmentReminder = (booking: any) => {
           <p><strong>Service:</strong> ${booking.service}</p>
           <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
           <p><strong>Time:</strong> ${booking.time}</p>
-          <p><strong>Price:</strong> £${booking.price}</p>
+          <p><strong>Price:</strong> ₺${booking.price}</p>
         </div>
         
         <div style="background-color: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
@@ -105,6 +115,11 @@ const generateAppointmentReminder = (booking: any) => {
           <p><strong>Edge & Co Barbershop</strong></p>
           <p>Professional barber services in your area</p>
           <p>Email: edgeandcobarber@gmail.com</p>
+          <hr style="margin: 15px 0; border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 12px; color: #999;">
+            You received this email because you have an upcoming appointment with Edge & Co Barbershop.<br>
+            If you no longer wish to receive these emails, please <a href="mailto:edgeandcobarber@gmail.com?subject=Unsubscribe" style="color: #666;">unsubscribe here</a>.
+          </p>
         </div>
       </div>
     `
@@ -115,13 +130,14 @@ export const NotificationsService = {
   sendNotification: async (payload: any) => {
     try {
       console.log('🚀 Sending email notification...');
-      console.log('📧 Payload:', payload);
+      console.log('📧 Payload:', JSON.stringify(payload, null, 2));
       
       let emailContent = { subject: '', html: '', to: '' };
       
       // Handle different notification types
       if (payload.type === 'booking_created' && payload.booking_data) {
         // Use the barber notification template when a booking is created by manager
+        console.log('📋 Using barber notification template');
         const booking = payload.booking_data;
         
         const template = generateBookingNotificationForBarber(booking);
@@ -130,7 +146,19 @@ export const NotificationsService = {
           html: template.html,
           to: booking.customer_email || 'edgeandcobarber@gmail.com'
         };
+      } else if (payload.type === 'customer_confirmation' && payload.booking_data) {
+        // Use the customer confirmation template when manually sending to customer
+        console.log('👤 Using customer confirmation template');
+        const booking = payload.booking_data;
+        
+        const template = generateBookingConfirmationEmail(booking);
+        emailContent = {
+          subject: template.subject,
+          html: template.html,
+          to: booking.customer_email || 'edgeandcobarber@gmail.com'
+        };
       } else if (payload.type === 'appointment_reminder') {
+        console.log('⏰ Using appointment reminder template');
         const template = generateAppointmentReminder(payload.booking_data);
         emailContent = {
           subject: template.subject,
@@ -139,6 +167,7 @@ export const NotificationsService = {
         };
       } else if (payload.to && (payload.subject || payload.html)) {
         // Direct email sending
+        console.log('📬 Using direct email template');
         emailContent = {
           subject: payload.subject || 'Edge & Co Barbershop Notification',
           html: payload.html || payload.text || 'Notification from Edge & Co Barbershop',
@@ -146,12 +175,19 @@ export const NotificationsService = {
         };
       } else {
         // Default notification
+        console.log('⚠️ Using default notification template');
         emailContent = {
           subject: 'Edge & Co Barbershop Notification',
           html: '<h2>New notification from Edge & Co Barbershop</h2><p>You have a new notification from your barbershop booking system.</p>',
           to: 'edgeandcobarber@gmail.com'
         };
       }
+      
+      console.log('📧 Email content:', {
+        to: emailContent.to,
+        subject: emailContent.subject,
+        htmlLength: emailContent.html.length
+      });
       
       // Send email using our Netlify Function
       const response = await fetch('https://edgeandco.netlify.app/.netlify/functions/send-email', {
@@ -166,12 +202,16 @@ export const NotificationsService = {
         })
       });
       
+      console.log('📤 Netlify Function response status:', response.status);
+      
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Email sent successfully via Netlify Function');
+        console.log('✅ Email sent successfully via Netlify Function:', result);
         return { ok: true, status: 200, body: { message: 'Email sent via Netlify Function', service: 'netlify' } };
       } else {
-        throw new Error(`Netlify Function responded with status ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ Netlify Function error:', response.status, errorText);
+        throw new Error(`Netlify Function responded with status ${response.status}: ${errorText}`);
       }
       
     } catch (error) {

@@ -37,10 +37,18 @@ exports.handler = async (event, context) => {
     });
 
     const mailOptions = {
-      from: 'edgeandcobarber@gmail.com',
+      from: '"Edge & Co Barber" <edgeandcobarber@gmail.com>',
       to: to,
       subject: subject,
-      html: html
+      html: html,
+      headers: {
+        'List-Unsubscribe': '<mailto:edgeandcobarber@gmail.com?subject=Unsubscribe>',
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        'X-Mailer': 'Edge & Co Booking System',
+        'X-Priority': '3',
+        'Importance': 'Normal',
+        'Reply-To': 'edgeandcobarber@gmail.com'
+      }
     };
 
     console.log('📧 Sending email with options:', {
