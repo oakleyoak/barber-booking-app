@@ -1,17 +1,4 @@
-const nodemailer = require('n    // Gmail SMTP configuration with enhanced security
-    const transporter = nodemailer.createTransporter({
-      service: 'gmail',
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false, // TLS
-      auth: {
-        user: 'edgeandcobarber@gmail.com',
-        pass: 'hapw tpmv kqku niqr' // Your app password
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });r');
+const nodemailer = require('nodemailer');
 
 exports.handler = async (event, context) => {
   // Handle CORS
@@ -40,12 +27,18 @@ exports.handler = async (event, context) => {
     console.log('To:', to);
     console.log('Subject:', subject);
 
-    // Gmail SMTP configuration
-    const transporter = nodemailer.createTransport({
+    // Gmail SMTP configuration with enhanced security
+    const transporter = nodemailer.createTransporter({
       service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false, // TLS
       auth: {
         user: 'edgeandcobarber@gmail.com',
         pass: 'hapw tpmv kqku niqr' // Your app password
+      },
+      tls: {
+        rejectUnauthorized: false
       }
     });
 
