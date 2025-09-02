@@ -1,7 +1,52 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { 
-  Calendar, 
+          }
+      });
+
+      if (result.ok) {
+        modal.notify('Customer notification sent successfully!', 'success');
+      } else {
+        modal.notify('Failed to send customer notification: ' + result.error, 'error');
+      }
+    } catch (err) {
+      console.error('Error sending customer notification:', err);
+      modal.notify('Failed to send customer notification', 'error');
+    }
+  };
+
+  // Handler to send invoice
+  const sendInvoice = async (booking: Booking) => {
+    try {
+      // First, get customer email from customer_id if available
+      let customerEmail = '';
+      if (booking.customer_id) {
+        const customer = await customerService.getCustomerById(booking.customer_id);
+        customerEmail = customer?.email || '';
+      }
+
+      if (!customerEmail) {
+        modal.notify('Customer email not available. Please update customer information first.', 'error');
+        return;
+      }
+
+      // Add customer email to booking for invoice generation
+      const bookingWithEmail = {
+        ...booking,
+        customer_email: customerEmail
+      };
+
+      // Send invoice
+      const result = await InvoiceService.sendInvoice(bookingWithEmail);
+
+      if (result.ok) {
+        modal.notify('Invoice sent successfully!', 'success');
+      } else {
+        modal.notify('Failed to send invoice: ' + result.error, 'error');
+      }
+    } catch (err) {
+      console.error('Error sending invoice:', err);
+      modal.notify('Failed to send invoice', 'error');
   Clock, 
   User, 
   DollarSign, 
@@ -12,6 +57,7 @@ import {
   Filter, 
   Phone, 
   Mail, 
+  Receipt,
   CheckSquare, 
   AlertTriangle, 
   History, 
@@ -28,6 +74,7 @@ import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
+import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService } from '../services/servicePricing';
 
 interface Booking {
@@ -644,6 +691,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                                     <Mail className="h-4 w-4" />
                                   </button>
                                   <button
+                                    onClick={() => sendInvoice(booking)}
+                                    className="p-1 text-purple-600 hover:bg-purple-100 rounded"
+                                    title="Send invoice"
+                                  >
+                                    <Receipt className="h-4 w-4" />
+                                  </button>
+                                  <button
                                     onClick={() => startEdit(booking)}
                                     className="p-1 text-blue-600 hover:bg-blue-100 rounded"
                                     title="Edit booking"
@@ -694,6 +748,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status}</span>
                   <span className="text-sm text-gray-500">{booking.time}</span>
                   <button onClick={() => sendCustomerNotification(booking)} className="ml-2 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600" title="Send customer notification"><Mail className="h-4 w-4" /></button>
+                  <button onClick={() => sendInvoice(booking)} className="ml-2 px-2 py-1 bg-purple-500 text-white rounded hover:bg-purple-600" title="Send invoice"><Receipt className="h-4 w-4" /></button>
                   <button onClick={() => startEdit(booking)} className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"><Edit2 className="h-4 w-4" /></button>
                   <button onClick={() => deleteBooking(booking)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"><X className="h-4 w-4" /></button>
                 </div>

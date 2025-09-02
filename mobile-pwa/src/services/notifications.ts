@@ -157,6 +157,14 @@ export const NotificationsService = {
           html: template.html,
           to: booking.customer_email || 'edgeandcobarber@gmail.com'
         };
+      } else if (payload.type === 'invoice' && payload.email_content) {
+        // Use direct invoice template provided by InvoiceService
+        console.log('💰 Using invoice template');
+        emailContent = {
+          subject: payload.email_content.subject,
+          html: payload.email_content.html,
+          to: payload.email_content.to
+        };
       } else if (payload.type === 'appointment_reminder') {
         console.log('⏰ Using appointment reminder template');
         const template = generateAppointmentReminder(payload.booking_data);
