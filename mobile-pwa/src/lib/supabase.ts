@@ -43,11 +43,14 @@ export interface Booking {
   user_id?: string;
   customer_id?: string;
   customer_name: string;
+  customer_email?: string; // Added from component
+  customer_phone?: string; // Added from component
   service: string;
   price: number;
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  notes?: string; // Added from component
   payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
   payment_method?: 'stripe' | 'cash' | 'card' | 'other';
   stripe_payment_id?: string;
@@ -57,6 +60,14 @@ export interface Booking {
   payment_amount?: number;
   created_at?: string;
   updated_at?: string;
+  users?: { // From booking management component
+    name: string;
+  };
+  customers?: { // From booking management component
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
 export interface Expense {

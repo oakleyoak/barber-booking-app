@@ -24,32 +24,12 @@ import {
   X
 } from 'lucide-react';
 import { useModal } from './ui/ModalProvider';
-import { supabase } from '../lib/supabase';
+import { supabase, type Booking } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService } from '../services/servicePricing';
-
-interface Booking {
-  id: string;
-  user_id?: string;
-  customer_id?: string;
-  customer_name: string;
-  customer_phone?: string;
-  customer_email?: string;
-  service: string;
-  price: number;
-  date: string;
-  time: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
-  notes?: string;
-  created_at?: string;
-  updated_at?: string;
-  users?: {
-    name: string;
-  };
-}
 
 interface BookingManagementProps {
   currentUser: {
@@ -67,6 +47,27 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const [currentView, setCurrentView] = useState<'upcoming' | 'history'>('upcoming');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+
+  const markAsPaid = async (bookingId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'paid', payment_method: 'cash', payment_received_at: new Date().toISOString() })
+        .eq('id', bookingId)
+        .select(`*, users(name)`)
+        .single();
+
+      if (error) throw error;
+
+      setBookings(prevBookings =>
+        prevBookings.map(b => (b.id === bookingId ? data as Booking : b))
+      );
+      modal.notify('Booking marked as paid!', 'success');
+    } catch (err) {
+      console.error('Error marking as paid:', err);
+      modal.notify('Failed to mark booking as paid', 'error');
+    }
+  };
 
   // Handler to send customer notification
   const sendCustomerNotification = async (booking: Booking) => {
@@ -292,6 +293,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       }`}>
                         {booking.status}
                       </span>
+                      {/* --- PAYMENT STATUS BADGE --- */}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
+                        booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                        booking.payment_status === 'failed' || booking.payment_status === 'refunded' ? 'bg-red-100 text-red-800' :
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {booking.payment_status?.replace('_', ' ') || 'Pending Payment'}
+                      </span>
                     </div>
 
                     {booking.notes && (
@@ -303,6 +312,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
                   {/* Action Buttons */}
                   <div className="flex space-x-2">
+                    {/* --- MARK AS PAID BUTTON --- */}
+                    {booking.payment_status !== 'paid' && (
+                      <button
+                        onClick={() => markAsPaid(booking.id)}
+                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                        title="Mark as Paid"
+                      >
+                        <CheckSquare className="w-4 h-4" />
+                      </button>
+                    )}
                     {/* Send Notification Button */}
                     <button
                       onClick={() => sendCustomerNotification(booking)}
