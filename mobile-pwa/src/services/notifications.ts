@@ -215,44 +215,7 @@ export const NotificationsService = {
       }
       
     } catch (error) {
-      console.error('❌ Formspree failed, trying backup method...');
-      
-      // Backup method: Use a different free service or log for manual processing
-      try {
-        // Log the email details for manual processing if needed
-        console.log('📝 Email details for manual processing:', {
-          to: payload.to,
-          subject: payload.subject,
-          content: payload.html || payload.text,
-          timestamp: new Date().toISOString()
-        });
-        
-        // You could save this to localStorage or send to another service
-        const backupEmail = {
-          to: payload.to,
-          subject: payload.subject,
-          content: payload.html || payload.text,
-          timestamp: new Date().toISOString(),
-          status: 'failed_to_send'
-        };
-        
-        // Store in localStorage for later retry
-        const failedEmails = JSON.parse(localStorage.getItem('failedEmails') || '[]');
-        failedEmails.push(backupEmail);
-        localStorage.setItem('failedEmails', JSON.stringify(failedEmails));
-        
-        console.log('📝 Email saved to localStorage for retry');
-        return { 
-          ok: false, 
-          error: 'Email service temporarily unavailable - saved for retry',
-          fallback: 'localStorage'
-        };
-        
-      } catch (backupError) {
-        console.error('❌ Backup method also failed:', backupError);
-      }
-      
-      console.error('❌ All email methods failed:', error);
+      console.error('❌ Email sending failed:', error);
       return { ok: false, error: (error as Error).message };
     }
   }

@@ -28,7 +28,7 @@ exports.handler = async (event, context) => {
     console.log('Subject:', subject);
 
     // Gmail SMTP configuration
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
         user: 'edgeandcobarber@gmail.com',
