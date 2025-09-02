@@ -9,7 +9,8 @@
     "dev": "cd mobile-pwa && npm run dev"
   },
   "dependencies": {
-    "nodemailer": "^6.9.8"
+    "nodemailer": "^6.9.8",
+    "stripe": "^14.21.0"
   },
   "keywords": [
     "barbershop",
