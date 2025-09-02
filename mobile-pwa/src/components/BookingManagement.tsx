@@ -46,6 +46,13 @@ interface Booking {
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_method?: string;
+  stripe_payment_id?: string;
+  invoice_number?: string;
+  invoice_sent_at?: string;
+  payment_received_at?: string;
+  payment_amount?: number;
   users?: {
     name: string;
   };
@@ -130,6 +137,34 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } catch (err) {
       console.error('Error sending invoice:', err);
       modal.notify('Failed to send invoice', 'error');
+    }
+  };
+
+  // Mark booking as paid manually
+  const markAsPaid = async (booking: Booking) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          payment_status: 'paid',
+          payment_method: 'manual',
+          payment_received_at: new Date().toISOString()
+        })
+        .eq('id', booking.id);
+
+      if (error) throw error;
+
+      modal.notify('Payment status updated to paid', 'success');
+      
+      // Refresh the current view
+      if (currentView === 'upcoming') {
+        loadUpcomingBookings();
+      } else {
+        loadBookingHistory();
+      }
+    } catch (err) {
+      console.error('Error marking as paid:', err);
+      modal.notify('Failed to update payment status', 'error');
     }
   };
 
@@ -292,6 +327,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       }`}>
                         {booking.status}
                       </span>
+                      
+                      {/* Payment Status Badge */}
+                      {booking.payment_status && (
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                          booking.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
+                          booking.payment_status === 'refunded' ? 'bg-yellow-100 text-yellow-800' :
+                          'bg-orange-100 text-orange-800'
+                        }`}>
+                          💳 {booking.payment_status === 'paid' ? 'Paid' : 
+                               booking.payment_status === 'failed' ? 'Payment Failed' :
+                               booking.payment_status === 'refunded' ? 'Refunded' :
+                               'Payment Pending'}
+                        </span>
+                      )}
                     </div>
 
                     {booking.notes && (
@@ -320,6 +370,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     >
                       <Receipt className="w-4 h-4" />
                     </button>
+
+                    {/* Mark as Paid Button - only show if payment is pending */}
+                    {booking.payment_status === 'pending' && (
+                      <button
+                        onClick={() => markAsPaid(booking)}
+                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
+                        title="Mark as Paid"
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                      </button>
+                    )}
 
                     {/* Delete Button */}
                     <button

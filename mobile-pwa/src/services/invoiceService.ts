@@ -1,6 +1,7 @@
 import { NotificationsService } from './notifications';
 import { BusinessConfig } from '../config/businessConfig';
 import { StripePaymentLinks } from './stripeService';
+import { supabase } from '../lib/supabase';
 
 export interface InvoiceData {
   booking_id: string;
@@ -70,6 +71,32 @@ export const InvoiceService = {
     } catch (error) {
       console.error('Error creating Stripe payment link:', error);
       return null;
+    }
+  },
+
+  // Update booking with invoice and payment information
+  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string): Promise<void> => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          invoice_number: invoiceData.invoice_number,
+          invoice_sent_at: new Date().toISOString(),
+          stripe_payment_id: stripePaymentId || null,
+          payment_status: 'pending',
+          payment_amount: invoiceData.price
+        })
+        .eq('id', bookingId);
+
+      if (error) {
+        console.error('Failed to update booking with invoice data:', error);
+        throw error;
+      }
+
+      console.log('✅ Updated booking with invoice data:', bookingId);
+    } catch (error) {
+      console.error('Error updating booking invoice data:', error);
+      throw error;
     }
   },
 
@@ -236,6 +263,13 @@ export const InvoiceService = {
 
       const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
       const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods);
+
+      // Get Stripe payment ID from payment methods for tracking
+      const stripeMethod = paymentMethods.find(pm => pm.id === 'stripe');
+      const stripePaymentId = stripeMethod?.details?.includes('stripe.com') ? stripeMethod.details : null;
+
+      // Update booking with invoice data
+      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined);
 
       // Send via NotificationsService
       const result = await NotificationsService.sendNotification({
