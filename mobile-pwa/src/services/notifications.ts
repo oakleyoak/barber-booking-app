@@ -1,23 +1,219 @@
-import { supabaseUrl } from '../lib/supabase';
+import { supabaseUrl, supabaseKey } from '../lib/supabase';
+
+// Email templates
+const generateBookingNotificationForBarber = (booking: any) => {
+  return {
+    subject: `✂️ New Booking Assignment - Edge & Co Barbershop`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2c3e50; margin-bottom: 10px;">✂️ Edge & Co Barbershop</h1>
+          <h2 style="color: #3498db; margin: 0;">New Booking Assignment</h2>
+        </div>
+        
+        <div style="background-color: #e8f4fd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db;">
+          <h3 style="color: #2c3e50; margin-top: 0;">📅 You have a new appointment</h3>
+          <p>Hi ${booking.barber_name || 'Team Member'},</p>
+          <p>Your manager has booked a new appointment for you.</p>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #2c3e50; margin-top: 0;">Appointment Details</h3>
+          <p><strong>Customer:</strong> ${booking.customer_name}</p>
+          <p><strong>Service:</strong> ${booking.service}</p>
+          <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> ${booking.time}</p>
+          <p><strong>Price:</strong> ₺${booking.price}</p>
+          <p><strong>Status:</strong> ${booking.status}</p>
+        </div>
+        
+        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; color: #27ae60;"><strong>✅ Please prepare for this appointment</strong></p>
+          <p style="margin: 5px 0 0 0; font-size: 14px;">Check your schedule and ensure you're ready for the customer.</p>
+        </div>
+        
+        <div style="border-top: 1px solid #ddd; padding-top: 20px; text-align: center; font-size: 14px; color: #666;">
+          <p><strong>Edge & Co Barbershop</strong></p>
+          <p>Professional barber services</p>
+          <p>Login to your app to see all your appointments</p>
+        </div>
+      </div>
+    `
+  };
+};
+
+const generateBookingConfirmationEmail = (booking: any) => {
+  return {
+    subject: `✂️ Booking Confirmation - Edge & Co Barbershop`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2c3e50; margin-bottom: 10px;">✂️ Edge & Co Barbershop</h1>
+          <h2 style="color: #27ae60; margin: 0;">Booking Confirmed!</h2>
+        </div>
+        
+        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+          <h3 style="color: #2c3e50; margin-top: 0;">Appointment Details</h3>
+          <p><strong>Customer:</strong> ${booking.customer_name}</p>
+          <p><strong>Service:</strong> ${booking.service}</p>
+          <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> ${booking.time}</p>
+          <p><strong>Price:</strong> ₺${booking.price}</p>
+          <p><strong>Status:</strong> ${booking.status}</p>
+        </div>
+        
+        <div style="background-color: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; color: #27ae60;"><strong>✅ Your appointment is confirmed!</strong></p>
+          <p style="margin: 5px 0 0 0; font-size: 14px;">We look forward to seeing you at Edge & Co Barbershop.</p>
+        </div>
+        
+        <div style="border-top: 1px solid #ddd; padding-top: 20px; text-align: center; font-size: 14px; color: #666;">
+          <p><strong>Edge & Co Barbershop</strong></p>
+          <p>Professional barber services in your area</p>
+          <p>Email: edgeandcobarber@gmail.com</p>
+        </div>
+      </div>
+    `
+  };
+};
+
+const generateAppointmentReminder = (booking: any) => {
+  return {
+    subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2c3e50; margin-bottom: 10px;">✂️ Edge & Co Barbershop</h1>
+          <h2 style="color: #f39c12; margin: 0;">Appointment Reminder</h2>
+        </div>
+        
+        <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #f39c12;">
+          <h3 style="color: #2c3e50; margin-top: 0;">⏰ Upcoming Appointment</h3>
+          <p><strong>Customer:</strong> ${booking.customer_name}</p>
+          <p><strong>Service:</strong> ${booking.service}</p>
+          <p><strong>Date:</strong> ${new Date(booking.date).toLocaleDateString()}</p>
+          <p><strong>Time:</strong> ${booking.time}</p>
+          <p><strong>Price:</strong> £${booking.price}</p>
+        </div>
+        
+        <div style="background-color: #e8f4fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; color: #1e5f99;"><strong>📍 Don't forget your appointment!</strong></p>
+          <p style="margin: 5px 0 0 0; font-size: 14px;">We're looking forward to seeing you soon.</p>
+        </div>
+        
+        <div style="border-top: 1px solid #ddd; padding-top: 20px; text-align: center; font-size: 14px; color: #666;">
+          <p><strong>Edge & Co Barbershop</strong></p>
+          <p>Professional barber services in your area</p>
+          <p>Email: edgeandcobarber@gmail.com</p>
+        </div>
+      </div>
+    `
+  };
+};
 
 export const NotificationsService = {
   sendNotification: async (payload: any) => {
     try {
-      const res = await fetch(`${supabaseUrl}/functions/v1/send-notification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        console.error('NotificationsService send failed', text);
-        return { ok: false, status: res.status, body: text };
+      console.log('🚀 Sending email notification...');
+      console.log('📧 Payload:', payload);
+      
+      let emailContent = { subject: '', html: '', to: '' };
+      
+      // Handle different notification types
+      if (payload.type === 'booking_created' && payload.booking_data) {
+        // Use the barber notification template when a booking is created by manager
+        const booking = payload.booking_data;
+        
+        const template = generateBookingNotificationForBarber(booking);
+        emailContent = {
+          subject: template.subject,
+          html: template.html,
+          to: booking.customer_email || 'edgeandcobarber@gmail.com'
+        };
+      } else if (payload.type === 'appointment_reminder') {
+        const template = generateAppointmentReminder(payload.booking_data);
+        emailContent = {
+          subject: template.subject,
+          html: template.html,
+          to: payload.to || payload.booking_data?.customer_email || 'edgeandcobarber@gmail.com'
+        };
+      } else if (payload.to && (payload.subject || payload.html)) {
+        // Direct email sending
+        emailContent = {
+          subject: payload.subject || 'Edge & Co Barbershop Notification',
+          html: payload.html || payload.text || 'Notification from Edge & Co Barbershop',
+          to: payload.to
+        };
+      } else {
+        // Default notification
+        emailContent = {
+          subject: 'Edge & Co Barbershop Notification',
+          html: '<h2>New notification from Edge & Co Barbershop</h2><p>You have a new notification from your barbershop booking system.</p>',
+          to: 'edgeandcobarber@gmail.com'
+        };
       }
-      const json = await res.json();
-      return { ok: true, status: res.status, body: json };
-    } catch (err) {
-      console.error('NotificationsService error', err);
-      return { ok: false, error: (err as Error).message };
+      
+      // Send email using our Netlify Function
+      const response = await fetch('https://edgeandco.netlify.app/.netlify/functions/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: emailContent.to,
+          subject: emailContent.subject,
+          html: emailContent.html
+        })
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Email sent successfully via Netlify Function');
+        return { ok: true, status: 200, body: { message: 'Email sent via Netlify Function', service: 'netlify' } };
+      } else {
+        throw new Error(`Netlify Function responded with status ${response.status}`);
+      }
+      
+    } catch (error) {
+      console.error('❌ Formspree failed, trying backup method...');
+      
+      // Backup method: Use a different free service or log for manual processing
+      try {
+        // Log the email details for manual processing if needed
+        console.log('📝 Email details for manual processing:', {
+          to: payload.to,
+          subject: payload.subject,
+          content: payload.html || payload.text,
+          timestamp: new Date().toISOString()
+        });
+        
+        // You could save this to localStorage or send to another service
+        const backupEmail = {
+          to: payload.to,
+          subject: payload.subject,
+          content: payload.html || payload.text,
+          timestamp: new Date().toISOString(),
+          status: 'failed_to_send'
+        };
+        
+        // Store in localStorage for later retry
+        const failedEmails = JSON.parse(localStorage.getItem('failedEmails') || '[]');
+        failedEmails.push(backupEmail);
+        localStorage.setItem('failedEmails', JSON.stringify(failedEmails));
+        
+        console.log('📝 Email saved to localStorage for retry');
+        return { 
+          ok: false, 
+          error: 'Email service temporarily unavailable - saved for retry',
+          fallback: 'localStorage'
+        };
+        
+      } catch (backupError) {
+        console.error('❌ Backup method also failed:', backupError);
+      }
+      
+      console.error('❌ All email methods failed:', error);
+      return { ok: false, error: (error as Error).message };
     }
   }
 };

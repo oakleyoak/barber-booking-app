@@ -22,7 +22,7 @@ import {
   Eye, 
   Download, 
   RefreshCw,
-  X 
+  X
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
@@ -81,6 +81,48 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       modal.notify('Failed to delete booking', 'error');
     }
   };
+
+  // Handler to send customer notification
+  const sendCustomerNotification = async (booking: Booking) => {
+    try {
+      // First, get customer email from customer_id if available
+      let customerEmail = '';
+      if (booking.customer_id) {
+        const customer = await customerService.getCustomerById(booking.customer_id);
+        customerEmail = customer?.email || '';
+      }
+
+      if (!customerEmail) {
+        modal.notify('Customer email not available. Please update customer information first.', 'error');
+        return;
+      }
+
+      // Send customer confirmation email
+      const result = await NotificationsService.sendNotification({
+        type: 'customer_confirmation',
+        booking_id: booking.id,
+        booking_data: {
+          customer_name: booking.customer_name,
+          service: booking.service,
+          date: booking.date,
+          time: booking.time,
+          price: booking.price,
+          status: booking.status,
+          customer_email: customerEmail,
+          barber_name: booking.users?.name || 'Edge & Co Team'
+        }
+      });
+
+      if (result.ok) {
+        modal.notify('Customer notification sent successfully!', 'success');
+      } else {
+        modal.notify('Failed to send customer notification: ' + result.error, 'error');
+      }
+    } catch (err) {
+      console.error('Error sending customer notification:', err);
+      modal.notify('Failed to send customer notification', 'error');
+    }
+  };
   const services = ServicePricingService.getAllServices().map(s => s.name);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
@@ -117,13 +159,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     user_id: '',
     status: 'scheduled',
   });
-  const [allStaff, setAllStaff] = useState<{id: string, name: string}[]>([]);
+  const [allStaff, setAllStaff] = useState<{id: string, name: string, email: string}[]>([]);
   const [allCustomers, setAllCustomers] = useState<{id: string, name: string}[]>([]);
   const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
-  userService.getUsers().then((users: any[]) => setAllStaff(users.map(u => ({id: u.id, name: u.name}))));
+  userService.getUsers().then((users: any[]) => setAllStaff(users.map(u => ({id: u.id, name: u.name, email: u.email}))));
   customerService.getCustomers().then((customers: any[]) => setAllCustomers(customers.map(c => ({id: c.id, name: c.name}))));
     }
   }, [currentUser.role]);
@@ -206,9 +248,26 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }
 
       console.log('Booking created successfully');
-      // Send notification via Edge Function (non-blocking)
+      // Send notification to the assigned barber
       try {
-        NotificationsService.sendNotification({ type: 'booking_created', booking_id: created.id }).then(r => console.log('notification send result', r));
+        const assignedStaff = allStaff.find(staff => staff.id === finalUserId);
+        const barberEmail = assignedStaff?.email || 'edgeandcobarber@gmail.com'; // fallback to business email
+        const barberName = assignedStaff?.name || 'Staff Member';
+
+        NotificationsService.sendNotification({ 
+          type: 'booking_created', 
+          booking_id: created.id,
+          booking_data: {
+            customer_name: createForm.customer_name,
+            service: createForm.service,
+            date: createForm.date,
+            time: createForm.time,
+            price: createForm.price,
+            status: createForm.status,
+            customer_email: barberEmail, // Send to the assigned barber
+            barber_name: barberName
+          }
+        }).then(r => console.log('notification send result', r));
       } catch (notifyErr) {
         console.error('Failed to trigger notification', notifyErr);
       }
@@ -578,6 +637,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status}</span>
                                 <div className="flex gap-1">
                                   <button
+                                    onClick={() => sendCustomerNotification(booking)}
+                                    className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                    title="Send customer notification"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </button>
+                                  <button
                                     onClick={() => startEdit(booking)}
                                     className="p-1 text-blue-600 hover:bg-blue-100 rounded"
                                     title="Edit booking"
@@ -627,7 +693,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 <div className="flex items-center space-x-2">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status}</span>
                   <span className="text-sm text-gray-500">{booking.time}</span>
-                  <button onClick={() => startEdit(booking)} className="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"><Edit2 className="h-4 w-4" /></button>
+                  <button onClick={() => sendCustomerNotification(booking)} className="ml-2 px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600" title="Send customer notification"><Mail className="h-4 w-4" /></button>
+                  <button onClick={() => startEdit(booking)} className="px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"><Edit2 className="h-4 w-4" /></button>
                   <button onClick={() => deleteBooking(booking)} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"><X className="h-4 w-4" /></button>
                 </div>
               </div>

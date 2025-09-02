@@ -4,6 +4,7 @@ import { User } from '../lib/supabase';
 import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
+import { NotificationsService } from '../services/notifications';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -18,6 +19,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
+  const [allStaff, setAllStaff] = useState<{id: string, name: string, email: string}[]>([]);
 
   // Form data
   const [formData, setFormData] = useState({
@@ -37,13 +39,14 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     user_id: currentUser.id // default to current user
   });
 
-  const [allStaff, setAllStaff] = useState<{id: string, name: string}[]>([]);
+  const [allStaffMembers, setAllStaffMembers] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
     // Only fetch staff if owner/manager
     if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
       userService.getUsers().then(users => {
-        setAllStaff(users.map(u => ({ id: u.id, name: u.name })));
+        setAllStaffMembers(users.map(u => ({ id: u.id, name: u.name })));
+        setAllStaff(users.map(u => ({ id: u.id, name: u.name, email: u.email })));
       });
     }
   }, [currentUser.role]);
@@ -176,7 +179,32 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         status: 'scheduled'
       }]).select();
       if (error) throw error;
-  modal.notify('Booking created successfully!', 'success');
+      
+      // Send notification to the assigned barber
+      try {
+        const assignedStaff = allStaff.find(staff => staff.id === bookingUserId);
+        const barberEmail = assignedStaff?.email || 'edgeandcobarber@gmail.com'; // fallback to business email
+        const barberName = assignedStaff?.name || 'Staff Member';
+
+        NotificationsService.sendNotification({ 
+          type: 'booking_created', 
+          booking_id: data[0]?.id,
+          booking_data: {
+            customer_name: selectedCustomer.name,
+            service: bookingData.service,
+            date: bookingData.appointment_date,
+            time: bookingData.appointment_time,
+            price: bookingData.price,
+            status: 'scheduled',
+            customer_email: barberEmail, // Send to the assigned barber
+            barber_name: barberName
+          }
+        }).then(r => console.log('Customer Manager notification send result', r));
+      } catch (notifyErr) {
+        console.error('Failed to trigger notification from Customer Manager', notifyErr);
+      }
+      
+      modal.notify('Booking created successfully!', 'success');
       setShowBookingModal(false);
       setSelectedCustomer(null);
       setBookingData({
@@ -335,14 +363,14 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone *
+                    Phone
                   </label>
                   <input
                     type="tel"
-                    required
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                    placeholder="Optional - for tourists or customers without phone"
                   />
                 </div>
 
@@ -409,7 +437,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     >
                       <option value="">Select staff</option>
-                      {allStaff.map(staff => (
+                      {allStaffMembers.map(staff => (
                         <option key={staff.id} value={staff.id}>{staff.name}</option>
                       ))}
                     </select>
