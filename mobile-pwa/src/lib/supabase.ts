@@ -48,6 +48,13 @@ export interface Booking {
   date: string;
   time: string;
   status: 'scheduled' | 'completed' | 'cancelled';
+  payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_method?: 'stripe' | 'cash' | 'card' | 'other';
+  stripe_payment_id?: string;
+  invoice_number?: string;
+  invoice_sent_at?: string;
+  payment_received_at?: string;
+  payment_amount?: number;
   created_at?: string;
   updated_at?: string;
 }

@@ -329,19 +329,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       </span>
                       
                       {/* Payment Status Badge */}
-                      {booking.payment_status && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                          booking.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
-                          booking.payment_status === 'refunded' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
-                          💳 {booking.payment_status === 'paid' ? 'Paid' : 
-                               booking.payment_status === 'failed' ? 'Payment Failed' :
-                               booking.payment_status === 'refunded' ? 'Refunded' :
-                               'Payment Pending'}
-                        </span>
-                      )}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                        booking.payment_status === 'failed' ? 'bg-red-100 text-red-800' :
+                        booking.payment_status === 'refunded' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-orange-100 text-orange-800'
+                      }`}>
+                        💳 {booking.payment_status === 'paid' ? 'Paid' : 
+                             booking.payment_status === 'failed' ? 'Payment Failed' :
+                             booking.payment_status === 'refunded' ? 'Refunded' :
+                             'Payment Pending'}
+                      </span>
                     </div>
 
                     {booking.notes && (
@@ -371,8 +369,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       <Receipt className="w-4 h-4" />
                     </button>
 
-                    {/* Mark as Paid Button - only show if payment is pending */}
-                    {booking.payment_status === 'pending' && (
+                    {/* Mark as Paid Button - only show if payment is not paid */}
+                    {booking.payment_status !== 'paid' && (
                       <button
                         onClick={() => markAsPaid(booking)}
                         className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
