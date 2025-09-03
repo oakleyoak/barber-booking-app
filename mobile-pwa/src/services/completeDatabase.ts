@@ -1189,7 +1189,7 @@ export const sessionService = {
 export const dailyCleaningLogService = {
   async getLogsByDate(date: string, barberId?: string) {
     try {
-      let query = supabase.from('daily_cleaning_log').select('*').eq('date', date);
+      let query = supabase.from('daily_cleaning_logs').select('*').eq('date', date);
       if (barberId) query = query.eq('barber_id', barberId);
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
@@ -1202,7 +1202,7 @@ export const dailyCleaningLogService = {
 
   async getLogsByDateRange(startDate: string, endDate: string, barberId?: string) {
     try {
-      let query = supabase.from('daily_cleaning_log').select('*').gte('date', startDate).lte('date', endDate);
+      let query = supabase.from('daily_cleaning_logs').select('*').gte('date', startDate).lte('date', endDate);
       if (barberId) query = query.eq('barber_id', barberId);
       const { data, error } = await query.order('date', { ascending: true });
       if (error) throw error;
@@ -1215,7 +1215,7 @@ export const dailyCleaningLogService = {
 
   async createLog(record: any) {
     try {
-      const { data, error } = await supabase.from('daily_cleaning_log').insert([record]).select().single();
+      const { data, error } = await supabase.from('daily_cleaning_logs').insert([record]).select().single();
       if (error) throw error;
       return data;
     } catch (error) {
@@ -1226,7 +1226,7 @@ export const dailyCleaningLogService = {
 
   async updateLog(id: string, updates: any) {
     try {
-      const { data, error } = await supabase.from('daily_cleaning_log').update(updates).eq('id', id).select().single();
+      const { data, error } = await supabase.from('daily_cleaning_logs').update(updates).eq('id', id).select().single();
       if (error) throw error;
       return data;
     } catch (error) {
@@ -1237,7 +1237,7 @@ export const dailyCleaningLogService = {
 
   async deleteLog(id: string) {
     try {
-      const { error } = await supabase.from('daily_cleaning_log').delete().eq('id', id);
+      const { error } = await supabase.from('daily_cleaning_logs').delete().eq('id', id);
       if (error) throw error;
       return true;
     } catch (error) {
