@@ -1,6 +1,15 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { createClient } = require('@supabase/supabase-js');
 
+// Date utility function to fix timezone issues
+const getTodayLocal = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = (today.getMonth() + 1).toString().padStart(2, '0');
+  const day = today.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -93,7 +102,7 @@ exports.handler = async ({ body, headers }) => {
                 amount: serviceAmount, // Service amount without processing fee
                 commission: commissionRate,
                 commission_amount: commissionAmount,
-                date: new Date().toISOString().split('T')[0],
+                date: getTodayLocal(),
                 status: 'completed'
               });
 

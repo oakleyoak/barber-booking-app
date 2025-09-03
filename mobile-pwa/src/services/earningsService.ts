@@ -1,6 +1,7 @@
 import { dbService } from './database';
 import { Transaction } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
+import { getTodayLocal, getLocalDateString, subtractDaysLocal } from '../utils/dateUtils';
 
 export interface TransactionData {
   customer_name: string;
@@ -26,7 +27,7 @@ export class EarningsService {
         amount: transactionData.amount,
         commission: transactionData.commission,
         commission_amount: transactionData.amount * (transactionData.commission / 100),
-        date: new Date().toISOString().split('T')[0],
+        date: getTodayLocal(),
         status: 'completed',
         booking_id: transactionData.booking_id || undefined
       };
@@ -41,7 +42,7 @@ export class EarningsService {
 
   static async getTodayEarnings(userId: string): Promise<EarningsData> {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
       const transactions = await dbService.getTransactions(userId);
       const todayTransactions = transactions.filter(t => t.date === today);
 
@@ -69,8 +70,8 @@ export class EarningsService {
       const weekAgo = new Date(today);
       weekAgo.setDate(today.getDate() - 7);
 
-      const weekAgoStr = weekAgo.toISOString().split('T')[0];
-      const todayStr = today.toISOString().split('T')[0];
+      const weekAgoStr = getLocalDateString(weekAgo);
+      const todayStr = getLocalDateString(today);
 
       const transactions = await dbService.getTransactions(userId);
       const weekTransactions = transactions.filter(t => t.date >= weekAgoStr && t.date <= todayStr);
@@ -103,8 +104,8 @@ export class EarningsService {
       const monthAgo = new Date(today);
       monthAgo.setMonth(today.getMonth() - 1);
 
-      const monthAgoStr = monthAgo.toISOString().split('T')[0];
-      const todayStr = today.toISOString().split('T')[0];
+      const monthAgoStr = getLocalDateString(monthAgo);
+      const todayStr = getLocalDateString(today);
 
       const transactions = await dbService.getTransactions(userId);
       const monthTransactions = transactions.filter(t => t.date >= monthAgoStr && t.date <= todayStr);

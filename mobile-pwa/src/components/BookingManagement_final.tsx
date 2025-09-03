@@ -30,6 +30,7 @@ import { userService, customerService, bookingService } from '../services/comple
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService } from '../services/servicePricing';
+import { getTodayLocal } from '../utils/dateUtils';
 
 interface BookingManagementProps {
   currentUser: {
@@ -165,7 +166,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Load upcoming bookings
   const loadUpcomingBookings = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -187,7 +188,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Load booking history
   const loadBookingHistory = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
       const { data, error } = await supabase
         .from('bookings')
         .select(`
