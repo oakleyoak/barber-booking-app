@@ -179,6 +179,18 @@ function App() {
             </button>
             
             <button
+              onClick={() => setCurrentView('bookings')}
+              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
+                currentView === 'bookings'
+                  ? 'bg-green-700 text-white border border-green-900'
+                  : 'bg-white text-green-900 hover:bg-green-50 border border-green-200'
+              }`}
+            >
+              <ClipboardList className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
+              <span className="text-center leading-tight">My Bookings</span>
+            </button>
+            
+            <button
               onClick={() => setCurrentView('earnings')}
               className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
                 currentView === 'earnings'
@@ -331,7 +343,7 @@ function App() {
               <IncidentReports currentUserId={currentUser.id} />
             )}
 
-            {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
+            {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <BookingManagement currentUser={currentUser} />
             )}
 
