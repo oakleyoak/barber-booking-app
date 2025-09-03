@@ -677,159 +677,138 @@ const OperationsManual: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <style>{`
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-      `}</style>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <div className="max-w-6xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">Operations Manual</h1>
-          <p className="text-gray-600 text-lg">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">Operations Manual</h2>
+          <p className="text-gray-600">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
         </div>
 
         {/* Stats Cards */}
         {data.statistics && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-green-200 hover:shadow-md transition-shadow">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-green-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-green-600 mb-1">Completed Today</p>
-                  <p className="text-3xl font-bold text-green-700">
+                  <p className="text-sm text-green-600 font-medium">Completed Today</p>
+                  <p className="text-2xl font-bold text-green-700">
                     {data.statistics.tasks_completed_today || 0}
                   </p>
                 </div>
-                <div className="bg-green-50 p-3 rounded-full">
-                  <CheckCircle className="text-green-500" size={28} />
-                </div>
+                <CheckCircle className="text-green-500" size={24} />
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-orange-200 hover:shadow-md transition-shadow">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-orange-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-orange-600 mb-1">Pending Tasks</p>
-                  <p className="text-3xl font-bold text-orange-700">
+                  <p className="text-sm text-orange-600 font-medium">Pending Tasks</p>
+                  <p className="text-2xl font-bold text-orange-700">
                     {data.statistics.tasks_pending || 0}
                   </p>
                 </div>
-                <div className="bg-orange-50 p-3 rounded-full">
-                  <Clock className="text-orange-500" size={28} />
-                </div>
+                <Clock className="text-orange-500" size={24} />
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-blue-200 hover:shadow-md transition-shadow">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-blue-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-blue-600 mb-1">Total Tasks</p>
-                  <p className="text-3xl font-bold text-blue-700">
+                  <p className="text-sm text-blue-600 font-medium">Total Tasks</p>
+                  <p className="text-2xl font-bold text-blue-700">
                     {(data.cleaningTasks.length + data.maintenanceTasks.length + data.safetyItems.length)}
                   </p>
                 </div>
-                <div className="bg-blue-50 p-3 rounded-full">
-                  <ClipboardList className="text-blue-500" size={28} />
-                </div>
+                <ClipboardList className="text-blue-500" size={24} />
               </div>
             </div>
             
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-purple-200 hover:shadow-md transition-shadow">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-purple-200">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-purple-600 mb-1">Compliance Rate</p>
-                  <p className="text-3xl font-bold text-purple-700">
-                    {data.statistics.compliance_rate || '0%'}
+                  <p className="text-sm text-purple-600 font-medium">Compliance Rate</p>
+                  <p className="text-2xl font-bold text-purple-700">
+                    {data.statistics.compliance_rate || '2%'}
                   </p>
                 </div>
-                <div className="bg-purple-50 p-3 rounded-full">
-                  <Shield className="text-purple-500" size={28} />
-                </div>
+                <Shield className="text-purple-500" size={24} />
               </div>
             </div>
           </div>
         )}
 
         {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="border-b border-gray-200">
-              <nav className="flex overflow-x-auto scrollbar-hide px-4">
-                {[
-                  { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
-                  { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
-                  { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length },
-                  { id: 'history', label: 'History', icon: Clock, count: 0 },
-                  { id: 'daily_cleaning_logs', label: 'Logs', icon: ClipboardList, count: logs.cleaning.length },
-                  { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length },
-                  { id: 'equipment_maintenance', label: 'Equipment', icon: Wrench, count: 0 }
-                ].map(tab => {
-                  const Icon = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`
-                        group flex items-center px-4 py-4 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-                        ${activeTab === tab.id
-                          ? 'border-blue-500 text-blue-600'
-                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                        }
-                      `}
-                    >
-                      <Icon className="mr-2" size={18} />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
-                      {tab.count > 0 && (
-                        <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                          activeTab === tab.id
-                            ? 'bg-blue-100 text-blue-600'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}>
-                          {tab.count}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
+        <div className="mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <nav className="flex overflow-x-auto">
+              {[
+                { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
+                { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
+                { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length },
+                { id: 'history', label: 'History', icon: Clock, count: 0 },
+                { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length },
+                { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length },
+                { id: 'equipment_maintenance', label: 'Equipment', icon: Wrench, count: 0 }
+              ].map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`
+                      flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
+                      ${activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600 bg-blue-50'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }
+                    `}
+                  >
+                    <Icon className="mr-2" size={16} />
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                        activeTab === tab.id
+                          ? 'bg-blue-100 text-blue-600'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
           </div>
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
 
       {/* Tab Content */}
       <div className="space-y-6">
         {/* Cleaning Tasks */}
         {activeTab === 'cleaning' && (
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h2 className="text-2xl font-semibold flex items-center text-gray-900">
-                <ClipboardList className="mr-3" size={28} />
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <ClipboardList className="mr-2" size={20} />
                 Cleaning Tasks
               </h2>
               <button
                 onClick={() => setShowAddForm('cleaning')}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                <Plus size={18} className="mr-2" />
-                Add Cleaning Task
+                <Plus size={16} className="mr-1" />
+                Add Task
               </button>
             </div>
             
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {data.cleaningTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <ClipboardList size={64} className="mx-auto mb-4 opacity-30" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No cleaning tasks found</h3>
-                  <p>Add your first cleaning task to get started with operations management.</p>
+                <div className="text-center py-8 text-gray-500">
+                  <ClipboardList size={48} className="mx-auto mb-4 opacity-50" />
+                  <p>No cleaning tasks found. Add your first task to get started.</p>
                 </div>
               ) : (
                 data.cleaningTasks.map(task => renderTaskCard(task, 'cleaning'))
@@ -840,27 +819,26 @@ const OperationsManual: React.FC = () => {
 
         {/* Maintenance Tasks */}
         {activeTab === 'maintenance' && (
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h2 className="text-2xl font-semibold flex items-center text-gray-900">
-                <Wrench className="mr-3" size={28} />
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Wrench className="mr-2" size={20} />
                 Maintenance Tasks
               </h2>
               <button
                 onClick={() => setShowAddForm('maintenance')}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                <Plus size={18} className="mr-2" />
-                Add Maintenance Task
+                <Plus size={16} className="mr-1" />
+                Add Task
               </button>
             </div>
             
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {data.maintenanceTasks.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Wrench size={64} className="mx-auto mb-4 opacity-30" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No maintenance tasks found</h3>
-                  <p>Add your first maintenance task to track equipment upkeep.</p>
+                <div className="text-center py-8 text-gray-500">
+                  <Wrench size={48} className="mx-auto mb-4 opacity-50" />
+                  <p>No maintenance tasks found. Add your first task to get started.</p>
                 </div>
               ) : (
                 data.maintenanceTasks.map(task => renderTaskCard(task, 'maintenance'))
@@ -871,27 +849,26 @@ const OperationsManual: React.FC = () => {
 
         {/* Safety Checks */}
         {activeTab === 'safety' && (
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h2 className="text-2xl font-semibold flex items-center text-gray-900">
-                <Shield className="mr-3" size={28} />
+          <div className="p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Shield className="mr-2" size={20} />
                 Safety Check Items
               </h2>
               <button
                 onClick={() => setShowAddForm('safety')}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                <Plus size={18} className="mr-2" />
-                Add Safety Check
+                <Plus size={16} className="mr-1" />
+                Add Check
               </button>
             </div>
             
-            <div className="grid gap-4">
+            <div className="space-y-3">
               {data.safetyItems.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <Shield size={64} className="mx-auto mb-4 opacity-30" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No safety check items found</h3>
-                  <p>Add your first safety check to ensure compliance.</p>
+                <div className="text-center py-8 text-gray-500">
+                  <Shield size={48} className="mx-auto mb-4 opacity-50" />
+                  <p>No safety check items found. Add your first check to get started.</p>
                 </div>
               ) : (
                 data.safetyItems.map(task => renderTaskCard(task, 'safety'))
@@ -902,95 +879,81 @@ const OperationsManual: React.FC = () => {
 
         {/* Daily Cleaning Logs */}
         {activeTab === 'daily_cleaning_logs' && (
-          <div className="p-6">
+          <div className="p-4">
             <DailyCleaningLogs />
           </div>
         )}
 
         {/* Daily Safety Checks */}
         {activeTab === 'daily_safety_checks' && (
-          <div className="p-6">
+          <div className="p-4">
             <DailySafetyChecks />
           </div>
         )}
 
         {/* Equipment Maintenance Logs */}
         {activeTab === 'equipment_maintenance' && (
-          <div className="p-6">
+          <div className="p-4">
             <EquipmentMaintenance />
           </div>
         )}
 
         {/* History Tab */}
         {activeTab === 'history' && (
-          <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-              <h2 className="text-2xl font-semibold flex items-center text-gray-900">
-                <Clock className="mr-3" size={28} />
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold flex items-center">
+                <Clock className="mr-2" size={20} />
                 Completion History
               </h2>
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex items-center space-x-2">
                 <input 
                   type="date" 
                   value={historyFilters.start} 
                   onChange={e => setHistoryFilters(prev => ({ ...prev, start: e.target.value }))} 
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  className="px-2 py-1 border border-gray-300 rounded text-sm" 
                 />
                 <input 
                   type="date" 
                   value={historyFilters.end} 
                   onChange={e => setHistoryFilters(prev => ({ ...prev, end: e.target.value }))} 
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                  className="px-2 py-1 border border-gray-300 rounded text-sm" 
                 />
                 <button 
                   onClick={loadHistory} 
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
                 >
                   Filter
                 </button>
               </div>
             </div>
 
-            <div className="space-y-8">
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Cleaning Logs</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+            <div className="space-y-4">
+              <div>
+                <h3 className="font-semibold mb-2">Cleaning Logs</h3>
+                <div className="overflow-x-auto bg-white rounded border">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Task</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed Date</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed At</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200">
                       {logs.cleaning.length > 0 ? logs.cleaning.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {l.cleaning_tasks?.task_name || l.task_name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {l.completed_at ? new Date(l.completed_at).toLocaleTimeString() : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {l.notes || '—'}
-                          </td>
+                          <td className="px-3 py-2">{l.cleaning_tasks?.task_name || l.task_name || 'N/A'}</td>
+                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-3 py-2">{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-3 py-2">{l.completed_at ? new Date(l.completed_at).toLocaleTimeString() : 'N/A'}</td>
+                          <td className="px-3 py-2">{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                            No cleaning logs found for the selected date range.
-                          </td>
+                          <td colSpan={5} className="px-3 py-4 text-center text-gray-500">No cleaning logs found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -998,45 +961,31 @@ const OperationsManual: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Maintenance Logs</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+              <div>
+                <h3 className="font-semibold mb-2">Maintenance Logs</h3>
+                <div className="overflow-x-auto bg-white rounded border">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Equipment</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Task</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Equipment</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed Date</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200">
                       {logs.maintenance.length > 0 ? logs.maintenance.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {l.maintenance_tasks?.task_name || l.task_name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {l.maintenance_tasks?.equipment_name || l.equipment_name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {l.notes || '—'}
-                          </td>
+                          <td className="px-3 py-2">{l.maintenance_tasks?.task_name || l.task_name || 'N/A'}</td>
+                          <td className="px-3 py-2">{l.maintenance_tasks?.equipment_name || l.equipment_name || 'N/A'}</td>
+                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-3 py-2">{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-3 py-2">{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                            No maintenance logs found for the selected date range.
-                          </td>
+                          <td colSpan={5} className="px-3 py-4 text-center text-gray-500">No maintenance logs found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1044,28 +993,24 @@ const OperationsManual: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Safety Check Logs</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
+              <div>
+                <h3 className="font-semibold mb-2">Safety Check Logs</h3>
+                <div className="overflow-x-auto bg-white rounded border">
+                  <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barber</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Item</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Status</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Check Date</th>
+                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="divide-y divide-gray-200">
                       {logs.safety.length > 0 ? logs.safety.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {l.safety_check_items?.check_name || l.item_name || 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-3 py-2">{l.safety_check_items?.check_name || l.item_name || 'N/A'}</td>
+                          <td className="px-3 py-2">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               l.status === 'passed' ? 'bg-green-100 text-green-800' :
                               l.status === 'failed' ? 'bg-red-100 text-red-800' :
@@ -1074,21 +1019,13 @@ const OperationsManual: React.FC = () => {
                               {l.status || 'Unknown'}
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {l.check_date ? new Date(l.check_date).toLocaleDateString() : 'N/A'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                            {l.notes || '—'}
-                          </td>
+                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-3 py-2">{l.check_date ? new Date(l.check_date).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-3 py-2">{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
-                          <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                            No safety check logs found for the selected date range.
-                          </td>
+                          <td colSpan={5} className="px-3 py-4 text-center text-gray-500">No safety check logs found.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1098,11 +1035,11 @@ const OperationsManual: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
         </div>
 
         {/* Add Task Form Modal */}
         {renderAddForm()}
+        </div>
       </div>
     </div>
   );
