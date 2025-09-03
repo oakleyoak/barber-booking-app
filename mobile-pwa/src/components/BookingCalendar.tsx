@@ -314,7 +314,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   };
 
   const selectDate = (date: Date) => {
-    setSelectedDate(date.toISOString().split('T')[0]);
+    // Fix timezone issue - use local date formatting instead of ISO string
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const localDateString = `${year}-${month}-${day}`;
+    
+    setSelectedDate(localDateString);
     setView('day');
   };
 
@@ -398,12 +404,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         {view === 'day' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
-              <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronLeft className="h-5 w-5" /></button>
+              <button onClick={() => { 
+                const d = new Date(selectedDate); 
+                d.setDate(d.getDate() - 1); 
+                const year = d.getFullYear();
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                setSelectedDate(`${year}-${month}-${day}`);
+              }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronLeft className="h-5 w-5" /></button>
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-gray-900">{new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                 <p className="text-sm text-gray-600">{bookings.length} appointment{bookings.length !== 1 ? 's' : ''}</p>
               </div>
-              <button onClick={() => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d.toISOString().split('T')[0]); }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronRight className="h-5 w-5" /></button>
+              <button onClick={() => { 
+                const d = new Date(selectedDate); 
+                d.setDate(d.getDate() + 1); 
+                const year = d.getFullYear();
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                setSelectedDate(`${year}-${month}-${day}`);
+              }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronRight className="h-5 w-5" /></button>
             </div>
             <div className="space-y-2">
               {timeSlots.map(time => {
