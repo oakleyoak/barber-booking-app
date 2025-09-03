@@ -13,9 +13,9 @@ interface BookingCalendarProps {
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const modal = useModal();
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [view, setView] = useState<'calendar' | 'day' | 'list'>('calendar');
+  const [view, setView] = useState<'calendar' | 'day' | 'list'>('day');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [monthlyBookings, setMonthlyBookings] = useState<Booking[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -40,6 +40,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     { name: 'Massage', duration: 45, price: 700 },
     { name: 'Shave', duration: 30, price: 500 }
   ];
+
+  // Always start with today's date when component mounts
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
+    setSelectedDate(today);
+    setCurrentMonth(new Date());
+  }, []);
 
   useEffect(() => {
     loadData();
