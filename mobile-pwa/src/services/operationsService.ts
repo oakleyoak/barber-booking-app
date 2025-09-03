@@ -89,7 +89,7 @@ const getCurrentBarberId = async () => {
     const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('id')
-      .eq('id', session.user.id)
+      .eq('auth_user_id', session.user.id)
       .single();
     
     if (profileError) {
