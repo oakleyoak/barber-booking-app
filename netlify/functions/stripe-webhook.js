@@ -6,135 +6,130 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-exports.handler = async (event, context) => {
-  // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, Stripe-Signature',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
+// This is your Stripe CLI webhook secret for testing your endpoint locally.
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
+exports.handler = async ({ body, headers }) => {
+  const sig = headers['stripe-signature'];
 
-  if (event.httpMethod !== 'POST') {
+  let event;
+
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+  } catch (err) {
+    console.error(`Webhook Error: ${err.message}`);
     return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Method not allowed' })
+      statusCode: 400,
+      body: `Webhook Error: ${err.message}`,
     };
   }
 
-  try {
-    const sig = event.headers['stripe-signature'];
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  // Handle the checkout.session.completed event
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    console.log('Checkout session was successful!', session);
 
-    let stripeEvent;
+    const { invoice_number } = session.metadata;
+    const paymentIntentId = session.payment_intent;
+    const paymentLinkId = session.payment_link; // Added to get payment link ID
+
+    // Extract the card processing fee from the line items
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const cardFeeItem = lineItems.data.find(item => item.description === 'Card Processing Fee');
+    const cardProcessingFee = cardFeeItem ? cardFeeItem.amount_total / 100 : 0;
+
+    if (!invoice_number) {
+        console.error('Webhook Error: Missing invoice_number in session metadata.');
+        return { statusCode: 400, body: 'Missing invoice_number in metadata.' };
+    }
 
     try {
-      stripeEvent = stripe.webhooks.constructEvent(event.body, sig, endpointSecret);
-    } catch (err) {
-      console.error('Webhook signature verification failed:', err.message);
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Webhook signature verification failed' })
-      };
+      const { data: booking, error } = await supabase
+        .from('bookings')
+        .update({ 
+          payment_status: 'paid',
+          payment_method: 'card',
+          payment_received_at: new Date().toISOString(),
+          stripe_payment_id: paymentIntentId, // Store the actual payment intent ID
+          card_processing_fee: cardProcessingFee // Store the fee
+        })
+        .eq('invoice_number', invoice_number)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating booking:', error);
+        return { statusCode: 500, body: 'Error updating booking in database.' };
+      }
+
+      if (booking) {
+        console.log('Successfully updated booking payment status for invoice:', invoice_number);
+        
+        // Create transaction record for earnings tracking
+        try {
+          // Get the total amount paid and calculate earnings
+          const totalAmountPaid = session.amount_total / 100; // Convert from cents to TRY
+          const serviceAmount = totalAmountPaid - cardProcessingFee; // Service amount without processing fee
+          
+          // Get user details from booking
+          const { data: user } = await supabase
+            .from('users')
+            .select('id, commission_rate')
+            .eq('id', booking.user_id)
+            .single();
+
+          if (user) {
+            const commissionRate = user.commission_rate || 60;
+            const commissionAmount = serviceAmount * (commissionRate / 100);
+
+            // Create transaction record
+            const { error: transactionError } = await supabase
+              .from('transactions')
+              .insert({
+                booking_id: booking.id,
+                user_id: booking.user_id,
+                customer_name: booking.customer_name,
+                service: booking.service,
+                amount: serviceAmount, // Service amount without processing fee
+                commission: commissionRate,
+                commission_amount: commissionAmount,
+                date: new Date().toISOString().split('T')[0],
+                status: 'completed'
+              });
+
+            if (transactionError) {
+              console.error('Error creating transaction record:', transactionError);
+            } else {
+              console.log('✅ Created transaction record for card payment:', booking.id);
+            }
+          }
+        } catch (earningsError) {
+          console.error('Error creating earnings record:', earningsError);
+          // Don't block the webhook for this error
+        }
+        
+        // Deactivate the payment link
+        if (paymentLinkId) {
+          try {
+            await stripe.paymentLinks.update(paymentLinkId, { active: false });
+            console.log('Successfully deactivated payment link:', paymentLinkId);
+          } catch (deactivationError) {
+            console.error('Error deactivating payment link:', deactivationError);
+            // Don't block the response for this, just log it
+          }
+        }
+      } else {
+        console.warn('No matching booking found for invoice number:', invoice_number);
+      }
+
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      return { statusCode: 500, body: 'Database operation failed.' };
     }
-
-    // Handle the event
-    switch (stripeEvent.type) {
-      case 'checkout.session.completed':
-      case 'payment_link.payment_succeeded':
-        await handlePaymentSuccess(stripeEvent.data.object);
-        break;
-      case 'payment_intent.payment_failed':
-        await handlePaymentFailed(stripeEvent.data.object);
-        break;
-      default:
-        console.log(`Unhandled event type ${stripeEvent.type}`);
-    }
-
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ received: true })
-    };
-
-  } catch (error) {
-    console.error('Webhook error:', error);
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ error: 'Webhook handler failed' })
-    };
   }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ received: true }),
+  };
 };
-
-async function handlePaymentSuccess(paymentData) {
-  try {
-    console.log('🎉 Payment succeeded:', paymentData.id);
-    
-    // Extract invoice number from metadata or description
-    const invoiceNumber = paymentData.metadata?.invoice_number;
-    
-    if (!invoiceNumber) {
-      console.error('No invoice number found in payment metadata');
-      return;
-    }
-
-    // Update booking payment status
-    const { data, error } = await supabase
-      .from('bookings')
-      .update({
-        payment_status: 'paid',
-        payment_method: 'stripe',
-        stripe_payment_id: paymentData.id,
-        payment_received_at: new Date().toISOString(),
-        payment_amount: paymentData.amount_total ? paymentData.amount_total / 100 : null
-      })
-      .eq('invoice_number', invoiceNumber);
-
-    if (error) {
-      console.error('Failed to update booking payment status:', error);
-    } else {
-      console.log('✅ Updated booking payment status for invoice:', invoiceNumber);
-    }
-
-  } catch (error) {
-    console.error('Error handling payment success:', error);
-  }
-}
-
-async function handlePaymentFailed(paymentData) {
-  try {
-    console.log('❌ Payment failed:', paymentData.id);
-    
-    // Extract invoice number from metadata
-    const invoiceNumber = paymentData.metadata?.invoice_number;
-    
-    if (!invoiceNumber) {
-      console.error('No invoice number found in failed payment metadata');
-      return;
-    }
-
-    // Update booking payment status
-    const { data, error } = await supabase
-      .from('bookings')
-      .update({
-        payment_status: 'failed',
-        stripe_payment_id: paymentData.id
-      })
-      .eq('invoice_number', invoiceNumber);
-
-    if (error) {
-      console.error('Failed to update booking payment status:', error);
-    } else {
-      console.log('⚠️ Updated booking payment status for failed payment:', invoiceNumber);
-    }
-
-  } catch (error) {
-    console.error('Error handling payment failure:', error);
-  }
-}

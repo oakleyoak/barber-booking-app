@@ -31,6 +31,12 @@ exports.handler = async ({ body, headers }) => {
 
     const { invoice_number } = session.metadata;
     const paymentIntentId = session.payment_intent;
+    const paymentLinkId = session.payment_link; // Added to get payment link ID
+
+    // Extract the card processing fee from the line items
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const cardFeeItem = lineItems.data.find(item => item.description === 'Card Processing Fee');
+    const cardProcessingFee = cardFeeItem ? cardFeeItem.amount_total / 100 : 0;
 
     if (!invoice_number) {
         console.error('Webhook Error: Missing invoice_number in session metadata.');
@@ -44,7 +50,8 @@ exports.handler = async ({ body, headers }) => {
           payment_status: 'paid',
           payment_method: 'card',
           payment_received_at: new Date().toISOString(),
-          stripe_payment_id: paymentIntentId // Store the actual payment intent ID
+          stripe_payment_id: paymentIntentId, // Store the actual payment intent ID
+          card_processing_fee: cardProcessingFee // Store the fee
         })
         .eq('invoice_number', invoice_number)
         .select()
@@ -57,6 +64,60 @@ exports.handler = async ({ body, headers }) => {
 
       if (booking) {
         console.log('Successfully updated booking payment status for invoice:', invoice_number);
+        
+        // Create transaction record for earnings tracking
+        try {
+          // Get the total amount paid and calculate earnings
+          const totalAmountPaid = session.amount_total / 100; // Convert from cents to TRY
+          const serviceAmount = totalAmountPaid - cardProcessingFee; // Service amount without processing fee
+          
+          // Get user details from booking
+          const { data: user } = await supabase
+            .from('users')
+            .select('id, commission_rate')
+            .eq('id', booking.user_id)
+            .single();
+
+          if (user) {
+            const commissionRate = user.commission_rate || 60;
+            const commissionAmount = serviceAmount * (commissionRate / 100);
+
+            // Create transaction record
+            const { error: transactionError } = await supabase
+              .from('transactions')
+              .insert({
+                booking_id: booking.id,
+                user_id: booking.user_id,
+                customer_name: booking.customer_name,
+                service: booking.service,
+                amount: serviceAmount, // Service amount without processing fee
+                commission: commissionRate,
+                commission_amount: commissionAmount,
+                date: new Date().toISOString().split('T')[0],
+                status: 'completed'
+              });
+
+            if (transactionError) {
+              console.error('Error creating transaction record:', transactionError);
+            } else {
+              console.log('✅ Created transaction record for card payment:', booking.id);
+            }
+          }
+        } catch (earningsError) {
+          console.error('Error creating earnings record:', earningsError);
+          // Don't block the webhook for this error
+        }
+        
+        // Deactivate the payment link
+        if (paymentLinkId) {
+          try {
+            await stripe.paymentLinks.update(paymentLinkId, { active: false });
+            console.log('Successfully deactivated payment link:', paymentLinkId);
+          } catch (deactivationError) {
+            console.error('Error deactivating payment link:', deactivationError);
+            // Don't block the response for this, just log it
+          }
+        }
       } else {
         console.warn('No matching booking found for invoice number:', invoice_number);
       }

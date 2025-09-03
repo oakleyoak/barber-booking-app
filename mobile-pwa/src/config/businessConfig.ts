@@ -3,8 +3,8 @@
 
 export const BusinessConfig = {
   // Bank Information
-  iban: 'TR XX XXXX XXXX XXXX XXXX XXXX XX', // Replace with your actual IBAN
-  accountHolder: 'Edge & Co Barbershop',
+  iban: 'TR41 0010 3000 0000 0056 6690 26',
+  accountHolder: 'Dylan Ahmet Salih',
   bankName: 'Your Bank Name',
   
   // Business Information

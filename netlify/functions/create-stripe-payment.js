@@ -26,44 +26,55 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { amount, currency, description, invoiceNumber, customerEmail, customerName } = JSON.parse(event.body);
+    const { amount, currency, description, invoiceNumber, customerEmail, customerName, services, cardProcessingFee } = JSON.parse(event.body);
 
     console.log('🔐 Creating Stripe payment link for:', { amount, currency, description });
 
+    const lineItems = services.map(service => ({
+      price_data: {
+        currency: currency.toLowerCase(),
+        product_data: {
+          name: service.name,
+        },
+        unit_amount: service.price * 100, // Stripe expects amount in kuruş
+      },
+      quantity: 1,
+    }));
+
+    if (cardProcessingFee && cardProcessingFee > 0) {
+      lineItems.push({
+        price_data: {
+          currency: currency.toLowerCase(),
+          product_data: {
+            name: 'Card Processing Fee',
+          },
+          unit_amount: cardProcessingFee * 100,
+        },
+        quantity: 1,
+      });
+    }
+
     // Create a Stripe Payment Link
     const paymentLink = await stripe.paymentLinks.create({
-      line_items: [
-        {
-          price_data: {
-            currency: currency.toLowerCase(),
-            product_data: {
-              name: description,
-              metadata: {
-                invoice_number: invoiceNumber,
-                customer_name: customerName,
-                service_type: 'barbershop'
-              }
-            },
-            unit_amount: amount, // Amount in smallest currency unit (kuruş for TRY)
-          },
-          quantity: 1,
-        },
-      ],
+      line_items: lineItems,
       after_completion: {
         type: 'redirect',
         redirect: {
-          url: 'https://edgeandco.netlify.app/payment-success?invoice=' + invoiceNumber,
+          url: `https://edgeandco.netlify.app/payment-success?invoice=${invoiceNumber}`,
+        },
+      },
+      restrictions: {
+        completed_sessions: {
+          limit: 1,
         },
       },
       allow_promotion_codes: true,
-      billing_address_collection: 'auto',
-      customer_creation: 'always',
       metadata: {
         invoice_number: invoiceNumber,
         customer_email: customerEmail,
         customer_name: customerName,
         business: 'Edge & Co Barbershop'
-      }
+      },
     });
 
     console.log('✅ Stripe payment link created:', paymentLink.id);

@@ -58,7 +58,14 @@ export const InvoiceService = {
           description: `${invoice.service} - Edge & Co Barbershop`,
           invoiceNumber: invoice.invoice_number,
           customerEmail: invoice.customer_email,
-          customerName: invoice.customer_name
+          customerName: invoice.customer_name,
+          services: [
+            {
+              name: invoice.service,
+              price: invoice.price
+            }
+          ],
+          cardProcessingFee: invoice.card_processing_fee
         })
       });
 
