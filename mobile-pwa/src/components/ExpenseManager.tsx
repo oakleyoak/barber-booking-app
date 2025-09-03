@@ -125,157 +125,168 @@ export default function ExpenseManager({ currentUserId }: Props) {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Expense Management</h1>
-        <button
-          onClick={() => {
-            setShowAddForm(true);
-            setEditingExpense(null);
-            setNewExpense({
-              category: '',
-              description: '',
-              amount: '',
-              date: new Date().toISOString().split('T')[0],
-              receipt_url: '',
-              is_recurring: false,
-              recurring_frequency: ''
-            });
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Add Expense
-        </button>
+    <div className="p-6 bg-white">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Expense Management</h2>
+            <p className="text-gray-600 mt-1">Track and manage business expenses and financial records</p>
+          </div>
+          <button
+            onClick={() => {
+              setShowAddForm(true);
+              setEditingExpense(null);
+              setNewExpense({
+                category: '',
+                description: '',
+                amount: '',
+                date: new Date().toISOString().split('T')[0],
+                receipt_url: '',
+                is_recurring: false,
+                recurring_frequency: ''
+              });
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+          >
+            Add Expense
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-          <h3 className="text-sm text-gray-600 mb-1">Total Expenses</h3>
-          <p className="text-2xl font-bold text-red-600">₺{totalExpenses.toFixed(2)}</p>
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <h3 className="text-sm text-red-600 font-medium mb-1">Total Expenses</h3>
+          <p className="text-2xl font-bold text-red-700">₺{totalExpenses.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
-          <h3 className="text-sm text-gray-600 mb-1">This Month</h3>
-          <p className="text-2xl font-bold text-orange-600">₺{monthlyExpenses.toFixed(2)}</p>
+        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+          <h3 className="text-sm text-orange-600 font-medium mb-1">This Month</h3>
+          <p className="text-2xl font-bold text-orange-700">₺{monthlyExpenses.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-          <h3 className="text-sm text-gray-600 mb-1">Total Records</h3>
-          <p className="text-2xl font-bold text-green-600">{expenses.length}</p>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h3 className="text-sm text-green-600 font-medium mb-1">Total Records</h3>
+          <p className="text-2xl font-bold text-green-700">{expenses.length}</p>
         </div>
       </div>
 
       {/* Add/Edit Form */}
       {showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <div className="bg-gray-50 p-6 rounded-lg border mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {editingExpense ? 'Edit Expense' : 'Add New Expense'}
-          </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select
-                value={newExpense.category}
-                onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select Category</option>
-                {expenseCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={newExpense.category}
+                  onChange={(e) => setNewExpense({...newExpense, category: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {expenseCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₺)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newExpense.amount}
+                  onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <input
+                  type="text"
+                  value={newExpense.description}
+                  onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                <input
+                  type="date"
+                  value={newExpense.date}
+                  onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount (₺)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={newExpense.amount}
-                onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <input
-                type="text"
-                value={newExpense.description}
-                onChange={(e) => setNewExpense({...newExpense, description: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input
-                type="date"
-                value={newExpense.date}
-                onChange={(e) => setNewExpense({...newExpense, date: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Receipt URL (Optional)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Receipt URL (Optional)</label>
               <input
                 type="url"
                 value={newExpense.receipt_url}
                 onChange={(e) => setNewExpense({...newExpense, receipt_url: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                 placeholder="https://example.com/receipt.jpg"
               />
             </div>
 
-            <div className="md:col-span-2">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={newExpense.is_recurring}
-                  onChange={(e) => setNewExpense({...newExpense, is_recurring: e.target.checked})}
-                  className="mr-2"
-                />
-                <span className="text-sm font-medium text-gray-700">Recurring Expense</span>
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="recurring"
+                checked={newExpense.is_recurring}
+                onChange={(e) => setNewExpense({...newExpense, is_recurring: e.target.checked})}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="recurring" className="text-sm font-medium text-gray-700">
+                Recurring Expense
               </label>
             </div>
 
             {newExpense.is_recurring && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
-                <select
-                  value={newExpense.recurring_frequency}
-                  onChange={(e) => setNewExpense({...newExpense, recurring_frequency: e.target.value as 'weekly' | 'monthly' | 'yearly'})}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                >
-                  <option value="">Select Frequency</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="yearly">Yearly</option>
-                </select>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Frequency</label>
+                  <select
+                    value={newExpense.recurring_frequency}
+                    onChange={(e) => setNewExpense({...newExpense, recurring_frequency: e.target.value as 'weekly' | 'monthly' | 'yearly'})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    required
+                  >
+                    <option value="">Select Frequency</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="yearly">Yearly</option>
+                  </select>
+                </div>
               </div>
             )}
 
-            <div className="md:col-span-2 flex gap-2">
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {editingExpense ? 'Update Expense' : 'Add Expense'}
-              </button>
+            <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowAddForm(false);
                   setEditingExpense(null);
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+              >
+                {editingExpense ? 'Update Expense' : 'Add Expense'}
               </button>
             </div>
           </form>
@@ -283,74 +294,89 @@ export default function ExpenseManager({ currentUserId }: Props) {
       )}
 
       {/* Expenses List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Date</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Description</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Amount</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Recurring</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {expenses.map((expense) => (
-                <tr key={expense.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {new Date(expense.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{expense.category}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{expense.description}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                    ₺{expense.amount.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {expense.is_recurring ? (
-                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        {expense.recurring_frequency}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">No</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(expense)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(expense.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Delete
-                      </button>
-                      {expense.receipt_url && (
-                        <a
-                          href={expense.receipt_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800"
-                        >
-                          Receipt
-                        </a>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">Expense Records</h3>
+          <p className="text-sm text-gray-600 mt-1">All recorded business expenses and financial transactions</p>
         </div>
-
-        {expenses.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No expenses recorded yet. Add your first expense to get started.
+        
+        {expenses.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">
+              <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No expenses recorded</h3>
+            <p className="text-gray-500">Add your first expense to get started tracking your business finances.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recurring</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {expenses.map((expense) => (
+                  <tr key={expense.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {new Date(expense.date).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {expense.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{expense.description}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                      ₺{expense.amount.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {expense.is_recurring ? (
+                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                          {expense.recurring_frequency}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400 text-xs">One-time</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => handleEdit(expense)}
+                          className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(expense.id)}
+                          className="text-red-600 hover:text-red-800 font-medium transition-colors"
+                        >
+                          Delete
+                        </button>
+                        {expense.receipt_url && (
+                          <a
+                            href={expense.receipt_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800 font-medium transition-colors"
+                          >
+                            Receipt
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

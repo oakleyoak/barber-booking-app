@@ -171,47 +171,53 @@ export default function SuppliesInventory() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Supplies Inventory</h1>
-        <button
-          onClick={() => {
-            setShowAddForm(true);
-            setEditingItem(null);
-            setNewItem({
-              item_name: '',
-              category: '',
-              current_stock: '',
-              minimum_stock: '',
-              unit: 'pieces',
-              supplier: '',
-              expiry_date: '',
-              unit_cost: ''
-            });
-          }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Add Supply Item
-        </button>
+    <div className="p-6 bg-white">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Supplies Inventory</h2>
+            <p className="text-gray-600 mt-1">Track stock levels, manage supplies, and monitor inventory</p>
+          </div>
+          <button
+            onClick={() => {
+              setShowAddForm(true);
+              setEditingItem(null);
+              setNewItem({
+                item_name: '',
+                category: '',
+                current_stock: '',
+                minimum_stock: '',
+                unit: 'pieces',
+                supplier: '',
+                expiry_date: '',
+                unit_cost: ''
+              });
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+          >
+            Add Supply Item
+          </button>
+        </div>
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
-          <h3 className="text-sm text-gray-600 mb-1">Total Items</h3>
-          <p className="text-2xl font-bold text-blue-600">{totalItems}</p>
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+          <h3 className="text-sm text-blue-600 font-medium mb-1">Total Items</h3>
+          <p className="text-2xl font-bold text-blue-700">{totalItems}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-          <h3 className="text-sm text-gray-600 mb-1">Total Value</h3>
-          <p className="text-2xl font-bold text-green-600">₺{totalValue.toFixed(2)}</p>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h3 className="text-sm text-green-600 font-medium mb-1">Total Value</h3>
+          <p className="text-2xl font-bold text-green-700">₺{totalValue.toFixed(2)}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-500">
-          <h3 className="text-sm text-gray-600 mb-1">Out of Stock</h3>
-          <p className="text-2xl font-bold text-red-600">{outOfStockItems}</p>
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <h3 className="text-sm text-red-600 font-medium mb-1">Out of Stock</h3>
+          <p className="text-2xl font-bold text-red-700">{outOfStockItems}</p>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
-          <h3 className="text-sm text-gray-600 mb-1">Low/Expiring</h3>
-          <p className="text-2xl font-bold text-orange-600">{lowStockItems.length + expiringItems}</p>
+        <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
+          <h3 className="text-sm text-orange-600 font-medium mb-1">Low/Expiring</h3>
+          <p className="text-2xl font-bold text-orange-700">{lowStockItems.length + expiringItems}</p>
         </div>
       </div>
 
@@ -236,121 +242,125 @@ export default function SuppliesInventory() {
 
       {/* Add/Edit Form */}
       {showAddForm && (
-        <div className="bg-white p-6 rounded-lg shadow mb-6">
-          <h2 className="text-lg font-semibold mb-4">
+        <div className="bg-gray-50 p-6 rounded-lg border mb-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">
             {editingItem ? 'Edit Supply Item' : 'Add New Supply Item'}
-          </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Item Name</label>
-              <input
-                type="text"
-                value={newItem.item_name}
-                onChange={(e) => setNewItem({...newItem, item_name: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
+          </h3>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+                <input
+                  type="text"
+                  value={newItem.item_name}
+                  onChange={(e) => setNewItem({...newItem, item_name: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                <select
+                  value={newItem.category}
+                  onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newItem.current_stock}
+                  onChange={(e) => setNewItem({...newItem, current_stock: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Minimum Stock</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={newItem.minimum_stock}
+                  onChange={(e) => setNewItem({...newItem, minimum_stock: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                <select
+                  value={newItem.unit}
+                  onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                >
+                  {units.map(unit => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                <input
+                  type="text"
+                  value={newItem.supplier}
+                  onChange={(e) => setNewItem({...newItem, supplier: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="Supplier name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Expiry Date</label>
+                <input
+                  type="date"
+                  value={newItem.expiry_date}
+                  onChange={(e) => setNewItem({...newItem, expiry_date: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₺)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={newItem.unit_cost}
+                  onChange={(e) => setNewItem({...newItem, unit_cost: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="0.00"
+                />
+              </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select
-                value={newItem.category}
-                onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              >
-                <option value="">Select Category</option>
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Current Stock</label>
-              <input
-                type="number"
-                min="0"
-                value={newItem.current_stock}
-                onChange={(e) => setNewItem({...newItem, current_stock: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Stock</label>
-              <input
-                type="number"
-                min="0"
-                value={newItem.minimum_stock}
-                onChange={(e) => setNewItem({...newItem, minimum_stock: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-              <select
-                value={newItem.unit}
-                onChange={(e) => setNewItem({...newItem, unit: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {units.map(unit => (
-                  <option key={unit} value={unit}>{unit}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
-              <input
-                type="text"
-                value={newItem.supplier}
-                onChange={(e) => setNewItem({...newItem, supplier: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-              <input
-                type="date"
-                value={newItem.expiry_date}
-                onChange={(e) => setNewItem({...newItem, expiry_date: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Unit Cost (₺)</label>
-              <input
-                type="number"
-                step="0.01"
-                value={newItem.unit_cost}
-                onChange={(e) => setNewItem({...newItem, unit_cost: e.target.value})}
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="lg:col-span-3 flex gap-2">
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {editingItem ? 'Update Item' : 'Add Item'}
-              </button>
+            <div className="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
                 onClick={() => {
                   setShowAddForm(false);
                   setEditingItem(null);
                 }}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 font-medium"
               >
                 Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+              >
+                {editingItem ? 'Update Item' : 'Add Item'}
               </button>
             </div>
           </form>
@@ -399,92 +409,107 @@ export default function SuppliesInventory() {
       )}
 
       {/* Supplies List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Item</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Category</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Stock</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Unit Cost</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Expiry</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {supplies.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{item.item_name}</div>
-                      {item.supplier && (
-                        <div className="text-xs text-gray-500">Supplier: {item.supplier}</div>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{item.category}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">
-                    {item.current_stock} / {item.minimum_stock} {item.unit}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(item.current_stock, item.minimum_stock)}`}>
-                      {getStockStatusText(item.current_stock, item.minimum_stock)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900 font-medium">
-                    {item.unit_cost ? `₺${item.unit_cost.toFixed(2)}` : '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    {item.expiry_date ? (
+      <div className="bg-white rounded-lg border overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-900">Inventory Items</h3>
+          <p className="text-sm text-gray-600 mt-1">Current stock levels and supply management</p>
+        </div>
+        
+        {supplies.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">
+              <svg className="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-1">No inventory items</h3>
+            <p className="text-gray-500">Start managing your supplies by adding your first inventory item.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {supplies.map((item) => (
+                  <tr key={item.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4">
                       <div>
-                        <div className={`text-xs ${isExpired(item.expiry_date) ? 'text-red-600' : 
-                          isExpiring(item.expiry_date) ? 'text-orange-600' : 'text-gray-600'}`}>
-                          {new Date(item.expiry_date).toLocaleDateString()}
-                        </div>
-                        {isExpired(item.expiry_date) && (
-                          <div className="text-xs text-red-600 font-medium">Expired</div>
-                        )}
-                        {isExpiring(item.expiry_date) && !isExpired(item.expiry_date) && (
-                          <div className="text-xs text-orange-600 font-medium">Expiring Soon</div>
+                        <div className="text-sm font-medium text-gray-900">{item.item_name}</div>
+                        {item.supplier && (
+                          <div className="text-xs text-gray-500">Supplier: {item.supplier}</div>
                         )}
                       </div>
-                    ) : (
-                      <span className="text-gray-400">No expiry</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-sm">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setShowRestockForm(item)}
-                        className="text-green-600 hover:text-green-800"
-                      >
-                        Restock
-                      </button>
-                      <button
-                        onClick={() => handleEdit(item)}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {supplies.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            No supply items in inventory yet. Add your first item to get started.
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {item.category}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {item.current_stock} / {item.minimum_stock} {item.unit}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStockStatusColor(item.current_stock, item.minimum_stock)}`}>
+                        {getStockStatusText(item.current_stock, item.minimum_stock)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                      {item.unit_cost ? `₺${item.unit_cost.toFixed(2)}` : '—'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      {item.expiry_date ? (
+                        <div>
+                          <div className={`text-xs ${isExpired(item.expiry_date) ? 'text-red-600' : 
+                            isExpiring(item.expiry_date) ? 'text-orange-600' : 'text-gray-600'}`}>
+                            {new Date(item.expiry_date).toLocaleDateString()}
+                          </div>
+                          {isExpired(item.expiry_date) && (
+                            <div className="text-xs text-red-600 font-medium">Expired</div>
+                          )}
+                          {isExpiring(item.expiry_date) && !isExpired(item.expiry_date) && (
+                            <div className="text-xs text-orange-600 font-medium">Expiring Soon</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No expiry</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center space-x-3">
+                        <button
+                          onClick={() => setShowRestockForm(item)}
+                          className="text-green-600 hover:text-green-800 font-medium transition-colors"
+                        >
+                          Restock
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="text-red-600 hover:text-red-800 font-medium transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

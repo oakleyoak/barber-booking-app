@@ -677,21 +677,21 @@ const OperationsManual: React.FC = () => {
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 bg-white">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Operations Manual</h1>
-        <p className="text-gray-600 mt-1">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Operations Manual</h2>
+        <p className="text-gray-600">Manage daily operations, cleaning schedules, maintenance tasks, and safety compliance</p>
       </div>
 
       {/* Stats Cards */}
       {data.statistics && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-green-500">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Completed Today</p>
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-sm text-green-600 font-medium">Completed Today</p>
+                <p className="text-2xl font-bold text-green-700">
                   {data.statistics.tasks_completed_today || 0}
                 </p>
               </div>
@@ -699,11 +699,11 @@ const OperationsManual: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-orange-500">
+          <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pending Tasks</p>
-                <p className="text-2xl font-bold text-orange-600">
+                <p className="text-sm text-orange-600 font-medium">Pending Tasks</p>
+                <p className="text-2xl font-bold text-orange-700">
                   {data.statistics.tasks_pending || 0}
                 </p>
               </div>
@@ -711,11 +711,11 @@ const OperationsManual: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-blue-500">
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Tasks</p>
-                <p className="text-2xl font-bold text-blue-600">
+                <p className="text-sm text-blue-600 font-medium">Total Tasks</p>
+                <p className="text-2xl font-bold text-blue-700">
                   {(data.cleaningTasks.length + data.maintenanceTasks.length + data.safetyItems.length)}
                 </p>
               </div>
@@ -723,11 +723,11 @@ const OperationsManual: React.FC = () => {
             </div>
           </div>
           
-          <div className="bg-white p-4 rounded-lg shadow border-l-4 border-l-purple-500">
+          <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Compliance Rate</p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-sm text-purple-600 font-medium">Compliance Rate</p>
+                <p className="text-2xl font-bold text-purple-700">
                   {data.statistics.compliance_rate || '0%'}
                 </p>
               </div>
@@ -738,34 +738,36 @@ const OperationsManual: React.FC = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="border-b border-gray-200 mb-6">
-        <nav className="flex flex-wrap gap-6">
-          {[
-            { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
-            { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
-            { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length }
-            , { id: 'history', label: 'Completion History', icon: Clock, count: 0 }
-            , { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length }
-            , { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length }
-            , { id: 'equipment_maintenance', label: 'Equipment Logs', icon: Wrench, count: logs.maintenance.length }
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center pb-4 border-b-2 transition-colors ${
-                activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <tab.icon size={20} className="mr-2" />
-              {tab.label}
-              <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
-                {tab.count}
-              </span>
-            </button>
-          ))}
-        </nav>
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="-mb-px flex flex-wrap space-x-6">
+            {[
+              { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
+              { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
+              { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length },
+              { id: 'history', label: 'Completion History', icon: Clock, count: 0 },
+              { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length },
+              { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length },
+              { id: 'equipment_maintenance', label: 'Equipment Logs', icon: Wrench, count: logs.maintenance.length }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center py-2 px-4 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 bg-blue-50'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <tab.icon size={16} className="mr-2" />
+                {tab.label}
+                <span className="ml-2 px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </nav>
+        </div>
       </div>
 
       {/* Tab Content */}
