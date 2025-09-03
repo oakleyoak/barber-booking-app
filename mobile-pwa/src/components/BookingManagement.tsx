@@ -10,26 +10,8 @@ import {
   Filter, 
   Phone, 
   Mail, 
-  Recei  // Load booking history
-  const loadBookingHistory = async () => {
-    try {
-      const today = getTodayLocal();
-      let query = supabase
-        .from('bookings')
-        .select(`
-          *,
-          users(name)
-        `)
-        .lt('date', today)
-        .order('date', { ascending: false })
-        .order('time', { ascending: false });
-
-      // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber' && currentUser.id) {
-        query = query.eq('user_id', currentUser.id);
-      }
-
-      const { data, error } = await query;are, 
+  Receipt, 
+  CheckSquare, 
   AlertTriangle, 
   History, 
   ChevronDown, 
