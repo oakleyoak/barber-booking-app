@@ -738,55 +738,132 @@ const OperationsManual: React.FC = () => {
           </div>
         )}
 
-        {/* Navigation Tabs */}
+        {/* Navigation Grid */}
         <div className="mb-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-            <nav className="flex overflow-x-auto">
-              {[
-                { id: 'cleaning', label: 'Cleaning Tasks', icon: ClipboardList, count: data.cleaningTasks.length },
-                { id: 'maintenance', label: 'Maintenance', icon: Wrench, count: data.maintenanceTasks.length },
-                { id: 'safety', label: 'Safety Checks', icon: Shield, count: data.safetyItems.length },
-                { id: 'history', label: 'History', icon: Clock, count: 0 },
-                { id: 'daily_cleaning_logs', label: 'Cleaning Logs', icon: ClipboardList, count: logs.cleaning.length },
-                { id: 'daily_safety_checks', label: 'Safety Logs', icon: Shield, count: logs.safety.length },
-                { id: 'equipment_maintenance', label: 'Equipment', icon: Wrench, count: 0 }
-              ].map(tab => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`
-                      flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors
-                      ${activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600 bg-blue-50'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                      }
-                    `}
-                  >
-                    <Icon className="mr-2" size={16} />
-                    <span>{tab.label}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { 
+                id: 'cleaning', 
+                label: 'Cleaning Tasks', 
+                icon: ClipboardList, 
+                count: data.cleaningTasks.length,
+                activeStyles: 'border-blue-500 bg-blue-50',
+                iconStyles: 'text-blue-600',
+                textStyles: 'text-blue-900',
+                countStyles: 'bg-blue-100 text-blue-700'
+              },
+              { 
+                id: 'maintenance', 
+                label: 'Maintenance', 
+                icon: Wrench, 
+                count: data.maintenanceTasks.length,
+                activeStyles: 'border-orange-500 bg-orange-50',
+                iconStyles: 'text-orange-600',
+                textStyles: 'text-orange-900',
+                countStyles: 'bg-orange-100 text-orange-700'
+              },
+              { 
+                id: 'safety', 
+                label: 'Safety Checks', 
+                icon: Shield, 
+                count: data.safetyItems.length,
+                activeStyles: 'border-green-500 bg-green-50',
+                iconStyles: 'text-green-600',
+                textStyles: 'text-green-900',
+                countStyles: 'bg-green-100 text-green-700'
+              },
+              { 
+                id: 'history', 
+                label: 'History', 
+                icon: Clock, 
+                count: 0,
+                activeStyles: 'border-purple-500 bg-purple-50',
+                iconStyles: 'text-purple-600',
+                textStyles: 'text-purple-900',
+                countStyles: 'bg-purple-100 text-purple-700'
+              },
+              { 
+                id: 'daily_cleaning_logs', 
+                label: 'Cleaning Logs', 
+                icon: ClipboardList, 
+                count: logs.cleaning.length,
+                activeStyles: 'border-indigo-500 bg-indigo-50',
+                iconStyles: 'text-indigo-600',
+                textStyles: 'text-indigo-900',
+                countStyles: 'bg-indigo-100 text-indigo-700'
+              },
+              { 
+                id: 'daily_safety_checks', 
+                label: 'Safety Logs', 
+                icon: Shield, 
+                count: logs.safety.length,
+                activeStyles: 'border-red-500 bg-red-50',
+                iconStyles: 'text-red-600',
+                textStyles: 'text-red-900',
+                countStyles: 'bg-red-100 text-red-700'
+              },
+              { 
+                id: 'equipment_maintenance', 
+                label: 'Equipment', 
+                icon: Wrench, 
+                count: 0,
+                activeStyles: 'border-gray-500 bg-gray-50',
+                iconStyles: 'text-gray-600',
+                textStyles: 'text-gray-900',
+                countStyles: 'bg-gray-100 text-gray-700'
+              }
+            ].map(tab => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`
+                    p-4 rounded-lg border-2 transition-all duration-200 text-left
+                    ${isActive
+                      ? `${tab.activeStyles} shadow-md`
+                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                    }
+                  `}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <Icon 
+                        className={`mr-3 ${isActive ? tab.iconStyles : 'text-gray-500'}`} 
+                        size={24} 
+                      />
+                      <div>
+                        <h3 className={`font-semibold ${isActive ? tab.textStyles : 'text-gray-900'}`}>
+                          {tab.label}
+                        </h3>
+                        {tab.count > 0 && (
+                          <p className={`text-sm ${isActive ? tab.iconStyles : 'text-gray-500'}`}>
+                            {tab.count} items
+                          </p>
+                        )}
+                      </div>
+                    </div>
                     {tab.count > 0 && (
-                      <span className={`ml-2 px-2 py-1 text-xs rounded-full ${
-                        activeTab === tab.id
-                          ? 'bg-blue-100 text-blue-600'
+                      <span className={`
+                        px-2 py-1 text-xs font-semibold rounded-full
+                        ${isActive 
+                          ? tab.countStyles
                           : 'bg-gray-100 text-gray-600'
-                      }`}>
+                        }
+                      `}>
                         {tab.count}
                       </span>
                     )}
-                  </button>
-                );
-              })}
-            </nav>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Tab Content */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-
-      {/* Tab Content */}
-      <div className="space-y-6">
         {/* Cleaning Tasks */}
         {activeTab === 'cleaning' && (
           <div className="p-4">
@@ -1039,7 +1116,6 @@ const OperationsManual: React.FC = () => {
 
         {/* Add Task Form Modal */}
         {renderAddForm()}
-        </div>
       </div>
     </div>
   );

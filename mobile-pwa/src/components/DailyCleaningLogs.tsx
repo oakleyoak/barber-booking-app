@@ -60,12 +60,13 @@ export default function DailyCleaningLogs() {
     await load();
   };
 
-  if (loading) return <div className="p-6"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
+  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Daily Cleaning Logs</h1>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-800">Daily Cleaning Logs</h1>
         <button onClick={() => { setShowForm(true); setEditing(null); setForm({ date: new Date().toISOString().split('T')[0], barber_id: '', task_id: '', completed: false, notes: '' }); }} className="bg-blue-600 text-white px-4 py-2 rounded-lg">Add Log</button>
       </div>
 
@@ -138,6 +139,7 @@ export default function DailyCleaningLogs() {
             </tbody>
           </table>
         </div>
+      </div>
       </div>
     </div>
   );

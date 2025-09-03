@@ -188,10 +188,11 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   };
 
   return (
-    <div className="p-6 bg-white">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Customer Manager</h2>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-gray-900">Customer Manager</h2>
         <button
           onClick={() => setShowForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
@@ -426,6 +427,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

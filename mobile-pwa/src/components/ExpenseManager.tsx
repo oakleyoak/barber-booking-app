@@ -125,7 +125,8 @@ export default function ExpenseManager({ currentUserId }: Props) {
   }
 
   return (
-    <div className="p-6 bg-white">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center">
@@ -379,6 +380,7 @@ export default function ExpenseManager({ currentUserId }: Props) {
             </table>
           </div>
         )}
+      </div>
       </div>
     </div>
   );

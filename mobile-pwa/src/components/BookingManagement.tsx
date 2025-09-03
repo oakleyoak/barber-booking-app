@@ -272,9 +272,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   };
 
   return (
-    <div className="p-6 bg-white">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Management</h2>
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Management</h2>
         
         {/* View Toggle */}
         <div className="flex space-x-4 mb-6">
@@ -445,6 +446,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

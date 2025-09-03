@@ -159,7 +159,8 @@ export default function InventoryManager() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
+      <div className="max-w-7xl mx-auto">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Equipment Inventory</h1>
         <button
@@ -416,6 +417,7 @@ export default function InventoryManager() {
             No equipment in inventory yet. Add your first item to get started.
           </div>
         )}
+      </div>
       </div>
     </div>
   );
