@@ -5,7 +5,7 @@ import { userManagementService, shopSettingsService } from '../services/manageme
 import { ShopSettingsService } from '../services/shopSettings';
 import { bookingService, customerService, expenseService } from '../services/completeDatabase';
 
-const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string } }) => {
+const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string; role?: string } }) => {
   const modal = useModal();
   const [currentTab, setCurrentTab] = useState<'overview' | 'users' | 'settings' | 'reports'>('overview');
   const [shopSettings, setShopSettings] = useState<any>(null);

@@ -91,7 +91,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
       const userId = currentUser.role === 'Barber' ? currentUser.id : undefined;
       
       // Get commission rate for the current user
-      if (currentUser.role !== 'Owner') {
+      if (currentUser.role !== 'Owner' && currentUser.role !== 'Manager') {
         const rate = await ShopSettingsService.getCommissionRate(currentUser.role, currentUser.shop_name || '');
         setCommissionRate(rate);
       }
@@ -336,8 +336,8 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         </div>
       )}
 
-      {/* Owner Earnings from Staff */}
-      {currentUser.role === 'Owner' && (
+      {/* Owner and Manager Earnings from Staff */}
+      {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
         <div className="bg-gray-50 rounded-lg p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <Target className="h-5 w-5 mr-2" />

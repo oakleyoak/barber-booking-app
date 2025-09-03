@@ -279,8 +279,8 @@ function App() {
               </>
             )}
             
-            {/* Owner-only features */}
-            {currentUser?.role === 'Owner' && (
+            {/* Owner and Manager features */}
+            {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
               <>
                 <button
                   onClick={() => setCurrentView('bookings')}
@@ -327,19 +327,19 @@ function App() {
               <OperationsManual />
             )}
 
-            {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+            {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <ExpenseManager currentUserId={currentUser.id} />
             )}
 
-            {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+            {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <InventoryManager />
             )}
 
-            {currentView === 'supplies' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+            {currentView === 'supplies' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <SuppliesInventory />
             )}
 
-            {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Barber') && (
+            {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
               <IncidentReports currentUserId={currentUser.id} />
             )}
 
@@ -347,7 +347,7 @@ function App() {
               <BookingManagement currentUser={currentUser} />
             )}
 
-            {currentView === 'admin' && currentUser?.role === 'Owner' && (
+            {currentView === 'admin' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
               <AdminPanel currentUser={currentUser} />
             )}
           </div>
