@@ -45,7 +45,9 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const modal = useModal();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>('upcoming');
+  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>(
+    currentUser.role === 'Barber' ? 'all' : 'upcoming'
+  );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
 
@@ -276,6 +278,19 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         
         {/* View Toggle */}
         <div className="flex space-x-4 mb-6">
+          {currentUser.role === 'Barber' && (
+            <button
+              onClick={() => setCurrentView('all')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                currentView === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <Eye className="inline-block w-4 h-4 mr-2" />
+              All My Bookings
+            </button>
+          )}
           <button
             onClick={() => setCurrentView('upcoming')}
             className={`px-4 py-2 rounded-lg font-medium ${
@@ -298,19 +313,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             <History className="inline-block w-4 h-4 mr-2" />
             Booking History
           </button>
-          {currentUser.role === 'Barber' && (
-            <button
-              onClick={() => setCurrentView('all')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                currentView === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              <Eye className="inline-block w-4 h-4 mr-2" />
-              All My Bookings
-            </button>
-          )}
         </div>
 
         {/* Bookings List */}
