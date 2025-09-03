@@ -10,8 +10,26 @@ import {
   Filter, 
   Phone, 
   Mail, 
-  Receipt,
-  CheckSquare, 
+  Recei  // Load booking history
+  const loadBookingHistory = async () => {
+    try {
+      const today = getTodayLocal();
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          users(name)
+        `)
+        .lt('date', today)
+        .order('date', { ascending: false })
+        .order('time', { ascending: false });
+
+      // Filter by user for barbers, show all for owners/managers
+      if (currentUser.role === 'Barber' && currentUser.id) {
+        query = query.eq('user_id', currentUser.id);
+      }
+
+      const { data, error } = await query;are, 
   AlertTriangle, 
   History, 
   ChevronDown, 
@@ -45,7 +63,7 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const modal = useModal();
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [currentView, setCurrentView] = useState<'upcoming' | 'history'>('upcoming');
+  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>('upcoming');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
 
@@ -167,7 +185,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const loadUpcomingBookings = async () => {
     try {
       const today = getTodayLocal();
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
@@ -176,6 +194,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .gte('date', today)
         .order('date', { ascending: true })
         .order('time', { ascending: true });
+
+      // Filter by user for barbers, show all for owners/managers
+      if (currentUser.role === 'Barber' && currentUser.id) {
+        query = query.eq('user_id', currentUser.id);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       setBookings(data || []);
@@ -189,7 +214,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const loadBookingHistory = async () => {
     try {
       const today = getTodayLocal();
-      const { data, error } = await supabase
+      let query = supabase
         .from('bookings')
         .select(`
           *,
@@ -199,6 +224,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .order('date', { ascending: false })
         .order('time', { ascending: false });
 
+      // Filter by user for barbers, show all for owners/managers
+      if (currentUser.role === 'Barber' && currentUser.id) {
+        query = query.eq('user_id', currentUser.id);
+      }
+
+      const { data, error } = await query;
+
       if (error) throw error;
       setBookings(data || []);
     } catch (err) {
@@ -207,12 +239,41 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     }
   };
 
+  // Load all bookings for barber (their own only)
+  const loadAllBookings = async () => {
+    try {
+      let query = supabase
+        .from('bookings')
+        .select(`
+          *,
+          users(name)
+        `)
+        .order('date', { ascending: false })
+        .order('time', { ascending: false });
+
+      // Filter by user for barbers, show all for owners/managers
+      if (currentUser.role === 'Barber' && currentUser.id) {
+        query = query.eq('user_id', currentUser.id);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (err) {
+      console.error('Error loading all bookings:', err);
+      modal.notify('Failed to load all bookings', 'error');
+    }
+  };
+
   // Load bookings based on current view
   useEffect(() => {
     if (currentView === 'upcoming') {
       loadUpcomingBookings();
-    } else {
+    } else if (currentView === 'history') {
       loadBookingHistory();
+    } else if (currentView === 'all') {
+      loadAllBookings();
     }
   }, [currentView]);
 
@@ -255,6 +316,19 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             <History className="inline-block w-4 h-4 mr-2" />
             Booking History
           </button>
+          {currentUser.role === 'Barber' && (
+            <button
+              onClick={() => setCurrentView('all')}
+              className={`px-4 py-2 rounded-lg font-medium ${
+                currentView === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              }`}
+            >
+              <Eye className="inline-block w-4 h-4 mr-2" />
+              All My Bookings
+            </button>
+          )}
         </div>
 
         {/* Bookings List */}
@@ -262,7 +336,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           {bookings.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">
-                {currentView === 'upcoming' ? 'No upcoming bookings' : 'No booking history'}
+                {currentView === 'upcoming' ? 'No upcoming bookings' : 
+                 currentView === 'history' ? 'No booking history' : 
+                 'No bookings found'}
               </p>
             </div>
           ) : (
