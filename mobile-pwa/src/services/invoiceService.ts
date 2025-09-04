@@ -45,7 +45,8 @@ export const InvoiceService = {
   },
 
   // Create Stripe payment link for invoice
-  createStripePaymentLink: async (invoice: InvoiceData): Promise<string | null> => {
+  // Returns an object with id and url, or null on failure
+  createStripePaymentLink: async (invoice: InvoiceData): Promise<{ id: string; url: string } | null> => {
     try {
       const response = await fetch('/.netlify/functions/create-stripe-payment', {
         method: 'POST',
@@ -71,7 +72,8 @@ export const InvoiceService = {
 
       if (response.ok) {
         const result = await response.json();
-        return result.url;
+        // Expecting { id, url }
+        return { id: result.id, url: result.url };
       } else {
         console.error('Failed to create Stripe payment link:', response.status);
         return null;
@@ -83,7 +85,7 @@ export const InvoiceService = {
   },
 
   // Update booking with invoice and payment information
-  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string): Promise<void> => {
+  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string, invoiceUrl?: string): Promise<void> => {
     try {
       const { error } = await supabase
         .from('bookings')
@@ -91,6 +93,7 @@ export const InvoiceService = {
           invoice_number: invoiceData.invoice_number,
           invoice_sent_at: new Date().toISOString(),
           stripe_payment_id: stripePaymentId || null,
+          invoice_url: invoiceUrl || null,
           payment_status: 'pending',
           payment_amount: invoiceData.price + invoiceData.card_processing_fee
         })
@@ -110,9 +113,10 @@ export const InvoiceService = {
 
   // Available payment methods
   getPaymentMethods: async (invoice: InvoiceData): Promise<PaymentMethod[]> => {
-    const stripeUrl = await InvoiceService.createStripePaymentLink(invoice);
+  const stripeLink = await InvoiceService.createStripePaymentLink(invoice);
+  const stripeUrl = stripeLink?.url || null;
     
-    return [
+  return [
       {
         id: 'iban_tr',
         name: 'Bank Transfer (IBAN)',
@@ -124,7 +128,7 @@ export const InvoiceService = {
         id: 'stripe',
         name: 'Credit/Debit Card (Stripe)',
         type: 'online',
-        details: stripeUrl || 'Pay securely with your card',
+    details: stripeUrl || 'Pay securely with your card',
         icon: '💳'
       },
   // PayPal removed
@@ -279,12 +283,30 @@ export const InvoiceService = {
       const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
       const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods);
 
-      // Get Stripe payment ID from payment methods for tracking
-      const stripeMethod = paymentMethods.find(pm => pm.id === 'stripe');
-      const stripePaymentId = stripeMethod?.details?.includes('stripe.com') ? stripeMethod.details : null;
+      // Attempt to reuse existing payment link if present on booking and amount matches
+      const existingStripeId = booking.stripe_payment_id;
+      const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
+      let stripePaymentId: string | undefined = undefined;
+      let invoiceUrl: string | undefined = undefined;
 
-      // Update booking with invoice data
-      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined);
+      const expectedAmount = invoice.price + invoice.card_processing_fee;
+      const bookingAmount = booking.payment_amount || null;
+
+      if (existingStripeId && existingInvoiceUrl && bookingAmount === expectedAmount) {
+        // reuse
+        stripePaymentId = existingStripeId;
+        invoiceUrl = existingInvoiceUrl;
+      } else {
+        // create new payment link
+        const created = await InvoiceService.createStripePaymentLink(invoice);
+        if (created) {
+          stripePaymentId = created.id;
+          invoiceUrl = created.url;
+        }
+      }
+
+      // Update booking with invoice data (store both id and url)
+      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined, invoiceUrl || undefined);
 
       // Send via NotificationsService
       const result = await NotificationsService.sendNotification({
