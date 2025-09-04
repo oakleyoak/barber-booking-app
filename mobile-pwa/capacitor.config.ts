@@ -1,9 +1,24 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.edgeandco.booking',
+  appId: 'com.edgeandco.barbershop',
   appName: 'Edge & Co Barber',
-  webDir: 'dist'
+  webDir: 'dist',
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false
+  },
+  plugins: {
+    SplashScreen: {
+      launchShowDuration: 3000,
+      launchAutoHide: true,
+      backgroundColor: "#FFFFFF",
+      androidSplashResourceName: "splash",
+      androidScaleType: "CENTER_CROP",
+      showSpinner: false
+    }
+  }
 };
 
 export default config;
