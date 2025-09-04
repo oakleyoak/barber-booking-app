@@ -79,6 +79,13 @@ CREATE TABLE IF NOT EXISTS public.bookings (
   date date not null,
   time time without time zone not null,
   status text not null,
+  -- Invoice/payment fields
+  invoice_number text null,
+  invoice_sent_at timestamp with time zone null,
+  stripe_payment_id text null,
+  invoice_url text null,
+  payment_status text null,
+  payment_amount numeric(10,2) null,
   notes text null,
   created_at timestamp with time zone null default now(),
   updated_at timestamp with time zone null default now(),
