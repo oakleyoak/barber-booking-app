@@ -157,15 +157,15 @@ function App() {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Navigation - responsive grid (mobile-first 3 columns) */}
           <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
             <div className="max-w-full px-2 py-3">
-              <div className="overflow-x-auto">
-                <div className="flex space-x-1 min-w-max pb-1">
+              <div className="w-full">
+                <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
                   {/* Core Features - Available to All Users */}
                   <button
                     onClick={() => setCurrentView('calendar')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                       currentView === 'calendar'
                         ? 'bg-blue-700 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -177,7 +177,7 @@ function App() {
                   
                   <button
                     onClick={() => setCurrentView('earnings')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                       currentView === 'earnings'
                         ? 'bg-red-700 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -189,7 +189,7 @@ function App() {
                   
                   <button
                     onClick={() => setCurrentView('customers')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                       currentView === 'customers'
                         ? 'bg-blue-700 text-white shadow-md'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -216,7 +216,7 @@ function App() {
                     <>
                       <button
                         onClick={() => setCurrentView('expenses')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'expenses'
                             ? 'bg-blue-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -228,7 +228,7 @@ function App() {
                       
                       <button
                         onClick={() => setCurrentView('equipment')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'equipment'
                             ? 'bg-blue-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -240,7 +240,7 @@ function App() {
                       
                       <button
                         onClick={() => setCurrentView('supplies')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'supplies'
                             ? 'bg-blue-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -252,7 +252,7 @@ function App() {
                       
                       <button
                         onClick={() => setCurrentView('incidents')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'incidents'
                             ? 'bg-red-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -269,7 +269,7 @@ function App() {
                     <>
                       <button
                         onClick={() => setCurrentView('bookings')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'bookings'
                             ? 'bg-blue-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -281,7 +281,7 @@ function App() {
                       
                       <button
                         onClick={() => setCurrentView('admin')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
                           currentView === 'admin'
                             ? 'bg-blue-700 text-white shadow-md'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
