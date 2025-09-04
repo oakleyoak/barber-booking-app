@@ -5,6 +5,7 @@ import { customerService, type Customer } from '../services/completeDatabase';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
+import { Phone, Mail, User as UserIcon, Calendar, Edit, Trash2, Plus, Search, X, Clock, MapPin } from 'lucide-react';
 
 interface CustomerManagerProps {
   currentUser: User;
@@ -19,6 +20,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [showCustomerProfile, setShowCustomerProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allStaff, setAllStaff] = useState<{id: string, name: string, email: string}[]>([]);
 
@@ -82,6 +84,22 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     }
   };
 
+  const openCustomerProfile = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowCustomerProfile(true);
+  };
+
+  const closeCustomerProfile = () => {
+    setShowCustomerProfile(false);
+    setSelectedCustomer(null);
+  };
+
+  const openBookingModal = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setShowBookingModal(true);
+    setShowCustomerProfile(false); // Close profile when opening booking
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -98,8 +116,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
         modal.notify('Customer added successfully!', 'success');
       }
       
-      await loadCustomers();
       resetForm();
+      await loadCustomers();
     } catch (error) {
       console.error('Error saving customer:', error);
       modal.notify('Failed to save customer', 'error');
@@ -110,8 +128,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
   const resetForm = () => {
     setFormData({ name: '', phone: '', email: '', notes: '' });
-    setEditingCustomer(null);
     setShowForm(false);
+    setEditingCustomer(null);
   };
 
   const handleEdit = (customer: Customer) => {
@@ -126,59 +144,65 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   };
 
   const handleDelete = async (customerId: string) => {
-    if (!confirm('Are you sure you want to delete this customer?')) return;
-    
-    try {
-      setLoading(true);
-      await customerService.deleteCustomer(customerId);
-      modal.notify('Customer deleted successfully!', 'success');
-      await loadCustomers();
-    } catch (error) {
-      console.error('Error deleting customer:', error);
-      modal.notify('Failed to delete customer', 'error');
-    } finally {
-      setLoading(false);
+    if (window.confirm('Are you sure you want to delete this customer?')) {
+      try {
+        await customerService.deleteCustomer(customerId);
+        modal.notify('Customer deleted successfully!', 'success');
+        await loadCustomers();
+      } catch (error) {
+        console.error('Error deleting customer:', error);
+        modal.notify('Failed to delete customer', 'error');
+      }
     }
-  };
-
-  const openBookingModal = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setShowBookingModal(true);
   };
 
   const handleServiceChange = (serviceName: string) => {
     const service = services.find(s => s.name === serviceName);
-    setBookingData(prev => ({
-      ...prev,
-      service: serviceName,
-      price: service?.price || 0
-    }));
+    if (service) {
+      setBookingData(prev => ({
+        ...prev,
+        service: serviceName,
+        price: service.price
+      }));
+    }
   };
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomer) return;
-    
     try {
       setLoading(true);
-      const bookingUserId = (currentUser.role === 'Owner' || currentUser.role === 'Manager') ? bookingData.user_id : currentUser.id;
       
-      const { data, error } = await supabase.from('bookings').insert([{
-        user_id: bookingUserId,
-        customer_id: selectedCustomer.id,
-        customer_name: selectedCustomer.name,
+      // Create appointment object
+      const appointment = {
+        customer_id: selectedCustomer!.id,
+        customer_name: selectedCustomer!.name,
         service: bookingData.service,
         price: bookingData.price,
         date: bookingData.appointment_date,
         time: bookingData.appointment_time,
-        status: 'scheduled'
-      }]).select();
-      
-      if (error) throw error;
+        notes: bookingData.notes,
+        status: 'scheduled' as const,
+        user_id: bookingData.user_id
+      };
+
+      // Create booking using the booking service
+      const { bookingService } = await import('../services/completeDatabase');
+      await bookingService.createBooking(appointment);
       
       modal.notify('Booking created successfully!', 'success');
       setShowBookingModal(false);
       setSelectedCustomer(null);
+      
+      // Reset booking form
+      setBookingData({
+        service: 'Haircut',
+        price: 700,
+        notes: '',
+        appointment_date: new Date().toISOString().split('T')[0],
+        appointment_time: '09:00',
+        user_id: currentUser.id
+      });
+      
     } catch (error) {
       console.error('Error creating booking:', error);
       modal.notify('Failed to create booking', 'error');
@@ -188,98 +212,241 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-900">Customer Manager</h2>
+    <div className="w-full max-w-full overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <UserIcon className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Customer Manager</h2>
+            <p className="text-sm text-gray-600">{customers.length} total customers</p>
+          </div>
+        </div>
         <button
           onClick={() => setShowForm(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
         >
-          + Add Customer
+          <Plus className="h-4 w-4" />
+          Add Customer
         </button>
       </div>
 
       {/* Search Bar */}
-      <div className="mb-6">
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <input
           type="text"
           placeholder="Search customers by name, phone, or email..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
         />
-      </div>
-
-      {/* Customers Table */}
-      <div className="bg-gray-50 rounded-lg overflow-hidden">
-        {loading && !showForm && !showBookingModal ? (
-          <div className="p-8 text-center text-gray-600">Loading customers...</div>
-        ) : filteredCustomers.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {searchTerm ? 'No customers found matching your search.' : 'No customers found. Add your first customer!'}
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Customer
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider hidden md:table-cell">
-                    Contact
-                  </th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredCustomers.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                      <div className="text-sm text-gray-500 md:hidden">
-                        {customer.phone} {customer.email && `• ${customer.email}`}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 hidden md:table-cell">
-                      <div className="text-sm text-gray-900">{customer.phone}</div>
-                      {customer.email && (
-                        <div className="text-sm text-gray-500">{customer.email}</div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => openBookingModal(customer)}
-                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors text-sm"
-                        >
-                          Book
-                        </button>
-                        <button
-                          onClick={() => handleEdit(customer)}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition-colors text-sm"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(customer.id)}
-                          className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors text-sm"
-                        >
-                          Del
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
         )}
       </div>
+
+      {/* Customer Cards */}
+      {loading && !showForm && !showBookingModal ? (
+        <div className="text-center py-12">
+          <div className="inline-flex items-center gap-2 text-gray-600">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+            Loading customers...
+          </div>
+        </div>
+      ) : filteredCustomers.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm ? 'No customers found' : 'No customers yet'}
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm 
+              ? 'Try adjusting your search terms.' 
+              : 'Add your first customer to get started!'
+            }
+          </p>
+          {!searchTerm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Add Customer
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredCustomers.map((customer) => (
+            <div
+              key={customer.id}
+              onClick={() => openCustomerProfile(customer)}
+              className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-blue-100 p-1.5 rounded-full">
+                      <UserIcon className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{customer.name}</h3>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    {customer.phone && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="truncate">{customer.phone}</span>
+                      </div>
+                    )}
+                    {customer.email && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Mail className="h-3.5 w-3.5 text-gray-400" />
+                        <span className="truncate">{customer.email}</span>
+                      </div>
+                    )}
+                    {customer.notes && (
+                      <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 mt-2 line-clamp-2">
+                        {customer.notes}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-1 ml-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openBookingModal(customer);
+                    }}
+                    className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                  >
+                    <Calendar className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Customer Profile Modal */}
+      {showCustomerProfile && selectedCustomer && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Profile Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                    <UserIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedCustomer.name}</h3>
+                    <p className="text-blue-100 text-sm">Customer Profile</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeCustomerProfile}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Profile Content */}
+            <div className="p-6 space-y-6">
+              {/* Contact Information */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-600" />
+                  Contact Information
+                </h4>
+                <div className="space-y-3">
+                  {selectedCustomer.phone && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Phone className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Phone</span>
+                      </div>
+                      <a
+                        href={`tel:${selectedCustomer.phone}`}
+                        className="text-blue-600 font-medium hover:underline"
+                      >
+                        {selectedCustomer.phone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedCustomer.email && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <Mail className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Email</span>
+                      </div>
+                      <a
+                        href={`mailto:${selectedCustomer.email}`}
+                        className="text-blue-600 font-medium hover:underline truncate max-w-[60%]"
+                      >
+                        {selectedCustomer.email}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes Section */}
+              {selectedCustomer.notes && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Notes</h4>
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                <button
+                  onClick={() => openBookingModal(selectedCustomer)}
+                  className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Book Appointment
+                </button>
+                <button
+                  onClick={() => {
+                    handleEdit(selectedCustomer);
+                    closeCustomerProfile();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Edit className="h-4 w-4" />
+                  Edit Details
+                </button>
+              </div>
+              
+              <button
+                onClick={() => {
+                  handleDelete(selectedCustomer.id);
+                  closeCustomerProfile();
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete Customer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Customer Form Modal */}
       {showForm && (
@@ -442,7 +609,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };

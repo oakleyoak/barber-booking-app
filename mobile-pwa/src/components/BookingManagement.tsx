@@ -49,11 +49,15 @@ interface BookingManagementProps {
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const modal = useModal();
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>(
     currentUser.role === 'Barber' ? 'all' : 'upcoming'
   );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
   
   // New booking form state
   const [showBookingForm, setShowBookingForm] = useState(false);
@@ -84,6 +88,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     }
   }, [currentUser]);
 
+  // Search and filter bookings
+  useEffect(() => {
+    const filtered = bookings.filter(booking =>
+      booking.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (booking.notes && booking.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+    setFilteredBookings(filtered);
+  }, [bookings, searchTerm]);
+
   const loadStaffAndCustomers = async () => {
     try {
       // Load staff members
@@ -104,99 +118,104 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     }
   };
 
-  const markAsPaid = async (bookingId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .update({ payment_status: 'paid', payment_method: 'cash', payment_received_at: new Date().toISOString() })
-        .eq('id', bookingId)
-        .select(`*, users(name)`)
-        .single();
-
-      if (error) throw error;
-
-      setBookings(prevBookings =>
-        prevBookings.map(b => (b.id === bookingId ? data as Booking : b))
-      );
-      modal.notify('Booking marked as paid!', 'success');
-    } catch (err) {
-      console.error('Error marking as paid:', err);
-      modal.notify('Failed to mark booking as paid', 'error');
+  // Load bookings based on view
+  useEffect(() => {
+    if (currentView === 'upcoming') {
+      loadUpcomingBookings();
+    } else if (currentView === 'history') {
+      loadBookingHistory();
+    } else {
+      loadAllBookings();
     }
+  }, [currentView, currentUser]);
+
+  const openBookingDetails = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setShowBookingDetails(true);
   };
 
-  // Handler to send customer notification
-  const sendCustomerNotification = async (booking: Booking) => {
-    try {
-      const result = await NotificationsService.sendNotification({
-        type: 'customer_notification',
-        booking_id: booking.id,
-        booking_data: booking,
-        email_content: {
-          to: booking.customer_email || booking.customer_phone,
-          subject: `✂️ Booking Confirmation - Edge & Co Barbershop`,
-          html: `Your booking has been confirmed for ${booking.date} at ${booking.time}.`
-        }
-      });
-
-      if (result.ok) {
-        modal.notify('Customer notification sent successfully!', 'success');
-      } else {
-        modal.notify('Failed to send customer notification: ' + result.error, 'error');
-      }
-    } catch (err) {
-      console.error('Error sending customer notification:', err);
-      modal.notify('Failed to send customer notification', 'error');
-    }
+  const closeBookingDetails = () => {
+    setShowBookingDetails(false);
+    setSelectedBooking(null);
   };
 
-  // Handler to send invoice
-  const sendInvoice = async (booking: Booking) => {
-    try {
-      // First, get customer email from customer_id if available
-      let customerEmail = booking.customer_email;
-      
-      if (!customerEmail && booking.customer_id) {
-        try {
-          const customer = await customerService.getCustomerById(booking.customer_id);
-          customerEmail = customer?.email;
-        } catch (error) {
-          console.error('Error fetching customer email:', error);
-        }
-      }
-
-      if (!customerEmail) {
-        modal.notify('Customer email not available. Please update customer information first.', 'error');
-        return;
-      }
-
-      // Add customer email to booking for invoice generation
-      const bookingWithEmail = {
-        ...booking,
-        customer_email: customerEmail
-      };
-
-      // Send invoice
-      const result = await InvoiceService.sendInvoice(bookingWithEmail);
-
-      if (result.ok) {
-        modal.notify('Invoice sent successfully!', 'success');
-      } else {
-        modal.notify('Failed to send invoice: ' + result.error, 'error');
-      }
-    } catch (err) {
-      console.error('Error sending invoice:', err);
-      modal.notify('Failed to send invoice', 'error');
-    }
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
-  // Handler to open delete modal for a booking
+  // Format time to display format
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5); // Remove seconds if present
+  };
+
+  // Delete booking handler
   const deleteBooking = (booking: Booking) => {
     setBookingToDelete(booking);
     setShowDeleteModal(true);
   };
 
-  // Handler to confirm deletion
+  // Mark as paid handler
+  const markAsPaid = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'paid' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+      
+      modal.notify('Payment status updated!', 'success');
+      
+      // Reload current view
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      } else if (currentView === 'history') {
+        await loadBookingHistory();
+      } else {
+        await loadAllBookings();
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      modal.notify('Failed to update payment status', 'error');
+    }
+  };
+
+  // Send customer notification
+  const sendCustomerNotification = async (booking: Booking) => {
+    try {
+      await NotificationsService.sendNotification({
+        to: booking.customer_email || '',
+        name: booking.customer_name,
+        service: booking.service,
+        date: booking.date,
+        time: booking.time,
+        type: 'booking_reminder'
+      });
+      modal.notify('Notification sent successfully!', 'success');
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      modal.notify('Failed to send notification', 'error');
+    }
+  };
+
+  // Send invoice
+  const sendInvoice = async (booking: Booking) => {
+    try {
+      await InvoiceService.sendInvoice(booking);
+      modal.notify('Invoice sent successfully!', 'success');
+    } catch (error) {
+      console.error('Error sending invoice:', error);
+      modal.notify('Failed to send invoice', 'error');
+    }
+  };
+
+  // Confirm delete booking
   const confirmDeleteBooking = async () => {
     if (!bookingToDelete) return;
     try {
@@ -209,8 +228,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       
       if (currentView === 'upcoming') {
         await loadUpcomingBookings();
-      } else {
+      } else if (currentView === 'history') {
         await loadBookingHistory();
+      } else {
+        await loadAllBookings();
       }
     } catch (err) {
       console.error('Error deleting booking:', err);
@@ -298,16 +319,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .order('time', { ascending: true });
 
       // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber' && currentUser.id) {
+      if (currentUser.role === 'Barber') {
         query = query.eq('user_id', currentUser.id);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
+      
       setBookings(data || []);
-    } catch (err) {
-      console.error('Error loading upcoming bookings:', err);
+    } catch (error) {
+      console.error('Error loading upcoming bookings:', error);
       modal.notify('Failed to load upcoming bookings', 'error');
     }
   };
@@ -327,21 +348,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .order('time', { ascending: false });
 
       // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber' && currentUser.id) {
+      if (currentUser.role === 'Barber') {
         query = query.eq('user_id', currentUser.id);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
+      
       setBookings(data || []);
-    } catch (err) {
-      console.error('Error loading booking history:', err);
+    } catch (error) {
+      console.error('Error loading booking history:', error);
       modal.notify('Failed to load booking history', 'error');
     }
   };
 
-  // Load all bookings for barber (their own only)
+  // Load all bookings (for barbers to see their own bookings)
   const loadAllBookings = async () => {
     try {
       let query = supabase
@@ -354,349 +375,502 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .order('time', { ascending: false });
 
       // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber' && currentUser.id) {
+      if (currentUser.role === 'Barber') {
         query = query.eq('user_id', currentUser.id);
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
+      
       setBookings(data || []);
-    } catch (err) {
-      console.error('Error loading all bookings:', err);
-      modal.notify('Failed to load all bookings', 'error');
+    } catch (error) {
+      console.error('Error loading all bookings:', error);
+      modal.notify('Failed to load bookings', 'error');
     }
   };
 
-  // Load bookings based on current view
-  useEffect(() => {
-    if (currentView === 'upcoming') {
-      loadUpcomingBookings();
-    } else if (currentView === 'history') {
-      loadBookingHistory();
-    } else if (currentView === 'all') {
-      loadAllBookings();
+  // Get status color classes
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'cancelled':
+        return 'bg-red-100 text-red-800';
+      case 'scheduled':
+        return 'bg-blue-100 text-blue-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
-  }, [currentView]);
+  };
 
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'short'
-    });
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+      case 'refunded':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-2 sm:p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Booking Management</h2>
+    <div className="w-full max-w-full overflow-hidden">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-100 p-2 rounded-lg">
+            <CalendarIcon className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">Booking Management</h2>
+            <p className="text-sm text-gray-600">{filteredBookings.length} {currentView} bookings</p>
+          </div>
+        </div>
         
-        {/* View Toggle */}
-        <div className="flex space-x-4 mb-6">
-          {currentUser.role === 'Barber' && (
+        {/* Create Booking Button for Owner/Manager */}
+        {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+          <button
+            onClick={() => setShowBookingForm(true)}
+            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
+          >
+            <Plus className="h-4 w-4" />
+            Create Booking
+          </button>
+        )}
+      </div>
+
+      {/* Search Bar */}
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search bookings by customer, service, or notes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* View Tabs */}
+      <div className="bg-white border border-gray-200 rounded-lg p-1 mb-6">
+        <div className="overflow-x-auto">
+          <div className="flex space-x-1 min-w-max">
+            {currentUser.role === 'Barber' && (
+              <button
+                onClick={() => setCurrentView('all')}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm min-w-[120px] justify-center ${
+                  currentView === 'all'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <Eye className="h-4 w-4" />
+                All My Bookings
+              </button>
+            )}
             <button
-              onClick={() => setCurrentView('all')}
-              className={`px-4 py-2 rounded-lg font-medium ${
-                currentView === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              onClick={() => setCurrentView('upcoming')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm min-w-[120px] justify-center ${
+                currentView === 'upcoming'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              <Eye className="inline-block w-4 h-4 mr-2" />
-              All My Bookings
+              <CalendarIcon className="h-4 w-4" />
+              Upcoming
             </button>
-          )}
-          <button
-            onClick={() => setCurrentView('upcoming')}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              currentView === 'upcoming'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <CalendarIcon className="inline-block w-4 h-4 mr-2" />
-            Upcoming Bookings
-          </button>
-          <button
-            onClick={() => setCurrentView('history')}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              currentView === 'history'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            <History className="inline-block w-4 h-4 mr-2" />
-            Booking History
-          </button>
-          
-          {/* Create Booking Button for Owner/Manager */}
-          {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+            <button
+              onClick={() => setCurrentView('history')}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm min-w-[120px] justify-center ${
+                currentView === 'history'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              <History className="h-4 w-4" />
+              History
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Booking Cards */}
+      {filteredBookings.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+          <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            {searchTerm ? 'No bookings found' : 'No bookings yet'}
+          </h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm 
+              ? 'Try adjusting your search terms.' 
+              : currentView === 'upcoming' ? 'No upcoming bookings scheduled.' :
+                currentView === 'history' ? 'No booking history available.' : 'No bookings found.'
+            }
+          </p>
+          {!searchTerm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
             <button
               onClick={() => setShowBookingForm(true)}
-              className="px-4 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
-              <Plus className="inline-block w-4 h-4 mr-2" />
-              Create Booking
+              Create First Booking
             </button>
           )}
         </div>
-
-        {/* Create Booking Form */}
-        {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-          <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Create New Booking</h3>
-              <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={(e) => { e.preventDefault(); createBooking(); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
-                <input
-                  type="text"
-                  value={bookingFormData.customer_name}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, customer_name: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer (Optional)</label>
-                <select
-                  value={bookingFormData.customer_id}
-                  onChange={(e) => {
-                    const selectedCustomer = customers.find(c => c.id === e.target.value);
-                    setBookingFormData(prev => ({ 
-                      ...prev, 
-                      customer_id: e.target.value,
-                      customer_name: selectedCustomer ? selectedCustomer.name : prev.customer_name
-                    }));
-                  }}
-                  className="w-full p-2 border rounded-lg"
-                >
-                  <option value="">Select existing customer...</option>
-                  {customers.map(customer => (
-                    <option key={customer.id} value={customer.id}>{customer.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
-                <select
-                  value={bookingFormData.service_type}
-                  onChange={(e) => setBookingFormData(prev => ({ 
-                    ...prev, 
-                    service_type: e.target.value,
-                    price: ServicePricingService.getServicePrice(e.target.value)
-                  }))}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                >
-                  {SERVICES.map(service => (
-                    <option key={service.name} value={service.name}>{service.name} - ₺{service.price}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={bookingFormData.price}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
-                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  min="0"
-                  required
-                  placeholder="Enter custom amount"
-                />
-                <p className="text-xs text-gray-500 mt-1">Modify this amount as needed for custom pricing</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member *</label>
-                <select
-                  value={bookingFormData.staff_member}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, staff_member: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                >
-                  {staffMembers.map(staff => (
-                    <option key={staff.id} value={staff.id}>{staff.name}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                <input
-                  type="date"
-                  value={bookingFormData.booking_date}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_date: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                <select
-                  value={bookingFormData.booking_time}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_time: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                  required
-                >
-                  {timeSlots.map(time => (
-                    <option key={time} value={time}>{time}</option>
-                  ))}
-                </select>
-              </div>
-              
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={bookingFormData.notes}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full p-2 border rounded-lg"
-                  rows={3}
-                />
-              </div>
-              
-              <div className="md:col-span-2 flex space-x-3">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
-                >
-                  <Save className="inline-block w-4 h-4 mr-2" />
-                  Create Booking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowBookingForm(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Bookings List */}
-        <div className="space-y-4">
-          {bookings.length === 0 ? (
-            <div className="text-center py-8">
-              <p className="text-gray-500">
-                {currentView === 'upcoming' ? 'No upcoming bookings' : 
-                 currentView === 'history' ? 'No booking history' : 
-                 'No bookings found'}
-              </p>
-            </div>
-          ) : (
-            bookings.map((booking) => (
-              <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-4 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="font-medium">{booking.customer_name}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-4 h-4 text-gray-500" />
-                        <span>{formatDate(booking.date)} at {booking.time}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <DollarSign className="w-4 h-4 text-gray-500" />
-                        <span>₺{booking.price}</span>
-                      </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredBookings.map((booking) => (
+            <div
+              key={booking.id}
+              onClick={() => openBookingDetails(booking)}
+              className="bg-white rounded-lg border border-gray-200 p-4 hover:border-blue-300 hover:shadow-md transition-all cursor-pointer active:scale-[0.98]"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-blue-100 p-1.5 rounded-full">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <h3 className="font-semibold text-gray-900 truncate">{booking.customer_name}</h3>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Clock className="h-3.5 w-3.5 text-gray-400" />
+                      <span>{formatDate(booking.date)} at {formatTime(booking.time)}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <DollarSign className="h-3.5 w-3.5 text-gray-400" />
+                      <span>₺{booking.price} - {booking.service}</span>
                     </div>
                     
-                    <div className="flex items-center space-x-4 mb-2">
-                      <span className="text-sm text-gray-600">{booking.service}</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        booking.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        booking.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
+                    {/* Status Badges */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>
                         {booking.status}
                       </span>
-                      {/* --- PAYMENT STATUS BADGE --- */}
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${
-                        booking.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
-                        booking.payment_status === 'failed' || booking.payment_status === 'refunded' ? 'bg-red-100 text-red-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {booking.payment_status?.replace('_', ' ') || 'Pending Payment'}
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(booking.payment_status || 'pending')}`}>
+                        {booking.payment_status?.replace('_', ' ') || 'Pending'}
                       </span>
                     </div>
 
                     {booking.notes && (
-                      <p className="text-sm text-gray-600 mb-2">
-                        <strong>Notes:</strong> {booking.notes}
-                      </p>
+                      <div className="text-xs text-gray-500 bg-gray-50 rounded p-2 mt-2 line-clamp-2">
+                        {booking.notes}
+                      </div>
                     )}
                   </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex space-x-2">
-                    {/* --- MARK AS PAID BUTTON --- */}
-                    {booking.payment_status !== 'paid' && (
-                      <button
-                        onClick={() => markAsPaid(booking.id)}
-                        className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors"
-                        title="Mark as Paid"
-                      >
-                        <CheckSquare className="w-4 h-4" />
-                      </button>
-                    )}
-                    {/* Send Notification Button */}
+                </div>
+                
+                <div className="flex items-center gap-1 ml-3">
+                  {booking.payment_status !== 'paid' && (
                     <button
-                      onClick={() => sendCustomerNotification(booking)}
-                      className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                      title="Send Customer Notification"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsPaid(booking.id);
+                      }}
+                      className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
                     >
-                      <Mail className="w-4 h-4" />
+                      <CheckSquare className="h-4 w-4" />
                     </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-                    {/* Send Invoice Button */}
-                    <button
-                      onClick={() => sendInvoice(booking)}
-                      className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors"
-                      title="Send Invoice"
-                    >
-                      <Receipt className="w-4 h-4" />
-                    </button>
+      {/* Booking Details Modal */}
+      {showBookingDetails && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            {/* Profile Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                    <CalendarIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">{selectedBooking.customer_name}</h3>
+                    <p className="text-blue-100 text-sm">Booking Details</p>
+                  </div>
+                </div>
+                <button
+                  onClick={closeBookingDetails}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
 
-                    {/* Delete Button */}
-                    <button
-                      onClick={() => deleteBooking(booking)}
-                      className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                      title="Delete Booking"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+            {/* Booking Content */}
+            <div className="p-6 space-y-6">
+              {/* Booking Information */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  Booking Information
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Date & Time</span>
+                    </div>
+                    <span className="font-medium">{formatDate(selectedBooking.date)} at {formatTime(selectedBooking.time)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Service & Price</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">₺{selectedBooking.price}</div>
+                      <div className="text-sm text-gray-500">{selectedBooking.service}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Status</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedBooking.status)}`}>
+                        {selectedBooking.status}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(selectedBooking.payment_status || 'pending')}`}>
+                        {selectedBooking.payment_status?.replace('_', ' ') || 'Pending'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))
-          )}
+
+              {/* Notes Section */}
+              {selectedBooking.notes && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Notes</h4>
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedBooking.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                {selectedBooking.payment_status !== 'paid' && (
+                  <button
+                    onClick={() => {
+                      markAsPaid(selectedBooking.id);
+                      closeBookingDetails();
+                    }}
+                    className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    Mark Paid
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    sendCustomerNotification(selectedBooking);
+                    closeBookingDetails();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Notification
+                </button>
+                <button
+                  onClick={() => {
+                    sendInvoice(selectedBooking);
+                    closeBookingDetails();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  <Receipt className="h-4 w-4" />
+                  Send Invoice
+                </button>
+              </div>
+              
+              <button
+                onClick={() => {
+                  deleteBooking(selectedBooking);
+                  closeBookingDetails();
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+              >
+                <X className="h-4 w-4" />
+                Delete Booking
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Create Booking Form Modal */}
+      {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Create New Booking</h3>
+                <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <form onSubmit={(e) => { e.preventDefault(); createBooking(); }} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                  <input
+                    type="text"
+                    value={bookingFormData.customer_name}
+                    onChange={(e) => setBookingFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer (Optional)</label>
+                  <select
+                    value={bookingFormData.customer_id}
+                    onChange={(e) => {
+                      const selectedCustomer = customers.find(c => c.id === e.target.value);
+                      setBookingFormData(prev => ({ 
+                        ...prev, 
+                        customer_id: e.target.value,
+                        customer_name: selectedCustomer ? selectedCustomer.name : prev.customer_name
+                      }));
+                    }}
+                    className="w-full p-2 border rounded-lg"
+                  >
+                    <option value="">Select existing customer...</option>
+                    {customers.map(customer => (
+                      <option key={customer.id} value={customer.id}>{customer.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
+                  <select
+                    value={bookingFormData.service_type}
+                    onChange={(e) => setBookingFormData(prev => ({ 
+                      ...prev, 
+                      service_type: e.target.value,
+                      price: ServicePricingService.getServicePrice(e.target.value)
+                    }))}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  >
+                    {Object.entries(SERVICES).map(([key, service]) => (
+                      <option key={key} value={key}>{service.name} - ₺{service.price}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member *</label>
+                  <select
+                    value={bookingFormData.staff_member}
+                    onChange={(e) => setBookingFormData(prev => ({ ...prev, staff_member: e.target.value }))}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  >
+                    {staffMembers.map(staff => (
+                      <option key={staff.id} value={staff.id}>{staff.name}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                    <input
+                      type="date"
+                      value={bookingFormData.booking_date}
+                      onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_date: e.target.value }))}
+                      className="w-full p-2 border rounded-lg"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                    <select
+                      value={bookingFormData.booking_time}
+                      onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_time: e.target.value }))}
+                      className="w-full p-2 border rounded-lg"
+                      required
+                    >
+                      {timeSlots.map(time => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Price (₺) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={bookingFormData.price}
+                    onChange={(e) => setBookingFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={bookingFormData.notes}
+                    onChange={(e) => setBookingFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full p-2 border rounded-lg"
+                    rows={3}
+                  />
+                </div>
+                
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Create Booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowBookingForm(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && bookingToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete the booking for {bookingToDelete.customer_name} on {formatDate(bookingToDelete.date)}?
@@ -721,7 +895,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           </div>
         </div>
       )}
-      </div>
     </div>
   );
 };

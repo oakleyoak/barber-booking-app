@@ -130,229 +130,220 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-        <div
-        className="min-h-screen w-full"
-        style={{
-          background: `url(${largeLogo}) center/cover no-repeat fixed`,
-        }}
-      >
-        {/* Header */}
-  <div className="bg-white bg-opacity-90 shadow-sm border-b border-blue-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center">
-                <img src={logoIcon} alt="Edge & Co Logo" className="h-12 w-12 object-contain mr-3 rounded-full border border-gray-200" />
-                <div>
-                  <h1 className="text-xl font-bold text-blue-900">Edge & Co Management</h1>
-                  <p className="text-sm text-blue-700">{currentUser.shop_name}</p>
+        <div className="min-h-screen flex flex-col bg-gray-50">
+          {/* Header */}
+          <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+            <div className="max-w-full px-4 py-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-3">
+                  <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border border-gray-200" />
+                  <div>
+                    <h1 className="text-lg font-bold text-blue-900">Edge & Co</h1>
+                    <p className="text-xs text-blue-700">{currentUser.shop_name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-gray-700 hidden sm:block">
+                    {currentUser.name} ({currentUser.role})
+                  </span>
+                  <button
+                    onClick={handleSignOut}
+                    className="text-gray-600 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-xs border border-gray-300"
+                  >
+                    Sign Out
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
-                  {currentUser.name} ({currentUser.role})
-                </span>
-                <button
-                  onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-800 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-sm border border-gray-300 hover:border-gray-400"
-                >
-                  Sign Out
-                </button>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
+            <div className="max-w-full px-2 py-3">
+              <div className="overflow-x-auto">
+                <div className="flex space-x-1 min-w-max pb-1">
+                  {/* Core Features - Available to All Users */}
+                  <button
+                    onClick={() => setCurrentView('calendar')}
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                      currentView === 'calendar'
+                        ? 'bg-blue-700 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4 mb-1" />
+                    <span className="text-center leading-tight">Calendar</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentView('earnings')}
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                      currentView === 'earnings'
+                        ? 'bg-red-700 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <TrendingUp className="h-4 w-4 mb-1" />
+                    <span className="text-center leading-tight">Earnings</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentView('customers')}
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                      currentView === 'customers'
+                        ? 'bg-blue-700 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Users className="h-4 w-4 mb-1" />
+                    <span className="text-center leading-tight">Customers</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => setCurrentView('operations')}
+                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                      currentView === 'operations'
+                        ? 'bg-blue-700 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <ClipboardList className="h-4 w-4 mb-1" />
+                    <span className="text-center leading-tight">Operations</span>
+                  </button>
+
+                  {/* Management Features - Owner/Manager/Barber Access */}
+                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                    <>
+                      <button
+                        onClick={() => setCurrentView('expenses')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'expenses'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <DollarSign className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">Expenses</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentView('equipment')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'equipment'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Package className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">Equipment</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentView('supplies')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'supplies'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Package className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">Supplies</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentView('incidents')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'incidents'
+                            ? 'bg-red-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <AlertTriangle className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">Incidents</span>
+                      </button>
+                    </>
+                  )}
+                  
+                  {/* Owner and Manager features */}
+                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
+                    <>
+                      <button
+                        onClick={() => setCurrentView('bookings')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'bookings'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Calendar className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">All Bookings</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => setCurrentView('admin')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                          currentView === 'admin'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Shield className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">Admin</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-auto">
+            <div className="max-w-full p-4">
+              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+                {currentView === 'calendar' && (
+                  <BookingCalendar currentUser={currentUser} />
+                )}
+
+                {currentView === 'earnings' && (
+                  <RealEarningsTracker currentUser={currentUser} />
+                )}
+
+                {currentView === 'customers' && (
+                  <CustomerManager currentUser={currentUser} />
+                )}
+
+                {currentView === 'operations' && (
+                  <OperationsManual />
+                )}
+
+                {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                  <ExpenseManager currentUserId={currentUser.id} />
+                )}
+
+                {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                  <InventoryManager />
+                )}
+
+                {currentView === 'supplies' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                  <SuppliesInventory />
+                )}
+
+                {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                  <IncidentReports currentUserId={currentUser.id} />
+                )}
+
+                {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                  <BookingManagement currentUser={currentUser} />
+                )}
+
+                {currentView === 'admin' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
+                  <AdminPanel currentUser={currentUser} />
+                )}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Navigation */}
-  <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:flex lg:flex-wrap gap-1 sm:gap-2 mb-6">
-            {/* Core Features - Available to All Users */}
-            <button
-              onClick={() => setCurrentView('calendar')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                currentView === 'calendar'
-                  ? 'bg-blue-700 text-white border border-blue-900'
-                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-              }`}
-            >
-              <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="text-center leading-tight">Calendar</span>
-            </button>
-            
-            <button
-              onClick={() => setCurrentView('bookings')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                currentView === 'bookings'
-                  ? 'bg-green-700 text-white border border-green-900'
-                  : 'bg-white text-green-900 hover:bg-green-50 border border-green-200'
-              }`}
-            >
-              <ClipboardList className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="text-center leading-tight">My Bookings</span>
-            </button>
-            
-            <button
-              onClick={() => setCurrentView('earnings')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                currentView === 'earnings'
-                  ? 'bg-red-700 text-white border border-red-900'
-                  : 'bg-white text-red-900 hover:bg-red-50 border border-red-200'
-              }`}
-            >
-              <TrendingUp className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="text-center leading-tight">Earnings</span>
-            </button>
-            
-            <button
-              onClick={() => setCurrentView('customers')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                currentView === 'customers'
-                  ? 'bg-blue-700 text-white border border-blue-900'
-                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-              }`}
-            >
-              <Users className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="text-center leading-tight">Customers</span>
-            </button>
-            
-            <button
-              onClick={() => setCurrentView('operations')}
-              className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                currentView === 'operations'
-                  ? 'bg-blue-700 text-white border border-blue-900'
-                  : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-              }`}
-            >
-              <ClipboardList className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-              <span className="text-center leading-tight">Operations</span>
-            </button>
-
-            {/* Management Features - Owner/Manager/Barber Access */}
-            {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <>
-                <button
-                  onClick={() => setCurrentView('expenses')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'expenses'
-                      ? 'bg-blue-700 text-white border border-blue-900'
-                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <DollarSign className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">Expenses</span>
-                </button>
-                
-                <button
-                  onClick={() => setCurrentView('equipment')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'equipment'
-                      ? 'bg-blue-700 text-white border border-blue-900'
-                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">Equipment</span>
-                </button>
-                
-                <button
-                  onClick={() => setCurrentView('supplies')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'supplies'
-                      ? 'bg-blue-700 text-white border border-blue-900'
-                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <Package className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">Supplies</span>
-                </button>
-                
-                <button
-                  onClick={() => setCurrentView('incidents')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'incidents'
-                      ? 'bg-red-700 text-white border border-red-900'
-                      : 'bg-white text-red-900 hover:bg-red-50 border border-red-200'
-                  }`}
-                >
-                  <AlertTriangle className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">Incidents</span>
-                </button>
-              </>
-            )}
-            
-            {/* Owner and Manager features */}
-            {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
-              <>
-                <button
-                  onClick={() => setCurrentView('bookings')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'bookings'
-                      ? 'bg-blue-700 text-white border border-blue-900'
-                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <Calendar className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">All Bookings</span>
-                </button>
-                
-                <button
-                  onClick={() => setCurrentView('admin')}
-                  className={`flex flex-col sm:flex-row items-center justify-center px-1 sm:px-3 py-2 rounded-lg transition-colors text-xs sm:text-sm ${
-                    currentView === 'admin'
-                      ? 'bg-blue-700 text-white border border-blue-900'
-                      : 'bg-white text-blue-900 hover:bg-blue-50 border border-blue-200'
-                  }`}
-                >
-                  <Shield className="h-4 w-4 mb-1 sm:mb-0 sm:mr-2" />
-                  <span className="text-center leading-tight">Admin</span>
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Content Area */}
-          <div className="bg-white bg-opacity-90 rounded-xl shadow-sm p-6">
-            {currentView === 'calendar' && (
-              <BookingCalendar currentUser={currentUser} />
-            )}
-
-            {currentView === 'earnings' && (
-              <RealEarningsTracker currentUser={currentUser} />
-            )}
-
-            {currentView === 'customers' && (
-              <CustomerManager currentUser={currentUser} />
-            )}
-
-            {currentView === 'operations' && (
-              <OperationsManual />
-            )}
-
-            {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <ExpenseManager currentUserId={currentUser.id} />
-            )}
-
-            {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <InventoryManager />
-            )}
-
-            {currentView === 'supplies' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <SuppliesInventory />
-            )}
-
-            {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <IncidentReports currentUserId={currentUser.id} />
-            )}
-
-            {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-              <BookingManagement currentUser={currentUser} />
-            )}
-
-            {currentView === 'admin' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
-              <AdminPanel currentUser={currentUser} />
-            )}
-          </div>
-        </div>
-      </div>
       </ModalProvider>
     );
   }
@@ -436,40 +427,42 @@ function App() {
               <input
                 type={showPassword ? 'text' : 'password'}
                 className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter your password"
+                placeholder={isLogin ? 'Enter your password' : 'Create a password'}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 required
-                minLength={6}
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                 onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 hover:text-gray-600"
               >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                {showPassword ? <EyeOff /> : <Eye />}
               </button>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-red-600 text-sm">{error}</p>
+            <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded-lg border border-red-200">
+              {error}
             </div>
           )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+            {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
 
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsLogin(!isLogin)}
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+              }}
               className="text-blue-600 hover:text-blue-700 text-sm font-medium"
             >
               {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
