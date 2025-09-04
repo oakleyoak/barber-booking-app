@@ -21,7 +21,10 @@ import {
   Eye, 
   Download, 
   RefreshCw,
-  X
+  X,
+  Plus,
+  Save,
+  UserPlus
 } from 'lucide-react';
 import { useModal } from './ui/ModalProvider';
 import { supabase, type Booking } from '../lib/supabase';
@@ -29,7 +32,8 @@ import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
-import { ServicePricingService } from '../services/servicePricing';
+import { ServicePricingService, SERVICES } from '../services/servicePricing';
+import { UserManagementService } from '../services/userManagementService';
 import { getTodayLocal } from '../utils/dateUtils';
 
 interface BookingManagementProps {
@@ -50,6 +54,55 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
+  
+  // New booking form state
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [staffMembers, setStaffMembers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [bookingFormData, setBookingFormData] = useState({
+    customer_name: '',
+    customer_id: '',
+    service_type: 'Haircut',
+    staff_member: '',
+    booking_date: new Date().toISOString().split('T')[0],
+    booking_time: '09:00',
+    price: ServicePricingService.getServicePrice('Haircut'),
+    notes: ''
+  });
+
+  // Time slots for booking
+  const timeSlots = [
+    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
+    '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
+    '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00'
+  ];
+
+  // Load staff and customers when component mounts
+  useEffect(() => {
+    if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+      loadStaffAndCustomers();
+    }
+  }, [currentUser]);
+
+  const loadStaffAndCustomers = async () => {
+    try {
+      // Load staff members
+      await UserManagementService.syncStaffToCurrentShop(currentUser.shop_name);
+      const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
+      setStaffMembers(staff);
+      
+      // Load customers
+      const customerList = await customerService.getCustomers();
+      setCustomers(customerList);
+      
+      // Set default staff member
+      if (staff.length > 0) {
+        setBookingFormData(prev => ({ ...prev, staff_member: staff[0].id }));
+      }
+    } catch (error) {
+      console.error('Error loading staff and customers:', error);
+    }
+  };
 
   const markAsPaid = async (bookingId: string) => {
     try {
@@ -162,6 +215,71 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } catch (err) {
       console.error('Error deleting booking:', err);
       modal.notify('Failed to delete booking', 'error');
+    }
+  };
+
+  // Handler to create new booking
+  const createBooking = async () => {
+    if (!bookingFormData.customer_name || !bookingFormData.staff_member) {
+      modal.notify('Please fill in all required fields', 'error');
+      return;
+    }
+
+    try {
+      // Find the selected staff member
+      const selectedStaff = staffMembers.find(s => s.id === bookingFormData.staff_member);
+      if (!selectedStaff) {
+        modal.notify('Selected staff member not found', 'error');
+        return;
+      }
+
+      // Create the booking
+      const { data: booking, error: bookingError } = await supabase
+        .from('bookings')
+        .insert({
+          customer_name: bookingFormData.customer_name,
+          customer_id: bookingFormData.customer_id || null,
+          service: bookingFormData.service_type,
+          price: bookingFormData.price,
+          date: bookingFormData.booking_date,
+          time: bookingFormData.booking_time,
+          notes: bookingFormData.notes,
+          user_id: selectedStaff.id,
+          staff_name: selectedStaff.name,
+          payment_status: 'pending',
+          status: 'scheduled'
+        })
+        .select('*')
+        .single();
+
+      if (bookingError) throw bookingError;
+
+      // Reset form
+      setBookingFormData({
+        customer_name: '',
+        customer_id: '',
+        service_type: 'Haircut',
+        staff_member: staffMembers[0]?.id || '',
+        booking_date: new Date().toISOString().split('T')[0],
+        booking_time: '09:00',
+        price: ServicePricingService.getServicePrice('Haircut'),
+        notes: ''
+      });
+
+      setShowBookingForm(false);
+      modal.notify('Booking created successfully!', 'success');
+      
+      // Reload bookings
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      } else if (currentView === 'history') {
+        await loadBookingHistory();
+      } else {
+        await loadAllBookings();
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      modal.notify('Failed to create booking. Please try again.', 'error');
     }
   };
 
@@ -314,7 +432,159 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             <History className="inline-block w-4 h-4 mr-2" />
             Booking History
           </button>
+          
+          {/* Create Booking Button for Owner/Manager */}
+          {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+            <button
+              onClick={() => setShowBookingForm(true)}
+              className="px-4 py-2 rounded-lg font-medium bg-green-600 text-white hover:bg-green-700"
+            >
+              <Plus className="inline-block w-4 h-4 mr-2" />
+              Create Booking
+            </button>
+          )}
         </div>
+
+        {/* Create Booking Form */}
+        {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+          <div className="bg-white rounded-lg p-6 mb-6 border border-gray-200">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Create New Booking</h3>
+              <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={(e) => { e.preventDefault(); createBooking(); }} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                <input
+                  type="text"
+                  value={bookingFormData.customer_name}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer (Optional)</label>
+                <select
+                  value={bookingFormData.customer_id}
+                  onChange={(e) => {
+                    const selectedCustomer = customers.find(c => c.id === e.target.value);
+                    setBookingFormData(prev => ({ 
+                      ...prev, 
+                      customer_id: e.target.value,
+                      customer_name: selectedCustomer ? selectedCustomer.name : prev.customer_name
+                    }));
+                  }}
+                  className="w-full p-2 border rounded-lg"
+                >
+                  <option value="">Select existing customer...</option>
+                  {customers.map(customer => (
+                    <option key={customer.id} value={customer.id}>{customer.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
+                <select
+                  value={bookingFormData.service_type}
+                  onChange={(e) => setBookingFormData(prev => ({ 
+                    ...prev, 
+                    service_type: e.target.value,
+                    price: ServicePricingService.getServicePrice(e.target.value)
+                  }))}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                >
+                  {SERVICES.map(service => (
+                    <option key={service.name} value={service.name}>{service.name} - ₺{service.price}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Staff Member *</label>
+                <select
+                  value={bookingFormData.staff_member}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, staff_member: e.target.value }))}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                >
+                  {staffMembers.map(staff => (
+                    <option key={staff.id} value={staff.id}>{staff.name}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                <input
+                  type="date"
+                  value={bookingFormData.booking_date}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_date: e.target.value }))}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                <select
+                  value={bookingFormData.booking_time}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_time: e.target.value }))}
+                  className="w-full p-2 border rounded-lg"
+                  required
+                >
+                  {timeSlots.map(time => (
+                    <option key={time} value={time}>{time}</option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                <input
+                  type="number"
+                  value={bookingFormData.price}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  className="w-full p-2 border rounded-lg"
+                  min="0"
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={bookingFormData.notes}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  className="w-full p-2 border rounded-lg"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="md:col-span-2 flex space-x-3">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+                >
+                  <Save className="inline-block w-4 h-4 mr-2" />
+                  Create Booking
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBookingForm(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         {/* Bookings List */}
         <div className="space-y-4">

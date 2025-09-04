@@ -534,8 +534,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                   <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
                   <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer</label>
+                      <select 
+                        value={customers.find(c => c.name === formData.customer_name)?.id || ''} 
+                        onChange={(e) => {
+                          const selectedCustomer = customers.find(c => c.id === e.target.value);
+                          if (selectedCustomer) {
+                            setFormData(prev => ({...prev, customer_name: selectedCustomer.name}));
+                          }
+                        }} 
+                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select existing customer...</option>
+                        {customers.map(customer => (
+                          <option key={customer.id} value={customer.id}>{customer.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                      <input type="text" value={formData.customer_name} onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                      <input type="text" value={formData.customer_name} onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Or enter new customer name" required />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
