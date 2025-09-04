@@ -65,7 +65,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     try {
       const userFilter = currentUser.id;
       const dayBookings = await bookingService.getBookingsByDate(selectedDate, userFilter);
-      const allCustomers = await customerService.getCustomers(userFilter);
+      const allCustomers = await customerService.getCustomers(); // Remove userFilter to get all customers
       setBookings(dayBookings);
       setCustomers(allCustomers);
     } catch (error) {
