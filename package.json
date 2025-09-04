@@ -1,7 +1,7 @@
 {
   "name": "barber-booking-app",
   "version": "1.0.0",
-  "description": "Professional barbershop booking and management system",
+  "description": "Comprehensive business management system for Edge & Co Barbershop with booking, customer management, inventory tracking, financial management, and mobile app capabilities",
   "main": "index.js",
   "scripts": {
     "build": "cd mobile-pwa && npm ci && npm run build",
@@ -19,7 +19,15 @@
     "appointments",
     "react",
     "typescript",
-    "netlify"
+    "netlify",
+    "supabase",
+    "inventory-management",
+    "customer-management",
+    "financial-tracking",
+    "mobile-app",
+    "pwa",
+    "android-apk",
+    "capacitor"
   ],
   "author": "Edge & Co Barbershop",
   "license": "MIT",

@@ -1,7 +1,8 @@
 {
-  "name": "booking-mobile-pwa",
+  "name": "edge-and-co-barbershop-app",
   "private": true,
   "version": "1.0.0",
+  "description": "Edge & Co Barbershop management application - React TypeScript PWA with booking, customer management, inventory tracking, and Android app capabilities",
   "type": "module",
   "scripts": {
     "dev": "vite",
