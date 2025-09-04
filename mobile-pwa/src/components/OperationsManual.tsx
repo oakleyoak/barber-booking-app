@@ -978,27 +978,32 @@ const OperationsManual: React.FC = () => {
         {/* History Tab */}
         {activeTab === 'history' && (
           <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold flex items-center mb-3">
                 <Clock className="mr-2" size={20} />
                 Completion History
               </h2>
-              <div className="flex items-center space-x-2">
-                <input 
-                  type="date" 
-                  value={historyFilters.start} 
-                  onChange={e => setHistoryFilters(prev => ({ ...prev, start: e.target.value }))} 
-                  className="px-2 py-1 border border-gray-300 rounded text-sm" 
-                />
-                <input 
-                  type="date" 
-                  value={historyFilters.end} 
-                  onChange={e => setHistoryFilters(prev => ({ ...prev, end: e.target.value }))} 
-                  className="px-2 py-1 border border-gray-300 rounded text-sm" 
-                />
+              {/* Mobile-responsive filter section */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-end gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input 
+                    type="date" 
+                    value={historyFilters.start} 
+                    onChange={e => setHistoryFilters(prev => ({ ...prev, start: e.target.value }))} 
+                    className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded text-sm" 
+                    placeholder="Start date"
+                  />
+                  <input 
+                    type="date" 
+                    value={historyFilters.end} 
+                    onChange={e => setHistoryFilters(prev => ({ ...prev, end: e.target.value }))} 
+                    className="w-full sm:w-auto px-2 py-1 border border-gray-300 rounded text-sm" 
+                    placeholder="End date"
+                  />
+                </div>
                 <button 
                   onClick={loadHistory} 
-                  className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                  className="w-full sm:w-auto px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
                 >
                   Filter
                 </button>
@@ -1008,25 +1013,30 @@ const OperationsManual: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <h3 className="font-semibold mb-2">Cleaning Logs</h3>
-                <div className="overflow-x-auto bg-white rounded border">
+                <div className="overflow-x-auto bg-white rounded border shadow-sm">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Task</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed Date</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed At</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Task</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[100px]">Barber</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[110px]">Date</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[100px] hidden sm:table-cell">Time</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {logs.cleaning.length > 0 ? logs.cleaning.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-3 py-2">{l.cleaning_tasks?.task_name || l.task_name || 'N/A'}</td>
-                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
-                          <td className="px-3 py-2">{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</td>
-                          <td className="px-3 py-2">{l.completed_at ? new Date(l.completed_at).toLocaleTimeString() : 'N/A'}</td>
-                          <td className="px-3 py-2">{l.notes || '—'}</td>
+                          <td className="px-2 sm:px-3 py-2 font-medium">{l.cleaning_tasks?.task_name || l.task_name || 'N/A'}</td>
+                          <td className="px-2 sm:px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-2 sm:px-3 py-2">
+                            <div className="flex flex-col">
+                              <span>{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</span>
+                              <span className="text-xs text-gray-500 sm:hidden">{l.completed_at ? new Date(l.completed_at).toLocaleTimeString() : ''}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">{l.completed_at ? new Date(l.completed_at).toLocaleTimeString() : 'N/A'}</td>
+                          <td className="px-2 sm:px-3 py-2 max-w-[150px] truncate" title={l.notes || '—'}>{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
@@ -1040,25 +1050,30 @@ const OperationsManual: React.FC = () => {
 
               <div>
                 <h3 className="font-semibold mb-2">Maintenance Logs</h3>
-                <div className="overflow-x-auto bg-white rounded border">
+                <div className="overflow-x-auto bg-white rounded border shadow-sm">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Task</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Equipment</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Completed Date</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Task</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[100px] hidden sm:table-cell">Equipment</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[100px]">Barber</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[110px]">Date</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {logs.maintenance.length > 0 ? logs.maintenance.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-3 py-2">{l.maintenance_tasks?.task_name || l.task_name || 'N/A'}</td>
-                          <td className="px-3 py-2">{l.maintenance_tasks?.equipment_name || l.equipment_name || 'N/A'}</td>
-                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
-                          <td className="px-3 py-2">{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</td>
-                          <td className="px-3 py-2">{l.notes || '—'}</td>
+                          <td className="px-2 sm:px-3 py-2 font-medium">
+                            <div className="flex flex-col">
+                              <span>{l.maintenance_tasks?.task_name || l.task_name || 'N/A'}</span>
+                              <span className="text-xs text-gray-500 sm:hidden">{l.maintenance_tasks?.equipment_name || l.equipment_name || ''}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">{l.maintenance_tasks?.equipment_name || l.equipment_name || 'N/A'}</td>
+                          <td className="px-2 sm:px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-2 sm:px-3 py-2">{l.completed_date ? new Date(l.completed_date).toLocaleDateString() : 'N/A'}</td>
+                          <td className="px-2 sm:px-3 py-2 max-w-[150px] truncate" title={l.notes || '—'}>{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
@@ -1072,22 +1087,22 @@ const OperationsManual: React.FC = () => {
 
               <div>
                 <h3 className="font-semibold mb-2">Safety Check Logs</h3>
-                <div className="overflow-x-auto bg-white rounded border">
+                <div className="overflow-x-auto bg-white rounded border shadow-sm">
                   <table className="min-w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Item</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Status</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Barber</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Check Date</th>
-                        <th className="px-3 py-2 text-left font-medium text-gray-700">Notes</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Item</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[80px]">Status</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[100px] hidden sm:table-cell">Barber</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[110px]">Date</th>
+                        <th className="px-2 sm:px-3 py-2 text-left font-medium text-gray-700 min-w-[120px]">Notes</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {logs.safety.length > 0 ? logs.safety.map(l => (
                         <tr key={l.id} className="hover:bg-gray-50">
-                          <td className="px-3 py-2">{l.safety_check_items?.check_name || l.item_name || 'N/A'}</td>
-                          <td className="px-3 py-2">
+                          <td className="px-2 sm:px-3 py-2 font-medium">{l.safety_check_items?.check_name || l.item_name || 'N/A'}</td>
+                          <td className="px-2 sm:px-3 py-2">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               l.status === 'passed' ? 'bg-green-100 text-green-800' :
                               l.status === 'failed' ? 'bg-red-100 text-red-800' :
@@ -1096,9 +1111,14 @@ const OperationsManual: React.FC = () => {
                               {l.status || 'Unknown'}
                             </span>
                           </td>
-                          <td className="px-3 py-2">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
-                          <td className="px-3 py-2">{l.check_date ? new Date(l.check_date).toLocaleDateString() : 'N/A'}</td>
-                          <td className="px-3 py-2">{l.notes || '—'}</td>
+                          <td className="px-2 sm:px-3 py-2 hidden sm:table-cell">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</td>
+                          <td className="px-2 sm:px-3 py-2">
+                            <div className="flex flex-col">
+                              <span>{l.check_date ? new Date(l.check_date).toLocaleDateString() : 'N/A'}</span>
+                              <span className="text-xs text-gray-500 sm:hidden">{users.find(u => (u.auth_user_id === l.barber_id) || (u.id === l.barber_id))?.name || 'Unknown'}</span>
+                            </div>
+                          </td>
+                          <td className="px-2 sm:px-3 py-2 max-w-[150px] truncate" title={l.notes || '—'}>{l.notes || '—'}</td>
                         </tr>
                       )) : (
                         <tr>
