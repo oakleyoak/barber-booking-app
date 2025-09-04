@@ -264,8 +264,8 @@ function App() {
                     </>
                   )}
                   
-                  {/* Owner and Manager features */}
-                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
+                  {/* Owner, Manager and Barber features */}
+                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
                     <>
                       <button
                         onClick={() => setCurrentView('bookings')}
