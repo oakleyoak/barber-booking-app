@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
-import logoIcon from './assets/edgeandcologoicon.JPG';
+import logoIcon from './assets/BWicon.png';
 import largeLogo from './assets/edgeandcoblackandwhitelogobackground.png';
 import { supabase } from './lib/supabase';
 import { authService, userService, type User as SupabaseUser } from './services/completeDatabase';
@@ -143,7 +143,7 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-700 hidden sm:block">
+                  <span className="text-xs text-gray-700">
                     {currentUser.name} ({currentUser.role})
                   </span>
                   <button
