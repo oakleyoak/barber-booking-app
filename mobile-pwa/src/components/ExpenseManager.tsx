@@ -192,10 +192,11 @@ export default function ExpenseManager({ currentUserId }: Props) {
                     <option key={category} value={category}>{category}</option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Choose the most appropriate category</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Amount (₺)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Custom Amount (₺) *</label>
                 <input
                   type="number"
                   step="0.01"
@@ -203,7 +204,9 @@ export default function ExpenseManager({ currentUserId }: Props) {
                   onChange={(e) => setNewExpense({...newExpense, amount: e.target.value})}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   required
+                  placeholder="0.00"
                 />
+                <p className="text-xs text-gray-500 mt-1">Enter the exact expense amount</p>
               </div>
 
               <div>

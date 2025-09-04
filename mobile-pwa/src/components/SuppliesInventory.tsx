@@ -334,7 +334,7 @@ export default function SuppliesInventory() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unit Cost (₺)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Custom Unit Cost (₺)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -343,6 +343,7 @@ export default function SuppliesInventory() {
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   placeholder="0.00"
                 />
+                <p className="text-xs text-gray-500 mt-1">Enter the cost per unit (optional)</p>
               </div>
             </div>
 

@@ -153,7 +153,7 @@ function App() {
                 </span>
                 <button
                   onClick={handleSignOut}
-                  className="bg-blue-700 text-white px-4 py-2 rounded-lg hover:bg-blue-800 transition-colors border border-blue-900"
+                  className="text-gray-600 hover:text-gray-800 px-3 py-1 rounded-md hover:bg-gray-100 transition-colors duration-200 text-sm border border-gray-300 hover:border-gray-400"
                 >
                   Sign Out
                 </button>

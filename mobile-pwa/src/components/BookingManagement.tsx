@@ -504,6 +504,22 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <option key={service.name} value={service.name}>{service.name} - ₺{service.price}</option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={bookingFormData.price}
+                  onChange={(e) => setBookingFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                  className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  required
+                  placeholder="Enter custom amount"
+                />
+                <p className="text-xs text-gray-500 mt-1">Modify this amount as needed for custom pricing</p>
               </div>
               
               <div>
@@ -543,17 +559,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <option key={time} value={time}>{time}</option>
                   ))}
                 </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Price</label>
-                <input
-                  type="number"
-                  value={bookingFormData.price}
-                  onChange={(e) => setBookingFormData(prev => ({ ...prev, price: Number(e.target.value) }))}
-                  className="w-full p-2 border rounded-lg"
-                  min="0"
-                />
               </div>
               
               <div className="md:col-span-2">
