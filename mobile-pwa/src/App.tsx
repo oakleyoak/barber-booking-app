@@ -174,6 +174,20 @@ function App() {
                     <Calendar className="h-4 w-4 mb-1" />
                     <span className="text-center leading-tight">Calendar</span>
                   </button>
+                  {/* All Bookings - show to Owner/Manager/Barber and place next to Calendar */}
+                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                    <button
+                      onClick={() => setCurrentView('bookings')}
+                      className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                        currentView === 'bookings'
+                          ? 'bg-blue-700 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Calendar className="h-4 w-4 mb-1" />
+                      <span className="text-center leading-tight">All Bookings</span>
+                    </button>
+                  )}
                   
                   <button
                     onClick={() => setCurrentView('earnings')}
@@ -267,18 +281,6 @@ function App() {
                   {/* Owner, Manager and Barber features */}
                   {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
                     <>
-                      <button
-                        onClick={() => setCurrentView('bookings')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                          currentView === 'bookings'
-                            ? 'bg-blue-700 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Calendar className="h-4 w-4 mb-1" />
-                        <span className="text-center leading-tight">All Bookings</span>
-                      </button>
-                      
                       <button
                         onClick={() => setCurrentView('admin')}
                         className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
