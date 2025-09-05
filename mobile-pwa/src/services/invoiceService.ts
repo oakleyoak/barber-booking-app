@@ -86,18 +86,36 @@ export const InvoiceService = {
   },
 
   // Update booking with invoice and payment information
-  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string, invoiceUrl?: string): Promise<void> => {
+  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string, invoiceUrl?: string, isResend: boolean = false): Promise<void> => {
     try {
+      // Get existing booking data to check what needs updating
+      const { data: existingBooking } = await supabase
+        .from('bookings')
+        .select('invoice_number, stripe_payment_id, invoice_url, payment_status')
+        .eq('id', bookingId)
+        .single();
+
+      // Build update object - only update fields that need updating
+      const updateData: any = {
+        invoice_sent_at: new Date().toISOString(), // Always update when sending
+      };
+
+      // Only update invoice_number if it doesn't exist
+      if (!existingBooking?.invoice_number) {
+        updateData.invoice_number = invoiceData.invoice_number;
+      }
+
+      // Only update payment info if not already paid and we have new payment details
+      if (existingBooking?.payment_status !== 'paid') {
+        if (stripePaymentId) updateData.stripe_payment_id = stripePaymentId;
+        if (invoiceUrl) updateData.invoice_url = invoiceUrl;
+        updateData.payment_status = 'pending';
+        updateData.payment_amount = invoiceData.price + invoiceData.card_processing_fee;
+      }
+
       const { error } = await supabase
         .from('bookings')
-        .update({
-          invoice_number: invoiceData.invoice_number,
-          invoice_sent_at: new Date().toISOString(),
-          stripe_payment_id: stripePaymentId || null,
-          invoice_url: invoiceUrl || null,
-          payment_status: 'pending',
-          payment_amount: invoiceData.price + invoiceData.card_processing_fee
-        })
+        .update(updateData)
         .eq('id', bookingId);
 
       if (error) {
@@ -105,7 +123,7 @@ export const InvoiceService = {
         throw error;
       }
 
-      console.log('✅ Updated booking with invoice data:', bookingId);
+      console.log('✅ Updated booking with invoice data:', bookingId, isResend ? '(resend)' : '(new)');
     } catch (error) {
       console.error('Error updating booking invoice data:', error);
       throw error;
@@ -113,11 +131,8 @@ export const InvoiceService = {
   },
 
   // Available payment methods
-  getPaymentMethods: async (invoice: InvoiceData): Promise<PaymentMethod[]> => {
-  const stripeLink = await InvoiceService.createStripePaymentLink(invoice);
-  const stripeUrl = stripeLink?.url || null;
-    
-  return [
+  getPaymentMethods: (invoice: InvoiceData, stripeUrl?: string): PaymentMethod[] => {
+    return [
       {
         id: 'iban_tr',
         name: 'Bank Transfer (IBAN)',
@@ -129,10 +144,10 @@ export const InvoiceService = {
         id: 'stripe',
         name: 'Credit/Debit Card (Stripe)',
         type: 'online',
-    details: stripeUrl || 'Pay securely with your card',
+        details: stripeUrl || 'Pay securely with your card',
         icon: '💳'
       },
-  // PayPal removed
+      // PayPal removed
     ];
   },
 
@@ -266,47 +281,60 @@ export const InvoiceService = {
         }
       }
 
+      // For resending invoices, reuse existing invoice number if it exists
+      const existingInvoiceNumber = booking.invoice_number;
+      
       const invoice: InvoiceData = {
         booking_id: booking.id,
         customer_name: booking.customer_name,
-  customer_email: resolvedCustomerEmail || '',
+        customer_email: resolvedCustomerEmail || '',
         service: booking.service,
         price: booking.price,
         card_processing_fee: 50,
         date: booking.date,
         time: booking.time,
-        invoice_number: InvoiceService.generateInvoiceNumber(),
+        invoice_number: existingInvoiceNumber || InvoiceService.generateInvoiceNumber(), // Reuse existing number
         due_date: InvoiceService.calculateDueDate(),
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
-  const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
-  const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor);
-
-      // Attempt to reuse existing payment link if present on booking and amount matches
+      // Get payment methods after determining stripe URL
+      let finalStripeUrl = '';
+      
+      // For resending invoices, always reuse existing payment link if available and not paid
       const existingStripeId = booking.stripe_payment_id;
       const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
       let stripePaymentId: string | undefined = undefined;
       let invoiceUrl: string | undefined = undefined;
 
-      const expectedAmount = invoice.price + invoice.card_processing_fee;
-      const bookingAmount = booking.payment_amount || null;
-
-      if (existingStripeId && existingInvoiceUrl && bookingAmount === expectedAmount) {
-        // reuse
+      // If invoice exists and payment is still pending, reuse the existing payment link
+      if (existingStripeId && existingInvoiceUrl && booking.payment_status !== 'paid') {
+        console.log('🔄 Reusing existing payment link for unpaid invoice:', existingInvoiceNumber);
         stripePaymentId = existingStripeId;
         invoiceUrl = existingInvoiceUrl;
-      } else {
-        // create new payment link
+        finalStripeUrl = existingInvoiceUrl;
+      } else if (booking.payment_status !== 'paid') {
+        // Only create new payment link if not already paid
+        console.log('🆕 Creating new payment link for invoice:', invoice.invoice_number);
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
           stripePaymentId = created.id;
           invoiceUrl = created.url;
+          finalStripeUrl = created.url;
         }
+      } else {
+        // Payment already received, no need for payment link
+        console.log('✅ Invoice already paid, not creating payment link');
       }
 
+      const paymentMethods = InvoiceService.getPaymentMethods(invoice, finalStripeUrl);
+      const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor);
+
+      // Determine if this is a resend (invoice number already exists)
+      const isResend = !!existingInvoiceNumber;
+
       // Update booking with invoice data (store both id and url)
-      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined, invoiceUrl || undefined);
+      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined, invoiceUrl || undefined, isResend);
 
       // Send via NotificationsService
     const result = await NotificationsService.sendNotification({
