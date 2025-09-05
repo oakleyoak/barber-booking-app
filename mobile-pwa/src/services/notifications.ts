@@ -1,5 +1,24 @@
 import { supabase, supabaseUrl, supabaseKey } from '../lib/supabase';
 
+// Helper: resolve customer email from booking payload
+const resolveCustomerEmail = async (booking: any): Promise<string> => {
+  if (!booking) return '';
+  if (booking.customer_email) return booking.customer_email;
+  if (booking.customer_id) {
+    try {
+      const { data: cust, error: custErr } = await supabase
+        .from('customers')
+        .select('email')
+        .eq('id', booking.customer_id)
+        .single();
+      if (!custErr && cust && cust.email) return cust.email;
+    } catch (e) {
+      console.warn('Error resolving customer email:', e);
+    }
+  }
+  return '';
+};
+
 // Email templates
 const generateBookingNotificationForBarber = (booking: any) => {
   return {
@@ -177,12 +196,13 @@ export const NotificationsService = {
         // Use the customer confirmation template when manually sending to customer
         console.log('👤 Using customer confirmation template');
         const booking = payload.booking_data;
-        
+
         const template = generateBookingConfirmationEmail(booking);
+        const resolved = await resolveCustomerEmail(booking);
         emailContent = {
           subject: template.subject,
           html: template.html,
-          to: booking.customer_email || 'edgeandcobarber@gmail.com'
+          to: resolved || booking.customer_email || 'edgeandcobarber@gmail.com'
         };
       } else if (payload.type === 'invoice' && payload.email_content) {
         // Use direct invoice template provided by InvoiceService
@@ -194,11 +214,13 @@ export const NotificationsService = {
         };
       } else if (payload.type === 'appointment_reminder') {
         console.log('⏰ Using appointment reminder template');
-        const template = generateAppointmentReminder(payload.booking_data);
+        const booking = payload.booking_data;
+        const template = generateAppointmentReminder(booking);
+        const resolved = await resolveCustomerEmail(booking);
         emailContent = {
           subject: template.subject,
           html: template.html,
-          to: payload.to || payload.booking_data?.customer_email || 'edgeandcobarber@gmail.com'
+          to: payload.to || resolved || booking?.customer_email || 'edgeandcobarber@gmail.com'
         };
       } else if (payload.to && (payload.subject || payload.html)) {
         // Direct email sending
@@ -218,7 +240,7 @@ export const NotificationsService = {
         };
       }
       
-      console.log('📧 Email content:', {
+        console.log('📧 Email content:', {
         to: emailContent.to,
         subject: emailContent.subject,
         htmlLength: emailContent.html.length
