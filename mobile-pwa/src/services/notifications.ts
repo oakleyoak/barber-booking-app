@@ -55,8 +55,11 @@ const generateBookingNotificationForBarber = (booking: any) => {
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
+          <div style="color:#555;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+          <div style="margin-top:8px;">
+            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+          </div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you are a staff member at Edge & Co Barbershop.</p>
         </div>
@@ -104,8 +107,8 @@ const generateBookingConfirmationEmail = (booking: any) => {
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
+          <div style="color:#555;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you booked an appointment with Edge & Co Barbershop.</p>
           <p style="font-size: 13px; color: #3498db; margin-top: 10px;">
@@ -205,8 +208,8 @@ export const generateAppointmentReminder = (booking: any) => {
             <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
               <div style="font-weight:700; margin-bottom:6px;">Barber Details</div>
               <div style="font-size:13px; margin:4px 0;"><strong>Name:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Phone:</strong> +357 99 123 456</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Shop Address:</strong> 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Phone:</strong> +90 533 854 67 96</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Shop Address:</strong> Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
               <div style="font-size:12px; color:#666; margin-top:8px;">Contact your barber directly for any changes</div>
             </div>
           </div>
@@ -214,7 +217,10 @@ export const generateAppointmentReminder = (booking: any) => {
           <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
             <div style="font-size:13px; color:#444;">
               <div style="font-weight:700;">Edge & Co Barbershop</div>
-              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
+              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+              <div style="margin-top:8px;">
+                <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+              </div>
             </div>
             <div style="font-size:12px; color:#999; text-align:right;">Automated reminder • Edge & Co</div>
           </div>
