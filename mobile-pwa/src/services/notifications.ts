@@ -108,6 +108,9 @@ const generateBookingConfirmationEmail = (booking: any) => {
           <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you booked an appointment with Edge & Co Barbershop.</p>
+          <p style="font-size: 13px; color: #3498db; margin-top: 10px;">
+            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+          </p>
         </div>
       </div>
     `
