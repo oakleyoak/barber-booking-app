@@ -130,18 +130,21 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-        {/* Professional branded background - subtle and non-intrusive */}
-        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-50">
-          <div className="w-full h-full bg-gradient-to-br from-blue-50 via-white to-blue-50">
-            {/* Subtle logo watermark in bottom right */}
-            <div className="absolute bottom-4 right-4 opacity-5">
-              <img src={logoIcon} alt="" className="w-16 h-16 object-contain" />
-            </div>
-          </div>
+        {/* Branded background image for the entire app */}
+        <div aria-hidden="true" className="fixed inset-0 -z-50">
+          <div style={{
+            width: '100%',
+            height: '100%',
+            background: `url(${largeLogo}) center center / cover no-repeat, linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%)`,
+            position: 'absolute',
+            inset: 0,
+            zIndex: -50,
+            opacity: 0.18
+          }} />
         </div>
-        <div className="min-h-screen flex flex-col relative bg-white/95 backdrop-blur-sm">
+  <div className="min-h-screen flex flex-col relative" style={{ background: 'transparent' }}>
           {/* Header */}
-          <div className="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
+    <div className="bg-white/40 shadow-lg border-b border-gray-200/30 sticky top-0 z-50">
             <div className="max-w-full px-4 py-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
@@ -167,7 +170,7 @@ function App() {
           </div>
 
           {/* Navigation - responsive grid (mobile-first 3 columns) */}
-          <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-[73px] z-40 shadow-sm">
+          <div className="bg-white/30 border-b border-gray-200/20 sticky top-[73px] z-40 shadow-sm">
             <div className="max-w-full px-2 py-3">
               <div className="w-full">
                 <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
@@ -361,17 +364,11 @@ function App() {
 
   // Login/Register form
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-blue-100 relative overflow-hidden">
-      {/* Professional background with subtle branding */}
-      <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-10 left-10 opacity-10">
-          <img src={logoIcon} alt="" className="w-20 h-20 object-contain" />
-        </div>
-        <div className="absolute bottom-10 right-10 opacity-10">
-          <img src={logoIcon} alt="" className="w-16 h-16 object-contain" />
-        </div>
-      </div>
-      
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{
+  background: `url(${largeLogo}) center center / cover no-repeat, linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%)`
+    }}>
+      {/* Branded background image */}
+      {/* The background is now set via the style prop above */}
       <div className="rounded-xl shadow-xl p-8 w-full max-w-md relative z-10 bg-white/90 backdrop-blur-md border border-white/20">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
