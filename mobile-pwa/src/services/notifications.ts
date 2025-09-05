@@ -55,8 +55,8 @@ const generateBookingNotificationForBarber = (booking: any) => {
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: 123 Example St, London</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
+          <div style="color:#555;">Shop address: 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you are a staff member at Edge & Co Barbershop.</p>
         </div>
@@ -104,8 +104,8 @@ const generateBookingConfirmationEmail = (booking: any) => {
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: 123 Example St, London</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
+          <div style="color:#555;">Shop address: 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you booked an appointment with Edge & Co Barbershop.</p>
         </div>
@@ -192,7 +192,7 @@ export const generateAppointmentReminder = (booking: any) => {
             <ul style="color:#856404; margin:8px 0 0 18px;">
               <li>Please arrive 5 minutes before your scheduled appointment time</li>
               <li>Bring a valid form of identification if this is your first visit</li>
-              <li>Contact us immediately at +44 20 0000 0000 if you need to reschedule</li>
+              <li>Contact us immediately at +357 99 123 456 if you need to reschedule</li>
               <li>Late arrivals may result in shortened service time or rescheduling</li>
               <li>We maintain strict hygiene standards and use sanitized equipment</li>
             </ul>
@@ -200,18 +200,18 @@ export const generateAppointmentReminder = (booking: any) => {
 
           <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin-bottom:16px;">
             <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
-              <div style="font-weight:700; margin-bottom:6px;">Location & Contact</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Address:</strong> 123 Example St, London</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Phone:</strong> +44 20 0000 0000</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Email:</strong> edgeandcobarber@gmail.com</div>
-              <div style="font-size:12px; color:#666; margin-top:8px;">Please call ahead if you're running late</div>
+              <div style="font-weight:700; margin-bottom:6px;">Barber Details</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Name:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Phone:</strong> +357 99 123 456</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Shop Address:</strong> 123 Mustafa Kemal Caddesi, Famagusta, Cyprus</div>
+              <div style="font-size:12px; color:#666; margin-top:8px;">Contact your barber directly for any changes</div>
             </div>
           </div>
 
           <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
             <div style="font-size:13px; color:#444;">
               <div style="font-weight:700;">Edge & Co Barbershop</div>
-              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
+              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +357 99 123 456</div>
             </div>
             <div style="font-size:12px; color:#999; text-align:right;">Automated reminder • Edge & Co</div>
           </div>
