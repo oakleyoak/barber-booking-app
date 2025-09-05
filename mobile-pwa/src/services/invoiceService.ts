@@ -147,7 +147,7 @@ export const InvoiceService = {
         <div style="background:#ffffff; padding:22px; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <img src="https://edgeandco.netlify.app/assets/edgeandcologo.JPG" alt="Edge & Co" style="height:64px; border-radius:6px; object-fit:cover;" />
+              <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:64px; border-radius:6px; object-fit:cover;" />
               <div>
                 <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
                 <div style="font-size:13px; color:#666;">Shop address: 123 Example St, London</div>

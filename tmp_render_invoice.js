@@ -18,7 +18,8 @@ function generateInvoiceHTML(invoice, paymentMethods, accentColor) {
   <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
     <!-- Header -->
     <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
-      <h1 style="color: #2c3e50; margin-bottom: 10px; font-size: 28px;">✂️ Edge & Co Barbershop</h1>
+  <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:64px; display:block; margin:0 auto 8px;" />
+  <h1 style="color: #2c3e50; margin-bottom: 10px; font-size: 28px;">✂️ Edge & Co Barbershop</h1>
       <h2 style="color: ${color}; margin: 0; font-size: 24px;">INVOICE</h2>
       <p style="color: #666; margin: 5px 0;">Professional Barber Services</p>
     </div>
@@ -149,7 +150,7 @@ const invoice = {
   customer_name: 'Jane Doe',
   customer_email: 'jane@example.com',
   service: 'Haircut',
-  price: 750,
+  price: 700,
   card_processing_fee: 50,
   date: '2025-09-05',
   time: '13:00',
