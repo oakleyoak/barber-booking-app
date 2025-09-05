@@ -279,12 +279,28 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         return;
       }
 
+  // Determine customer email (if booking references a customer_id)
+  let customerEmail = '';
+      if (!customerEmail && bookingFormData.customer_id) {
+        try {
+          const { data: cust, error: custErr } = await supabase
+            .from('customers')
+            .select('email')
+            .eq('id', bookingFormData.customer_id)
+            .single();
+          if (!custErr && cust && cust.email) customerEmail = cust.email;
+        } catch (e) {
+          console.warn('Could not fetch customer email:', e);
+        }
+      }
+
       // Create the booking
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
           customer_name: bookingFormData.customer_name,
           customer_id: bookingFormData.customer_id || null,
+          customer_email: customerEmail || null,
           service: bookingFormData.service_type,
           price: bookingFormData.price,
           date: bookingFormData.booking_date,
