@@ -252,7 +252,18 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Send invoice
   const sendInvoice = async (booking: Booking) => {
     try {
-      await InvoiceService.sendInvoice(booking);
+      // Fetch the latest booking data from the database
+      const { data: latest, error: fetchError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', booking.id)
+        .single();
+      if (fetchError || !latest) {
+        console.warn('Could not fetch latest booking, using current booking object.');
+        await InvoiceService.sendInvoice(booking);
+      } else {
+        await InvoiceService.sendInvoice(latest);
+      }
       modal.notify('Invoice sent successfully!', 'success');
     } catch (error) {
       console.error('Error sending invoice:', error);
