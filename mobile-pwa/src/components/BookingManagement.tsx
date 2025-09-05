@@ -214,8 +214,24 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Send customer notification
   const sendCustomerNotification = async (booking: Booking) => {
     try {
+      // Resolve customer email from customers table when possible
+      let toEmail = booking.customer_email || '';
+      if (!toEmail && booking.customer_id) {
+        try {
+          const customer = await customerService.getCustomerById(booking.customer_id);
+          toEmail = customer?.email || '';
+        } catch (e) {
+          console.error('Error fetching customer for notification:', e);
+        }
+      }
+
+      if (!toEmail) {
+        modal.notify('Customer email not available. Please update customer information first.', 'error');
+        return;
+      }
+
       await NotificationsService.sendNotification({
-        to: booking.customer_email || '',
+        to: toEmail,
         name: booking.customer_name,
         service: booking.service,
         date: booking.date,
@@ -279,28 +295,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         return;
       }
 
-  // Determine customer email (if booking references a customer_id)
-  let customerEmail = '';
-      if (!customerEmail && bookingFormData.customer_id) {
-        try {
-          const { data: cust, error: custErr } = await supabase
-            .from('customers')
-            .select('email')
-            .eq('id', bookingFormData.customer_id)
-            .single();
-          if (!custErr && cust && cust.email) customerEmail = cust.email;
-        } catch (e) {
-          console.warn('Could not fetch customer email:', e);
-        }
-      }
-
-      // Create the booking
+  // Create the booking. Do NOT store customer_email on bookings table; rely on customers.email.
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
           customer_name: bookingFormData.customer_name,
           customer_id: bookingFormData.customer_id || null,
-          customer_email: customerEmail || null,
           service: bookingFormData.service_type,
           price: bookingFormData.price,
           date: bookingFormData.booking_date,

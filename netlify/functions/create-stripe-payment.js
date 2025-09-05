@@ -71,7 +71,8 @@ exports.handler = async (event, context) => {
       allow_promotion_codes: true,
       metadata: {
         invoice_number: invoiceNumber,
-        customer_email: customerEmail,
+  // accept customerEmail (client) or customer_email (legacy) keys
+  customer_email: customerEmail || eventBody.customer_email,
         customer_name: customerName,
         business: 'Edge & Co Barbershop'
       },

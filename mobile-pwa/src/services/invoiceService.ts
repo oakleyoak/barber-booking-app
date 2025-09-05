@@ -7,6 +7,7 @@ export interface InvoiceData {
   booking_id: string;
   customer_name: string;
   customer_email: string;
+  // note: customer_email here is a runtime/resolved value (from customers.email)
   service: string;
   price: number;
   card_processing_fee: number;
@@ -196,7 +197,7 @@ export const InvoiceService = {
           </table>
         </div>
 
-        <!-- Payment Methods -->
+  <!-- Payment Methods -->
         <div style="margin-bottom: 30px;">
           <h3 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">💳 Payment Options</h3>
           
@@ -237,6 +238,16 @@ export const InvoiceService = {
           ` : ''}
         </div>
 
+        <!-- Bank Details -->
+        <div style="margin-bottom: 30px; background-color: #f7f9fc; padding: 18px; border-radius: 8px;">
+          <h3 style="color: #2c3e50; margin-bottom: 10px;">🏦 Bank Details</h3>
+          <p style="margin: 4px 0;"><strong>Bank Name:</strong> Türkiye İş Bankası A.Ş.</p>
+          <p style="margin: 4px 0;"><strong>BIC / SWIFT:</strong> ISBKTRIS</p>
+          <p style="margin: 4px 0;"><strong>Address:</strong> Türkiye İş Bankası A.Ş., İş Kuleleri, Levent, 34330 Beşiktaş, Istanbul, Turkey</p>
+          <p style="margin: 4px 0;"><strong>Account holder:</strong> Dylan Ahmet Salih</p>
+          <p style="margin: 4px 0; font-family: monospace; font-size: 16px;"><strong>IBAN:</strong> TR41 0010 3000 0000 0056 6690 26</p>
+          <p style="margin-top: 10px; color: #e74c3c; font-size: 13px;">Please include the invoice number <strong>${invoice.invoice_number}</strong> as the payment reference when making a bank transfer.</p>
+        </div>
         <!-- Terms -->
         <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
           <h4 style="color: #856404; margin-top: 0;">📋 Payment Terms</h4>
@@ -266,10 +277,25 @@ export const InvoiceService = {
   // Send invoice via email
   sendInvoice: async (booking: any): Promise<{ ok: boolean; error?: string }> => {
     try {
+  // Resolve customer email from customers table when available (do not rely on bookings.customer_email)
+      let resolvedCustomerEmail = '';
+      if (booking.customer_id) {
+        try {
+          const { data: cust, error: custErr } = await supabase
+            .from('customers')
+            .select('email')
+            .eq('id', booking.customer_id)
+            .single();
+          if (!custErr && cust && cust.email) resolvedCustomerEmail = cust.email;
+        } catch (e) {
+          console.warn('Error resolving customer email for invoice:', e);
+        }
+      }
+
       const invoice: InvoiceData = {
         booking_id: booking.id,
         customer_name: booking.customer_name,
-        customer_email: booking.customer_email || '',
+  customer_email: resolvedCustomerEmail || '',
         service: booking.service,
         price: booking.price,
         card_processing_fee: 50,

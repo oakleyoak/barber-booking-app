@@ -43,7 +43,7 @@ export interface Booking {
   user_id?: string;
   customer_id?: string;
   customer_name: string;
-  customer_email?: string; // Added from component
+  customer_email?: string; // optional runtime field, not persisted to bookings table
   customer_phone?: string; // Added from component
   service: string;
   price: number;
