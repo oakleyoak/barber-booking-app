@@ -27,9 +27,8 @@ const generateBookingNotificationForBarber = (booking: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
-          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
           <div>
-            <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
+            <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
             <div style="font-size:12px; color:#666;">Appointment assigned</div>
           </div>
         </div>
@@ -75,9 +74,8 @@ const generateBookingConfirmationEmail = (booking: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background:#fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
-          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
           <div>
-            <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
+            <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
             <div style="font-size:12px; color:#666;">Booking Confirmation</div>
           </div>
         </div>
@@ -122,42 +120,72 @@ const generateAppointmentReminder = (booking: any) => {
   return {
     subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
     html: `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background:#fff; border-radius:8px;">
-        <div style="display:flex; align-items:center; gap:12px; margin-bottom: 16px;">
-          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
-          <div>
-            <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
-            <div style="font-size:12px; color:#666;">Appointment Reminder</div>
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width: 720px; margin: 0 auto; padding: 20px; background:#f4f6f8;">
+        <div style="background:#ffffff; padding:22px; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div>
+                <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
+                <div style="font-size:13px; color:#666;">Shop address: 123 Example St, London</div>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12px; color:#666;">Reminder</div>
+              <div style="font-weight:700; font-size:16px; color:#f39c12;">⏰ Upcoming</div>
+            </div>
           </div>
-        </div>
 
-        <div style="background-color: #fff9e6; padding: 14px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #f39c12;">
-          <h4 style="color: #2c3e50; margin-top: 0;">⏰ Upcoming Appointment</h4>
-          <p style="margin:6px 0;"><strong>Customer:</strong> ${booking.customer_name || '—'}</p>
-          <p style="margin:6px 0;"><strong>Service:</strong> ${booking.service || '—'}</p>
-          <p style="margin:6px 0;"><strong>Date:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString() : '—'}</p>
-          <p style="margin:6px 0;"><strong>Time:</strong> ${booking.time || '—'}</p>
-          <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
-        </div>
-
-        ${paymentUrl ? `
-          <div style="background-color: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #3498db;">
-            <p style="margin: 0; color: #1e5f99;"><strong>� Payment Available</strong></p>
-            <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">You can pay securely online: <a href="${paymentUrl}" style="background: #3498db; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-weight: 700;">Pay Now</a></p>
+          <div style="background:#fff9e6; padding:16px; border-radius:8px; margin-bottom:16px; border-left:4px solid #f39c12;">
+            <h3 style="color:#2c3e50; margin-top:0; margin-bottom:12px;">Appointment Reminder</h3>
+            <p style="margin:0; color:#856404; font-size:15px;">Dear ${booking.customer_name || 'Valued Customer'},</p>
+            <p style="margin:8px 0 0 0; color:#856404;">This is a friendly reminder about your upcoming appointment with Edge & Co Barbershop.</p>
           </div>
-        ` : ''}
 
-        <div style="background-color: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-          <p style="margin: 0; color: #1e5f99;"><strong>� Don't forget your appointment!</strong></p>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">We're looking forward to seeing you soon. Reply to this email if you need to reschedule.</p>
-        </div>
+          <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
+            <div style="flex:1; min-width:240px;">
+              <div style="font-size:13px; color:#888; margin-bottom:6px;">Appointment Details</div>
+              <div style="background:#f8f9fa; padding:14px; border-radius:8px;">
+                <p style="margin:6px 0;"><strong>Service:</strong> ${booking.service || '—'}</p>
+                <p style="margin:6px 0;"><strong>Date:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString() : '—'}</p>
+                <p style="margin:6px 0;"><strong>Time:</strong> ${booking.time || '—'}</p>
+                <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
+              </div>
+            </div>
 
-        <div style="border-top: 1px solid #eee; padding-top: 12px; text-align: left; font-size: 13px; color: #666;">
-          <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: 123 Example St, London</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
-          <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #999;">You received this email because you have an upcoming appointment with Edge & Co Barbershop.</p>
+            ${paymentUrl ? `
+              <div style="width:300px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
+                <div style="font-weight:700; margin-bottom:6px;">💳 Payment Options</div>
+                <div style="font-size:13px; margin:4px 0; color:#444;">Secure online payment available</div>
+                <div style="margin-top:12px;">
+                  <a href="${paymentUrl}" style="display:inline-block; background:#3498db; color:#fff; text-decoration:none; padding:10px 14px; border-radius:6px; font-weight:700;">Pay Now</a>
+                </div>
+              </div>
+            ` : `
+              <div style="width:300px; min-width:220px; background:#fafafa; padding:12px; border-radius:8px;">
+                <div style="font-size:13px; color:#888;">Contact Information</div>
+                <div style="margin-top:8px; font-size:13px; color:#333;">📧 edgeandcobarber@gmail.com</div>
+                <div style="margin-top:4px; font-size:13px; color:#333;">📞 +44 20 0000 0000</div>
+                <div style="margin-top:8px; font-size:12px; color:#666;">Please call if you need to reschedule</div>
+              </div>
+            `}
+          </div>
+
+          <div style="background:#e8f4fd; padding:14px; border-radius:8px; margin-bottom:16px; border-left:4px solid #3498db;">
+            <div style="font-weight:700; color:#1e5f99;">📍 Important Reminders</div>
+            <ul style="color:#1e5f99; margin:8px 0 0 18px; padding:0;">
+              <li style="margin:4px 0;">Please arrive 5 minutes before your appointment time</li>
+              <li style="margin:4px 0;">Contact us immediately if you need to reschedule</li>
+              <li style="margin:4px 0;">We look forward to providing you with excellent service</li>
+            </ul>
+          </div>
+
+          <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+            <div style="font-size:13px; color:#444;">
+              <div style="font-weight:700;">Edge & Co Barbershop</div>
+              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
+            </div>
+            <div style="font-size:12px; color:#999; text-align:right;">Professional barbering services • Edge & Co</div>
+          </div>
         </div>
       </div>
     `

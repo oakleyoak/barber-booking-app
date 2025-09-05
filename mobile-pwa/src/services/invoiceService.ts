@@ -148,7 +148,6 @@ export const InvoiceService = {
         <div style="background:#ffffff; padding:22px; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
           <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
             <div style="display:flex; align-items:center; gap:12px;">
-              <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:64px; border-radius:6px; object-fit:cover;" />
               <div>
                 <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
                 <div style="font-size:13px; color:#666;">Shop address: 123 Example St, London</div>
@@ -212,18 +211,18 @@ export const InvoiceService = {
             </div>
           ` : ''}
 
-          <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; margin-bottom:16px;">
+          <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin-bottom:16px;">
             <div style="flex:1; min-width:220px; background:#f7f9fb; padding:12px; border-radius:8px;">
               <div style="font-size:13px; color:#333;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
               <div style="font-size:12px; color:#555; margin-top:8px;">Please include the invoice number when making a bank transfer.</div>
             </div>
 
             <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
-              <div style="font-weight:700; margin-bottom:6px;">Bank Details</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Bank:</strong> ${BusinessConfig.bankName}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>BIC:</strong> ${BusinessConfig.bic}</div>
+              <div style="font-weight:700; margin-bottom:6px;">Payment Details</div>
               <div style="font-size:13px; margin:4px 0;"><strong>IBAN:</strong> ${BusinessConfig.iban}</div>
               <div style="font-size:13px; margin:4px 0;"><strong>Account Holder:</strong> ${BusinessConfig.accountHolder}</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>Bank:</strong> ${BusinessConfig.bankName}</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>BIC:</strong> ${BusinessConfig.bic}</div>
               <div style="font-size:12px; color:#777; margin-top:8px;">${BusinessConfig.bankAddress}</div>
             </div>
           </div>
