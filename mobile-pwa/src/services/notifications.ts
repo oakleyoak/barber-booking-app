@@ -287,7 +287,7 @@ export const NotificationsService = {
       });
       
       // Send email using our Netlify Function
-      const response = await fetch('https://edgeandco.netlify.app/.netlify/functions/send-email', {
+  const response = await fetch(`${BusinessConfig.siteUrl}/.netlify/functions/send-email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
