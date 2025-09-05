@@ -132,11 +132,13 @@ function App() {
       <ModalProvider>
         <div className="min-h-screen flex flex-col bg-gray-50 relative">
           {/* Decorative centered background image (non-distorting) */}
-          <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
-            <div className="w-full h-full max-w-[1200px] max-h-[2000px] opacity-70">
-              <img src={largeLogo} alt="" className="w-full h-full object-contain mx-auto block" />
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 flex items-start justify-center">
+            {/* Top-centered logo - smaller and non-distorting */}
+            <div className="w-full max-w-md mt-6 lg:mt-12 opacity-60 sm:opacity-70 md:opacity-80">
+              <img src={largeLogo} alt="" className="w-full h-auto object-contain mx-auto block max-h-64 sm:max-h-80" />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/40 to-white/60"></div>
+            {/* Subtle overlay to improve contrast but not hide UI */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/10 to-white/20"></div>
           </div>
 
           {/* Header */}
