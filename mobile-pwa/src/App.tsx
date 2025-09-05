@@ -130,15 +130,11 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-  <div className="min-h-screen flex flex-col bg-gray-50 relative">
-          {/* Decorative centered background image (non-distorting) */}
-          {/* Fullscreen decorative background image behind all content */}
-          <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10">
-            <img src={largeLogo} alt="" className="absolute inset-0 w-full h-full object-cover" />
-            {/* Slightly stronger overlay so foreground remains readable */}
-            <div className="absolute inset-0 bg-black/55" />
-          </div>
-
+        {/* Fixed full-viewport background image so it remains constant across views */}
+        <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-50">
+          <img src={largeLogo} alt="" className="w-full h-full object-cover" />
+        </div>
+        <div className="min-h-screen flex flex-col relative bg-white">
           {/* Header */}
           <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
             <div className="max-w-full px-4 py-3">
