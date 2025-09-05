@@ -1157,7 +1157,6 @@ export const authService = {
   async logoutUser(): Promise<void> {
     try {
       await supabase.auth.signOut();
-      localStorage.removeItem('currentUser');
     } catch (error) {
       console.error('Logout error:', error);
     }

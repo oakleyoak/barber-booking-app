@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
-import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle } from 'lucide-react';
 import { bookingService, customerService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
@@ -23,12 +23,24 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [formData, setFormData] = useState({
+  type FormData = {
+    customer_name: string;
+    customer_id?: string;
+    service: string;
+    price: string;
+    time: string;
+    status: 'scheduled' | 'completed' | 'cancelled';
+    notes: string;
+  };
+
+  const [formData, setFormData] = useState<FormData>({
     customer_name: '',
+    customer_id: undefined,
     service: '',
     price: '',
     time: '',
-    status: 'scheduled' as 'scheduled' | 'completed' | 'cancelled'
+    status: 'scheduled',
+    notes: ''
   });
 
   const services = [
@@ -100,11 +112,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       const formattedTime = formData.time.length === 5 ? `${formData.time}:00` : formData.time;
       const bookingData = {
         customer_name: formData.customer_name,
+  customer_id: formData.customer_id || undefined,
         service: formData.service,
         price: Number(formData.price),
         date: selectedDate,
         time: formattedTime,
         status: formData.status,
+  notes: formData.notes,
         user_id: currentUser.id
       };
 
@@ -135,7 +149,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         }
       }
 
-      setFormData({ customer_name: '', service: '', price: '', time: '', status: 'scheduled' });
+  setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: '', status: 'scheduled', notes: '' });
       setEditingBooking(null);
       setShowModal(false);
       await loadData();
@@ -151,10 +165,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     setEditingBooking(booking);
     setFormData({
       customer_name: booking.customer_name,
+  customer_id: booking.customer_id || undefined,
       service: booking.service,
       price: booking.price.toString(),
       time: normalizedTime,
       status: booking.status
+  ,notes: booking.notes || ''
     });
     setShowModal(true);
   };
@@ -205,6 +221,29 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     } catch (err) {
       console.error('Error marking as paid:', err);
       modal.notify('Failed to mark booking as paid', 'error');
+    }
+  };
+
+  const markAsUnpaid = async (bookingId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'pending', payment_method: null, payment_received_at: null })
+        .eq('id', bookingId)
+        .select('*')
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const updatedBooking = data as Booking;
+        setBookings(prev => prev.map(b => (b.id === bookingId ? updatedBooking : b)));
+        setMonthlyBookings(prev => prev.map(b => (b.id === bookingId ? updatedBooking : b)));
+      }
+      modal.notify('Payment status reverted to pending', 'success');
+    } catch (err) {
+      console.error('Error marking as unpaid:', err);
+      modal.notify('Failed to revert payment status', 'error');
     }
   };
 
@@ -349,15 +388,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                 <span className="hidden sm:inline">Day</span>
               </button>
             </div>
-            <button onClick={() => setShowModal(true)} className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">New Booking</span>
-              <span className="sm:hidden">+</span>
+            <button onClick={() => setShowModal(true)} className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm" title="Create new booking">
+              <Plus className="h-4 w-4" />
             </button>
-            <button onClick={async () => { await loadData(); await loadMonthlyBookings(); }} className="flex items-center px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm" title="Refresh data from Supabase">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Refresh</span>
-              <span className="sm:hidden">↻</span>
+            <button onClick={async () => { await loadData(); await loadMonthlyBookings(); }} className="flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition text-sm" title="Refresh data from Supabase">
+              <RefreshCw className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -446,9 +481,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                                 </div>
                                 <div className="flex-shrink-0 flex flex-col sm:flex-row items-end sm:items-center gap-2 ml-4">
                                   <div className="flex items-center gap-2">
-                                    {booking.payment_status !== 'paid' && (
+                                    {booking.payment_status !== 'paid' ? (
                                       <button onClick={() => markAsPaid(booking.id)} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Mark as Paid">
                                         <CheckSquare className="w-4 h-4" />
+                                      </button>
+                                    ) : (
+                                      <button onClick={() => markAsUnpaid(booking.id)} className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors" title="Revert Paid">
+                                        <XCircle className="w-4 h-4" />
                                       </button>
                                     )}
                                     <button onClick={() => sendCustomerNotification(booking)} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Send Customer Notification">
@@ -468,7 +507,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" onClick={() => { setFormData({ customer_name: '', service: '', price: '', time: time, status: 'scheduled' }); setShowModal(true); }}>
+                        <div className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" onClick={() => { setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: time, status: 'scheduled', notes: '' }); setShowModal(true); }}>
                           Click to book this slot
                         </div>
                       )}
@@ -540,7 +579,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                         onChange={(e) => {
                           const selectedCustomer = customers.find(c => c.id === e.target.value);
                           if (selectedCustomer) {
-                            setFormData(prev => ({...prev, customer_name: selectedCustomer.name}));
+                            setFormData(prev => ({...prev, customer_name: selectedCustomer.name, customer_id: selectedCustomer.id, notes: (selectedCustomer as any).notes || ''}));
+                          } else {
+                            setFormData(prev => ({...prev, customer_id: undefined}));
                           }
                         }} 
                         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -584,7 +625,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       </select>
                     </div>
                     <div className="flex justify-end space-x-3 pt-4">
-                      <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', service: '', price: '', time: '', status: 'scheduled' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
+                      <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
                       <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
                     </div>
                   </form>

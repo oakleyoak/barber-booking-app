@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
 import { customerService, type Customer } from '../services/completeDatabase';
+import { SERVICES } from '../services/servicePricing';
 import { supabase } from '../lib/supabase';
 import { userService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
@@ -44,13 +45,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
   const [allStaffMembers, setAllStaffMembers] = useState<{id: string, name: string}[]>([]);
 
-  const services = [
-    { name: 'Haircut', price: 700 },
-    { name: 'Beard Trim', price: 300 },
-    { name: 'Hair Wash', price: 200 },
-    { name: 'Full Service', price: 900 },
-    { name: 'Hot Towel Shave', price: 500 }
-  ];
+  const services = SERVICES.map(s => ({ name: s.name, price: s.price }));
 
   useEffect(() => {
     loadCustomers();

@@ -186,6 +186,30 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     }
   };
 
+  const markAsUnpaid = async (bookingId: string) => {
+    try {
+      const { error } = await supabase
+        .from('bookings')
+        .update({ payment_status: 'pending', payment_method: null, payment_received_at: null })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      modal.notify('Payment status reverted to pending', 'success');
+
+      if (currentView === 'upcoming') {
+        await loadUpcomingBookings();
+      } else if (currentView === 'history') {
+        await loadBookingHistory();
+      } else {
+        await loadAllBookings();
+      }
+    } catch (error) {
+      console.error('Error reverting payment status:', error);
+      modal.notify('Failed to revert payment status', 'error');
+    }
+  };
+
   // Send customer notification
   const sendCustomerNotification = async (booking: Booking) => {
     try {
@@ -573,7 +597,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 </div>
                 
                 <div className="flex items-center gap-1 ml-3">
-                  {booking.payment_status !== 'paid' && (
+                  {booking.payment_status !== 'paid' ? (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -582,6 +606,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
                     >
                       <CheckSquare className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        markAsUnpaid(booking.id);
+                      }}
+                      className="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm"
+                    >
+                      <XCircle className="h-4 w-4" />
                     </button>
                   )}
                 </div>

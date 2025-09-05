@@ -130,9 +130,17 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-        <div className="min-h-screen flex flex-col bg-gray-50">
+        <div className="min-h-screen flex flex-col bg-gray-50 relative">
+          {/* Decorative centered background image (non-distorting) */}
+          <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 flex items-center justify-center">
+            <div className="w-full h-full max-w-[1200px] max-h-[2000px] opacity-70">
+              <img src={largeLogo} alt="" className="w-full h-full object-contain mx-auto block" />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/40 to-white/60"></div>
+          </div>
+
           {/* Header */}
-          <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+          <div className="bg-white/90 shadow-sm border-b border-gray-200 sticky top-0 z-50 backdrop-blur-sm">
             <div className="max-w-full px-4 py-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
