@@ -72,6 +72,23 @@ exports.handler = async (event, context) => {
       headers: mailOptions.headers
     });
 
+      // If caller requested a preview, skip sending and return the HTML
+      const wantsPreview = Boolean(emailContent.preview);
+      if (wantsPreview) {
+        const previewHtml = html || '';
+        console.log('🔎 Email preview requested — logging first 800 characters:\n', previewHtml.slice(0, 800));
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify(Object.assign({
+            success: true,
+            preview: true,
+            email_preview_html: previewHtml,
+            message: 'Preview returned (no email sent)'
+          }, warning ? { warning } : {}))
+        };
+      }
+
     // Safety warning: if we are about to send to the boss address while the payload references a booking/customer, log explicitly
     const BOSS_EMAIL = 'edgeandcobarber@gmail.com';
     let warning = null;

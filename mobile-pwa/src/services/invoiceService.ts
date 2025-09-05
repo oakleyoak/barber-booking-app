@@ -137,16 +137,17 @@ export const InvoiceService = {
   },
 
   // Generate invoice HTML template
-  generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[]): string => {
+  generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[], accentColor?: string): string => {
     const ibanMethod = paymentMethods.find(pm => pm.type === 'iban');
     const onlineMethods = paymentMethods.filter(pm => pm.type === 'online');
+    const color = accentColor || BusinessConfig.accentColor || '#3498db';
 
     return `
       <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
         <!-- Header -->
         <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
           <h1 style="color: #2c3e50; margin-bottom: 10px; font-size: 28px;">✂️ Edge & Co Barbershop</h1>
-          <h2 style="color: #3498db; margin: 0; font-size: 24px;">INVOICE</h2>
+          <h2 style="color: ${color}; margin: 0; font-size: 24px;">INVOICE</h2>
           <p style="color: #666; margin: 5px 0;">Professional Barber Services</p>
         </div>
 
@@ -271,7 +272,7 @@ export const InvoiceService = {
   },
 
   // Send invoice via email
-  sendInvoice: async (booking: any): Promise<{ ok: boolean; error?: string }> => {
+  sendInvoice: async (booking: any, preview: boolean = false): Promise<{ ok: boolean; error?: string }> => {
     try {
   // Resolve customer email from customers table when available (do not rely on bookings.customer_email)
       let resolvedCustomerEmail = '';
@@ -302,8 +303,8 @@ export const InvoiceService = {
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
-      const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
-      const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods);
+  const paymentMethods = await InvoiceService.getPaymentMethods(invoice);
+  const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor);
 
       // Attempt to reuse existing payment link if present on booking and amount matches
       const existingStripeId = booking.stripe_payment_id;
@@ -331,14 +332,15 @@ export const InvoiceService = {
       await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined, invoiceUrl || undefined);
 
       // Send via NotificationsService
-      const result = await NotificationsService.sendNotification({
+    const result = await NotificationsService.sendNotification({
         type: 'invoice',
         booking_id: booking.id,
         invoice_data: invoice,
         email_content: {
           to: invoice.customer_email,
           subject: `💰 Invoice ${invoice.invoice_number} - Edge & Co Barbershop`,
-          html: invoiceHTML
+      html: invoiceHTML,
+      preview: preview
         }
       });
 

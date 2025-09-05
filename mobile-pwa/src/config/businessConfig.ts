@@ -8,6 +8,8 @@ export const BusinessConfig = {
   bankName: 'Türkiye İş Bankası A.Ş.',
   bic: 'ISBKTRIS',
   bankAddress: 'Türkiye İş Bankası A.Ş., İş Kuleleri, Levent, 34330 Beşiktaş, Istanbul, Turkey',
+  // Accent color used in invoice and buttons
+  accentColor: '#3498db',
   
   // Business Information
   businessName: 'Edge & Co Barbershop',
