@@ -1,4 +1,5 @@
 import { supabase, supabaseUrl, supabaseKey } from '../lib/supabase';
+import { BusinessConfig } from '../config/businessConfig';
 
 // Helper: resolve customer email from booking payload
 const resolveCustomerEmail = async (booking: any): Promise<string> => {
@@ -26,7 +27,7 @@ const generateBookingNotificationForBarber = (booking: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
-          <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
+          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
           <div>
             <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
             <div style="font-size:12px; color:#666;">Appointment assigned</div>
@@ -71,7 +72,7 @@ const generateBookingConfirmationEmail = (booking: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background:#fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
-          <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
+          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
           <div>
             <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
             <div style="font-size:12px; color:#666;">Booking Confirmation</div>
@@ -110,7 +111,7 @@ const generateAppointmentReminder = (booking: any) => {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background:#fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 16px;">
-          <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
+          <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:56px; border-radius:6px;"/>
           <div>
             <div style="font-weight:700; color:#2c3e50;">Edge & Co Barbershop</div>
             <div style="font-size:12px; color:#666;">Appointment Reminder</div>

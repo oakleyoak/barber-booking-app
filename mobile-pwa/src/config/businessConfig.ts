@@ -29,6 +29,8 @@ export const BusinessConfig = {
     successUrl: 'https://edgeandco.netlify.app/payment-success',
     cancelUrl: 'https://edgeandco.netlify.app/payment-cancel',
   },
+  // Public site URL used to build absolute asset links in email templates
+  siteUrl: 'https://edgeandco.netlify.app',
   
   // Online Payment Links (when you set them up)
   // paypalLink: '', // PayPal removed

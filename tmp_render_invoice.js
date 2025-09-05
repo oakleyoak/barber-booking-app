@@ -2,6 +2,7 @@ const fs = require('fs');
 
 // Minimal BusinessConfig values (match code)
 const BusinessConfig = {
+  siteUrl: 'https://edgeandco.netlify.app',
   iban: 'TR41 0010 3000 0000 0056 6690 26',
   accountHolder: 'Dylan Ahmet Salih',
   bankName: 'Türkiye İş Bankası A.Ş.',
@@ -18,7 +19,7 @@ function generateInvoiceHTML(invoice, paymentMethods, accentColor) {
   <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
     <!-- Header -->
     <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
-  <img src="https://edgeandco.netlify.app/assets/BWicon.png" alt="Edge & Co" style="height:64px; display:block; margin:0 auto 8px;" />
+  <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:64px; display:block; margin:0 auto 8px;" />
   <h1 style="color: #2c3e50; margin-bottom: 10px; font-size: 28px;">✂️ Edge & Co Barbershop</h1>
       <h2 style="color: ${color}; margin: 0; font-size: 24px;">INVOICE</h2>
       <p style="color: #666; margin: 5px 0;">Professional Barber Services</p>

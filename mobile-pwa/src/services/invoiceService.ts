@@ -153,7 +153,7 @@ export const InvoiceService = {
                 <div style="font-size:13px; color:#666;">Shop address: 123 Example St, London</div>
               </div>
             </div>
-            <div style="text-align:right;">
+              <div style="text-align:right;">
               <div style="font-size:12px; color:#666;">Invoice #</div>
               <div style="font-weight:700; font-size:16px; color:${color};">${invoice.invoice_number}</div>
             </div>
