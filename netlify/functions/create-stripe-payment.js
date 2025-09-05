@@ -54,13 +54,14 @@ exports.handler = async (event, context) => {
       });
     }
 
-    // Create a Stripe Payment Link
-    const paymentLink = await stripe.paymentLinks.create({
+  // Create a Stripe Payment Link
+  const SITE_URL = process.env.SITE_URL || 'https://edgeandco.netlify.app';
+  const paymentLink = await stripe.paymentLinks.create({
       line_items: lineItems,
       after_completion: {
         type: 'redirect',
         redirect: {
-          url: `https://edgeandco.netlify.app/payment-success?invoice=${invoiceNumber}`,
+      url: `${SITE_URL}/payment-success?invoice=${invoiceNumber}`,
         },
       },
       restrictions: {
