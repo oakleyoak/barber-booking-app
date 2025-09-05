@@ -114,7 +114,7 @@ const generateBookingConfirmationEmail = (booking: any) => {
   };
 };
 
-const generateAppointmentReminder = (booking: any) => {
+export const generateAppointmentReminder = (booking: any) => {
   const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
   const color = '#3498db'; // Match invoice accent color
 
@@ -188,7 +188,7 @@ const generateAppointmentReminder = (booking: any) => {
           </div>
 
           <div style="background:#fff7ea; padding:12px; border-radius:8px; border-left:4px solid #ffc107; margin-bottom:12px;">
-            <div style="font-weight:700; color:#856404;">� Appointment Guidelines</div>
+            <div style="font-weight:700; color:#856404;">📋 Appointment Guidelines</div>
             <ul style="color:#856404; margin:8px 0 0 18px;">
               <li>Please arrive 5 minutes before your scheduled appointment time</li>
               <li>Bring a valid form of identification if this is your first visit</li>
@@ -221,7 +221,7 @@ const generateAppointmentReminder = (booking: any) => {
   };
 };
 
-export const NotificationsService = {
+const NotificationsService = {
   sendNotification: async (payload: any) => {
     try {
       console.log('🚀 Sending email notification...');
@@ -394,3 +394,5 @@ export const NotificationsService = {
     }
   }
 };
+
+export { NotificationsService };

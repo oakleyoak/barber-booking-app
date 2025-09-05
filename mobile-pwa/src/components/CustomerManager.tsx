@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
-import { customerService, type Customer } from '../services/completeDatabase';
+import { customerService, type Customer, userService, bookingService } from '../services/completeDatabase';
 import { SERVICES } from '../services/servicePricing';
 import { supabase } from '../lib/supabase';
-import { userService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { Phone, Mail, User as UserIcon, Calendar, Edit, Trash2, Plus, Search, X, Clock, MapPin } from 'lucide-react';
 
@@ -181,7 +180,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
       };
 
       // Create booking using the booking service
-      const { bookingService } = await import('../services/completeDatabase');
       await bookingService.createBooking(appointment);
       
       modal.notify('Booking created successfully!', 'success');

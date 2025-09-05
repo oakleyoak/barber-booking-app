@@ -30,7 +30,7 @@ import { useModal } from './ui/ModalProvider';
 import { supabase, type Booking } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
-import { NotificationsService } from '../services/notifications';
+import { NotificationsService, generateAppointmentReminder } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService, SERVICES } from '../services/servicePricing';
 import { UserManagementService } from '../services/userManagementService';
@@ -230,14 +230,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         return;
       }
 
+      // Use the professional template for appointment reminders
+      const { subject, html } = generateAppointmentReminder(booking);
       await NotificationsService.sendNotification({
         type: 'customer_notification',
         booking_id: booking.id,
         booking_data: booking,
         email_content: {
           to: toEmail,
-          subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
-          html: `Hi ${booking.customer_name},<br>Your appointment for ${booking.service} is scheduled on ${booking.date} at ${booking.time}.`
+          subject,
+          html
         }
       });
       modal.notify('Notification sent successfully!', 'success');

@@ -29,7 +29,7 @@ import DailyCleaningLogs from './DailyCleaningLogs';
 import DailySafetyChecks from './DailySafetyChecks';
 import EquipmentMaintenance from './EquipmentMaintenance';
 import { userService } from '../services/completeDatabase';
-import { 
+import operationsService, { 
   getCleaningTasksWithStatus, 
   getMaintenanceTasksWithStatus, 
   getSafetyCheckItemsWithStatus,
@@ -214,7 +214,7 @@ const OperationsManual: React.FC = () => {
       setLoading(true);
       const start = historyFilters.start || undefined;
       const end = historyFilters.end || undefined;
-      const res = await (await import('../services/operationsService')).getLogsHistory(start, end);
+      const res = await operationsService.getLogsHistory(start, end);
       setLogs(res);
       // ensure users are available for name lookup
       if (!users || users.length === 0) {

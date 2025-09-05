@@ -686,5 +686,6 @@ export default {
   getComplianceReports,
   getCleaningTasksWithStatus,
   getMaintenanceTasksWithStatus,
-  getSafetyCheckItemsWithStatus
+  getSafetyCheckItemsWithStatus,
+  getLogsHistory
 };
