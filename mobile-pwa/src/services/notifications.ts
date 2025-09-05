@@ -1,4 +1,4 @@
-import { supabaseUrl, supabaseKey } from '../lib/supabase';
+import { supabase, supabaseUrl, supabaseKey } from '../lib/supabase';
 
 // Email templates
 const generateBookingNotificationForBarber = (booking: any) => {
@@ -137,14 +137,41 @@ export const NotificationsService = {
       // Handle different notification types
       if (payload.type === 'booking_created' && payload.booking_data) {
         // Use the barber notification template when a booking is created by manager
+        // Ensure we send to the barber's email (barber_email or user_email) not the customer
         console.log('📋 Using barber notification template');
         const booking = payload.booking_data;
-        
+
         const template = generateBookingNotificationForBarber(booking);
+
+        // Determine recipient email. Prefer barber_email (explicit), then attempt to lookup
+        // by booking.user_id in the users table, then fall back to user_email, then default.
+        let toEmail = booking.barber_email || booking.user_email || '';
+
+        // If we still don't have an email but we have a user_id, query Supabase users table
+        if ((!toEmail || toEmail === '') && booking.user_id) {
+          try {
+            console.log('🔎 Looking up barber email for user_id:', booking.user_id);
+            const { data: userRec, error: userErr } = await supabase
+              .from('users')
+              .select('email')
+              .eq('id', booking.user_id)
+              .single();
+
+            if (userErr) {
+              console.warn('⚠️ Could not lookup user email:', userErr.message || userErr);
+            } else if (userRec && userRec.email) {
+              toEmail = userRec.email;
+              console.log('✅ Found barber email via users table:', toEmail);
+            }
+          } catch (lookupErr) {
+            console.error('❌ Error while looking up barber email:', lookupErr);
+          }
+        }
+
         emailContent = {
           subject: template.subject,
           html: template.html,
-          to: booking.customer_email || 'edgeandcobarber@gmail.com'
+          to: toEmail || 'edgeandcobarber@gmail.com'
         };
       } else if (payload.type === 'customer_confirmation' && payload.booking_data) {
         // Use the customer confirmation template when manually sending to customer
