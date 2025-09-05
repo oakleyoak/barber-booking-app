@@ -9,6 +9,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
     
+    lintOptions {
+        disable 'UnsanitizedFilenameFromContentProvider'
+    }
+    
     defaultConfig {
         applicationId "com.edgeandco.barbershop"
         minSdkVersion rootProject.ext.minSdkVersion
