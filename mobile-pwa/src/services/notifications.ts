@@ -210,7 +210,7 @@ export const NotificationsService = {
           html: template.html,
           to: resolved || providedTo || 'edgeandcobarber@gmail.com'
         };
-      } else if (payload.type === 'customer_notification' && payload.booking_data) {
+  } else if (payload.type === 'customer_notification' && payload.booking_data) {
         // Explicitly handle customer_notification and prefer provided email_content.to
         console.log('👥 Using customer notification template');
         const booking = payload.booking_data;
@@ -239,6 +239,19 @@ export const NotificationsService = {
           subject: payload.email_content.subject,
           html: payload.email_content.html,
           to: payload.email_content.to
+        };
+      } else if (payload.type === 'booking_reminder' || payload.type === 'booking_reminder_manual') {
+        // Backwards compatible: treat booking_reminder as appointment_reminder
+        console.log('⏰ Using booking_reminder template (compat)');
+        const booking = payload.booking_data || {};
+        const template = generateAppointmentReminder(booking);
+        // prefer provided email_content.to or payload.to, then resolved customer email
+        const provided = payload.email_content || {};
+        const toResolved = await resolveCustomerEmail(booking);
+        emailContent = {
+          subject: provided.subject || template.subject,
+          html: provided.html || template.html,
+          to: provided.to || payload.to || toResolved || 'edgeandcobarber@gmail.com'
         };
       } else if (payload.type === 'appointment_reminder') {
         console.log('⏰ Using appointment reminder template');

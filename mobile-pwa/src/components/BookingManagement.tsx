@@ -231,12 +231,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }
 
       await NotificationsService.sendNotification({
-        to: toEmail,
-        name: booking.customer_name,
-        service: booking.service,
-        date: booking.date,
-        time: booking.time,
-        type: 'booking_reminder'
+        type: 'customer_notification',
+        booking_id: booking.id,
+        booking_data: booking,
+        email_content: {
+          to: toEmail,
+          subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
+          html: `Hi ${booking.customer_name},<br>Your appointment for ${booking.service} is scheduled on ${booking.date} at ${booking.time}.`
+        }
       });
       modal.notify('Notification sent successfully!', 'success');
     } catch (error) {
