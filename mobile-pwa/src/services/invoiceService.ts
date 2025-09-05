@@ -183,10 +183,9 @@ export const InvoiceService = {
             </div>
 
             <div style="width:300px; min-width:220px; background:#fafafa; padding:12px; border-radius:8px;">
-              <div style="font-size:13px; color:#888;">Payment</div>
-              ${ibanMethod ? `<div style="margin-top:8px; font-family: monospace; font-size:14px;"><strong>IBAN:</strong> ${ibanMethod.details}</div>` : ''}
-              <div style="margin-top:6px; font-size:13px; color:#333;"><strong>Account Holder:</strong> ${BusinessConfig.accountHolder}</div>
-              <div style="margin-top:6px; font-size:13px; color:#333;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
+              <div style="font-size:13px; color:#888;">Invoice Details</div>
+              <div style="margin-top:8px; font-size:13px; color:#333;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
+              <div style="margin-top:6px; font-size:13px; color:#333;"><strong>Due Date:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</div>
             </div>
           </div>
 
@@ -227,11 +226,6 @@ export const InvoiceService = {
           ` : ''}
 
           <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin-bottom:16px;">
-            <div style="flex:1; min-width:220px; background:#f7f9fb; padding:12px; border-radius:8px;">
-              <div style="font-size:13px; color:#333;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
-              <div style="font-size:12px; color:#555; margin-top:8px;">Please include the invoice number when making a bank transfer.</div>
-            </div>
-
             <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
               <div style="font-weight:700; margin-bottom:6px;">Payment Details</div>
               <div style="font-size:13px; margin:4px 0;"><strong>IBAN:</strong> ${BusinessConfig.iban}</div>
@@ -239,6 +233,7 @@ export const InvoiceService = {
               <div style="font-size:13px; margin:4px 0;"><strong>Bank:</strong> ${BusinessConfig.bankName}</div>
               <div style="font-size:13px; margin:4px 0;"><strong>BIC:</strong> ${BusinessConfig.bic}</div>
               <div style="font-size:12px; color:#777; margin-top:8px;">${BusinessConfig.bankAddress}</div>
+              <div style="font-size:12px; color:#555; margin-top:8px;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
             </div>
           </div>
 
