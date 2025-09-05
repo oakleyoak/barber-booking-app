@@ -300,6 +300,22 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       if (bookingError) throw bookingError;
 
+      // Send notification to the staff member
+      try {
+        await NotificationsService.sendNotification({
+          type: 'booking_created',
+          booking_data: {
+            ...booking,
+            barber_name: selectedStaff.name,
+            barber_email: selectedStaff.email
+          }
+        });
+        console.log('Staff notification sent successfully');
+      } catch (notificationError) {
+        console.error('Failed to send staff notification:', notificationError);
+        // Don't fail the booking creation if notification fails
+      }
+
       // Reset form
       setBookingFormData({
         customer_name: '',

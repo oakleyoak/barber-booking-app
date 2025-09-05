@@ -130,20 +130,25 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-        {/* Fixed full-viewport background image so it remains constant across views */}
+        {/* Professional branded background - subtle and non-intrusive */}
         <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-50">
-          <img src={largeLogo} alt="" className="w-full h-full object-cover" />
+          <div className="w-full h-full bg-gradient-to-br from-blue-50 via-white to-blue-50">
+            {/* Subtle logo watermark in bottom right */}
+            <div className="absolute bottom-4 right-4 opacity-5">
+              <img src={logoIcon} alt="" className="w-16 h-16 object-contain" />
+            </div>
+          </div>
         </div>
-        <div className="min-h-screen flex flex-col relative bg-white">
+        <div className="min-h-screen flex flex-col relative bg-white/95 backdrop-blur-sm">
           {/* Header */}
-          <div className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+          <div className="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-200/50 sticky top-0 z-50">
             <div className="max-w-full px-4 py-3">
               <div className="flex justify-between items-center">
                 <div className="flex items-center space-x-3">
-                  <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border border-gray-200" />
+                  <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
                   <div>
-                    <h1 className="text-lg font-bold text-blue-900">Edge & Co</h1>
-                    <p className="text-xs text-blue-700">{currentUser.shop_name}</p>
+                    <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
+                    <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -162,7 +167,7 @@ function App() {
           </div>
 
           {/* Navigation - responsive grid (mobile-first 3 columns) */}
-          <div className="bg-white border-b border-gray-200 sticky top-[73px] z-40">
+          <div className="bg-white/95 backdrop-blur-md border-b border-gray-200/50 sticky top-[73px] z-40 shadow-sm">
             <div className="max-w-full px-2 py-3">
               <div className="w-full">
                 <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
@@ -306,7 +311,7 @@ function App() {
           {/* Content Area */}
           <div className="flex-1 overflow-auto">
             <div className="max-w-full p-4">
-              <div className="bg-white rounded-xl shadow-sm p-4 sm:p-6">
+              <div className="brand-card rounded-xl p-4 sm:p-6">
                 {currentView === 'calendar' && (
                   <BookingCalendar currentUser={currentUser} />
                 )}
@@ -356,23 +361,32 @@ function App() {
 
   // Login/Register form
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div
-        className="rounded-xl shadow-lg p-8 w-full max-w-md relative z-10 flex flex-col items-center justify-center"
-        style={{
-          background: `url(${largeLogo}) center/cover no-repeat`,
-          backgroundColor: 'rgba(255,255,255,0.85)',
-          backgroundBlendMode: 'lighten',
-        }}
-      >
-        <div className="text-center mb-6 bg-white bg-opacity-80 rounded-xl p-2">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Edge & Co Management</h1>
-          <p className="text-gray-600">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 via-white to-blue-100 relative overflow-hidden">
+      {/* Professional background with subtle branding */}
+      <div aria-hidden="true" className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-10 left-10 opacity-10">
+          <img src={logoIcon} alt="" className="w-20 h-20 object-contain" />
+        </div>
+        <div className="absolute bottom-10 right-10 opacity-10">
+          <img src={logoIcon} alt="" className="w-16 h-16 object-contain" />
+        </div>
+      </div>
+      
+      <div className="rounded-xl shadow-xl p-8 w-full max-w-md relative z-10 bg-white/90 backdrop-blur-md border border-white/20">
+        <div className="text-center mb-6">
+          <div className="flex justify-center mb-4">
+            <img src={logoIcon} alt="Edge & Co Logo" className="w-16 h-16 object-contain rounded-full border-2 border-blue-200 shadow-lg" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Edge & Co</h1>
+          <p className="text-gray-600 font-medium">
+            Professional Barbershop Management
+          </p>
+          <p className="text-sm text-gray-500 mt-2">
             {isLogin ? 'Sign in to your account' : 'Create your shop account'}
           </p>
           {!isLogin && (
-            <p className="text-sm text-gray-500 mt-2">
-              Complete shop management system with operations tracking.
+            <p className="text-xs text-gray-400 mt-1">
+              Complete shop management system with operations tracking
             </p>
           )}
         </div>
@@ -457,7 +471,7 @@ function App() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full brand-button text-white py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
           >
             {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
