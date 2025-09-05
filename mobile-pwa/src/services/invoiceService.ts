@@ -165,7 +165,7 @@ export const InvoiceService = {
             <div style="display:flex; align-items:center; gap:12px;">
               <div>
                 <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
-                <div style="font-size:13px; color:#666;">Shop address: 123 Example St, London</div>
+                <div style="font-size:13px; color:#666;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
               </div>
             </div>
               <div style="text-align:right;">
@@ -247,10 +247,13 @@ export const InvoiceService = {
           </div>
 
           <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
-            <div style="font-size:13px; color:#444;">
-              <div style="font-weight:700;">Edge & Co Barbershop</div>
-              <div style="margin-top:6px;">📧 <a href=\"mailto:edgeandcobarber@gmail.com\">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
-            </div>
+              <div style="font-size:13px; color:#444;">
+                <div style="font-weight:700;">Edge & Co Barbershop</div>
+                <div style="margin-top:6px;">📧 <a href=\"mailto:edgeandcobarber@gmail.com\">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+                <div style="margin-top:8px;">
+                  <a href=\"https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu\" style=\"color:#3498db; text-decoration:underline;\" target=\"_blank\">Click here to review us on Google</a>
+                </div>
+              </div>
             <div style="font-size:12px; color:#999; text-align:right;">Automated invoice • Edge & Co</div>
           </div>
         </div>
