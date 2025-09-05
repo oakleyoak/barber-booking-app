@@ -116,6 +116,7 @@ const generateBookingConfirmationEmail = (booking: any) => {
 
 const generateAppointmentReminder = (booking: any) => {
   const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
+  const color = '#3498db'; // Match invoice accent color
 
   return {
     subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
@@ -131,7 +132,7 @@ const generateAppointmentReminder = (booking: any) => {
             </div>
             <div style="text-align:right;">
               <div style="font-size:12px; color:#666;">Appointment Reminder</div>
-              <div style="font-weight:700; font-size:16px; color:#f39c12;">Tomorrow</div>
+              <div style="font-weight:700; font-size:16px; color:${color};">Tomorrow</div>
             </div>
           </div>
 
@@ -170,7 +171,7 @@ const generateAppointmentReminder = (booking: any) => {
           <div style="margin-bottom:18px;">
             <table style="width:100%; border-collapse:collapse;">
               <thead>
-                <tr style="background:#3498db; color:#fff; text-align:left;">
+                <tr style="background:${color}; color:#fff; text-align:left;">
                   <th style="padding:12px;">Service</th>
                   <th style="padding:12px;">Barber</th>
                   <th style="padding:12px; text-align:right;">Price</th>
@@ -212,7 +213,7 @@ const generateAppointmentReminder = (booking: any) => {
               <div style="font-weight:700;">Edge & Co Barbershop</div>
               <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +44 20 0000 0000</div>
             </div>
-            <div style="font-size:12px; color:#999; text-align:right;">Professional appointment reminder • Edge & Co</div>
+            <div style="font-size:12px; color:#999; text-align:right;">Automated reminder • Edge & Co</div>
           </div>
         </div>
       </div>
