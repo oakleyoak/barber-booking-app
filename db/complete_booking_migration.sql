@@ -96,4 +96,15 @@ BEGIN
         ALTER TABLE public.bookings ADD COLUMN card_processing_fee NUMERIC(10,2);
         RAISE NOTICE 'Added card_processing_fee column to bookings table';
     END IF;
+
+    -- Add staff_name column
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'bookings'
+        AND column_name = 'staff_name'
+        AND table_schema = 'public'
+    ) THEN
+        ALTER TABLE public.bookings ADD COLUMN staff_name TEXT;
+        RAISE NOTICE 'Added staff_name column to bookings table';
+    END IF;
 END $$;
