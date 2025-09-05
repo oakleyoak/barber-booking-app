@@ -202,19 +202,24 @@ export const InvoiceService = {
           <h3 style="color: #2c3e50; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 5px;">💳 Payment Options</h3>
           
           ${ibanMethod ? `
-          <div style="background-color: #f0f8ff; padding: 20px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3498db;">
-            <h4 style="color: #2c3e50; margin-top: 0;">${ibanMethod.icon} ${ibanMethod.name}</h4>
-            <p style="margin: 10px 0; font-family: monospace; font-size: 16px; background-color: white; padding: 10px; border-radius: 4px;">
-              <strong>IBAN:</strong> ${ibanMethod.details}
-            </p>
-            <p style="margin: 5px 0; color: #555; font-size: 14px;">
-              <strong>Account Holder:</strong> ${BusinessConfig.accountHolder}<br>
-              <strong>Bank:</strong> ${BusinessConfig.bankName}<br>
-              <strong>Reference:</strong> ${invoice.invoice_number}
-            </p>
-            <p style="color: #e74c3c; font-size: 12px; margin: 10px 0 0 0;">
-              ⚠️ Please include the invoice number as reference when making the transfer.
-            </p>
+          <div style="background-color: #f0f8ff; padding: 18px; border-radius: 8px; margin-bottom: 15px; border-left: 4px solid #3498db; display: flex; gap: 16px; align-items: flex-start;">
+            <div style="flex: 1;">
+              <h4 style="color: #2c3e50; margin-top: 0;">${ibanMethod.icon} ${ibanMethod.name}</h4>
+              <div style="background-color: white; padding: 12px; border-radius: 6px; border: 1px solid #e6eef8;">
+                <p style="margin: 0 0 6px 0; font-family: monospace; font-size: 16px;"><strong>IBAN:</strong> ${ibanMethod.details}</p>
+                <p style="margin: 0; font-size: 14px; color: #333;"><strong>Account Holder:</strong> ${BusinessConfig.accountHolder}</p>
+                <p style="margin: 4px 0 0 0; font-size: 14px; color: #333;"><strong>Reference:</strong> ${invoice.invoice_number}</p>
+              </div>
+              <p style="color: #e74c3c; font-size: 12px; margin: 10px 0 0 0;">
+                ⚠️ Please include the invoice number as the payment reference when making the transfer.
+              </p>
+            </div>
+            <div style="width: 320px; background-color: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #eee;">
+              <h5 style="margin: 0 0 8px 0; color: #2c3e50; font-size: 15px;">🏦 Bank Details</h5>
+              <p style="margin: 4px 0;"><strong>Bank Name:</strong> ${BusinessConfig.bankName}</p>
+              <p style="margin: 4px 0;"><strong>BIC / SWIFT:</strong> ${BusinessConfig.bic}</p>
+              <p style="margin: 4px 0; font-size: 13px;"><strong>Address:</strong> ${BusinessConfig.bankAddress}</p>
+            </div>
           </div>
           ` : ''}
 
@@ -238,16 +243,7 @@ export const InvoiceService = {
           ` : ''}
         </div>
 
-        <!-- Bank Details -->
-        <div style="margin-bottom: 30px; background-color: #f7f9fc; padding: 18px; border-radius: 8px;">
-          <h3 style="color: #2c3e50; margin-bottom: 10px;">🏦 Bank Details</h3>
-          <p style="margin: 4px 0;"><strong>Bank Name:</strong> Türkiye İş Bankası A.Ş.</p>
-          <p style="margin: 4px 0;"><strong>BIC / SWIFT:</strong> ISBKTRIS</p>
-          <p style="margin: 4px 0;"><strong>Address:</strong> Türkiye İş Bankası A.Ş., İş Kuleleri, Levent, 34330 Beşiktaş, Istanbul, Turkey</p>
-          <p style="margin: 4px 0;"><strong>Account holder:</strong> Dylan Ahmet Salih</p>
-          <p style="margin: 4px 0; font-family: monospace; font-size: 16px;"><strong>IBAN:</strong> TR41 0010 3000 0000 0056 6690 26</p>
-          <p style="margin-top: 10px; color: #e74c3c; font-size: 13px;">Please include the invoice number <strong>${invoice.invoice_number}</strong> as the payment reference when making a bank transfer.</p>
-        </div>
+  <!-- Bank Details merged into IBAN payment block above -->
         <!-- Terms -->
         <div style="background-color: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
           <h4 style="color: #856404; margin-top: 0;">📋 Payment Terms</h4>

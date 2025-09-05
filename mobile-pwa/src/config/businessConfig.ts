@@ -5,7 +5,9 @@ export const BusinessConfig = {
   // Bank Information
   iban: 'TR41 0010 3000 0000 0056 6690 26',
   accountHolder: 'Dylan Ahmet Salih',
-  bankName: 'Your Bank Name',
+  bankName: 'Türkiye İş Bankası A.Ş.',
+  bic: 'ISBKTRIS',
+  bankAddress: 'Türkiye İş Bankası A.Ş., İş Kuleleri, Levent, 34330 Beşiktaş, Istanbul, Turkey',
   
   // Business Information
   businessName: 'Edge & Co Barbershop',
