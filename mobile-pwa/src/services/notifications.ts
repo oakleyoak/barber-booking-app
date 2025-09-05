@@ -67,6 +67,9 @@ const generateBookingNotificationForBarber = (booking: any) => {
 };
 
 const generateBookingConfirmationEmail = (booking: any) => {
+  // Check for payment URL from booking data
+  const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
+
   return {
     subject: `✂️ Booking Confirmation - Edge & Co Barbershop`,
     html: `
@@ -88,6 +91,14 @@ const generateBookingConfirmationEmail = (booking: any) => {
           <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
         </div>
 
+        ${paymentUrl ? `
+          <div style="background-color: #fff9e6; padding: 14px; border-radius: 8px; margin-bottom: 14px; border-left: 4px solid #f39c12;">
+            <h4 style="color: #2c3e50; margin-top: 0;">💳 Payment Options</h4>
+            <p style="margin: 0; color: #856404;">You can pay securely online for this appointment:</p>
+            <p style="margin: 8px 0 0 0;"><a href="${paymentUrl}" style="background: #3498db; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: 700;">Pay Now</a></p>
+          </div>
+        ` : ''}
+
         <div style="background-color: #e8f5e8; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
           <p style="margin: 0; color: #27ae60;"><strong>✅ Your appointment is confirmed!</strong></p>
           <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">We look forward to seeing you at Edge & Co Barbershop.</p>
@@ -106,6 +117,8 @@ const generateBookingConfirmationEmail = (booking: any) => {
 };
 
 const generateAppointmentReminder = (booking: any) => {
+  const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
+
   return {
     subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
     html: `
@@ -127,8 +140,15 @@ const generateAppointmentReminder = (booking: any) => {
           <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
         </div>
 
+        ${paymentUrl ? `
+          <div style="background-color: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid #3498db;">
+            <p style="margin: 0; color: #1e5f99;"><strong>� Payment Available</strong></p>
+            <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">You can pay securely online: <a href="${paymentUrl}" style="background: #3498db; color: #fff; text-decoration: none; padding: 6px 10px; border-radius: 4px; font-weight: 700;">Pay Now</a></p>
+          </div>
+        ` : ''}
+
         <div style="background-color: #e8f4fd; padding: 12px; border-radius: 8px; margin-bottom: 12px;">
-          <p style="margin: 0; color: #1e5f99;"><strong>📍 Don't forget your appointment!</strong></p>
+          <p style="margin: 0; color: #1e5f99;"><strong>� Don't forget your appointment!</strong></p>
           <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">We're looking forward to seeing you soon. Reply to this email if you need to reschedule.</p>
         </div>
 

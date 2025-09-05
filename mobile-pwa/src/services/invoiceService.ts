@@ -140,6 +140,7 @@ export const InvoiceService = {
   generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[], accentColor?: string): string => {
     const ibanMethod = paymentMethods.find(pm => pm.type === 'iban');
     const onlineMethods = paymentMethods.filter(pm => pm.type === 'online');
+  const onlineUrl = onlineMethods.length ? onlineMethods[0].details : '';
     const color = accentColor || BusinessConfig.accentColor || '#3498db';
 
     return `
@@ -204,6 +205,12 @@ export const InvoiceService = {
               </tfoot>
             </table>
           </div>
+
+          ${onlineUrl ? `
+            <div style="text-align:right; margin-bottom:18px;">
+              <a href="${onlineUrl}" style="background:${color}; color:#fff; text-decoration:none; padding:10px 14px; border-radius:8px; font-weight:700;">Pay Invoice</a>
+            </div>
+          ` : ''}
 
           <div style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; margin-bottom:16px;">
             <div style="flex:1; min-width:220px; background:#f7f9fb; padding:12px; border-radius:8px;">
