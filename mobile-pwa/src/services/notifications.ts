@@ -198,7 +198,7 @@ export const generateAppointmentReminder = (booking: any) => {
             <ul style="color:#856404; margin:8px 0 0 18px;">
               <li>Please arrive 5 minutes before your scheduled appointment time</li>
               <li>Bring a valid form of identification if this is your first visit</li>
-              <li>Contact us immediately at +357 99 123 456 if you need to reschedule</li>
+              <li>Contact us immediately at +90 533 854 67 96 if you need to reschedule</li>
               <li>Late arrivals may result in shortened service time or rescheduling</li>
               <li>We maintain strict hygiene standards and use sanitized equipment</li>
             </ul>
