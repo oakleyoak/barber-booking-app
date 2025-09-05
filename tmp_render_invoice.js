@@ -11,7 +11,7 @@ const BusinessConfig = {
   accentColor: '#3498db'
 };
 
-function generateInvoiceHTML(invoice, paymentMethods, accentColor) {
+function generateInvoiceHTML(invoice, paymentMethods, accentColor, logoSrc) {
   const ibanMethod = paymentMethods.find(pm => pm.type === 'iban');
   const onlineMethods = paymentMethods.filter(pm => pm.type === 'online');
   const color = accentColor || BusinessConfig.accentColor || '#3498db';
@@ -19,7 +19,7 @@ function generateInvoiceHTML(invoice, paymentMethods, accentColor) {
   <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background-color: #ffffff;">
     <!-- Header -->
     <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #2c3e50; padding-bottom: 20px;">
-  <img src="${BusinessConfig.siteUrl}/assets/BWicon.png" alt="Edge & Co" style="height:64px; display:block; margin:0 auto 8px;" />
+  <img src="${logoSrc}" alt="Edge & Co" style="height:64px; display:block; margin:0 auto 8px;" />
   <h1 style="color: #2c3e50; margin-bottom: 10px; font-size: 28px;">✂️ Edge & Co Barbershop</h1>
       <h2 style="color: ${color}; margin: 0; font-size: 24px;">INVOICE</h2>
       <p style="color: #666; margin: 5px 0;">Professional Barber Services</p>
@@ -165,7 +165,33 @@ const paymentMethods = [
   { id: 'stripe', name: 'Credit/Debit Card (Stripe)', type: 'online', details: 'https://pay.example.com', icon: '💳' }
 ];
 
-const html = generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor);
+// Try to embed the local BWicon.png as data URI for file:// preview. Search common locations.
+let logoSrc = `${BusinessConfig.siteUrl}/assets/BWicon.png`;
+const possiblePaths = [
+  'mobile-pwa/src/assets/BWicon.png',
+  'mobile-pwa/assets/BWicon.png',
+  'mobile-pwa/public/assets/BWicon.png',
+  'mobile-pwa/src/assets/BWicon.PNG',
+  'mobile-pwa/src/assets/bwicon.png',
+  'mobile-pwa/src/assets/BWicon.svg'
+];
+for (const p of possiblePaths) {
+  try {
+    if (fs.existsSync(p)) {
+      const buf = fs.readFileSync(p);
+      const ext = p.split('.').pop().toLowerCase();
+      const mime = ext === 'svg' ? 'image/svg+xml' : (ext === 'png' ? 'image/png' : 'image/jpeg');
+      const data = buf.toString('base64');
+      logoSrc = `data:${mime};base64,${data}`;
+      console.log('✅ Inlined logo from', p);
+      break;
+    }
+  } catch (e) {
+    // ignore and continue
+  }
+}
+
+const html = generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor, logoSrc);
 fs.writeFileSync('tmp_invoice_preview.html', html, 'utf8');
 console.log('Wrote tmp_invoice_preview.html in repo root. Size:', html.length);
 console.log('\n--- START PREVIEW (first 1000 chars) ---\n');
