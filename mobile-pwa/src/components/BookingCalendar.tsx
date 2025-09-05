@@ -249,12 +249,29 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   const sendCustomerNotification = async (booking: Booking) => {
     try {
+      // Always resolve customer's email from customers.email when possible
+      let customerEmail = '';
+      if (booking.customer_id) {
+        try {
+          const cust = await customerService.getCustomerById(booking.customer_id);
+          customerEmail = cust?.email || '';
+        } catch (e) {
+          console.error('Error fetching customer email:', e);
+        }
+      }
+
+      const toAddress = customerEmail || booking.customer_phone || '';
+      if (!toAddress) {
+        modal.notify('Customer email not available. Please update customer information first.', 'error');
+        return;
+      }
+
       const result = await NotificationsService.sendNotification({
         type: 'customer_notification',
         booking_id: booking.id,
         booking_data: booking,
         email_content: {
-          to: booking.customer_email || booking.customer_phone,
+          to: toAddress,
           subject: `✂️ Booking Confirmation - Edge & Co Barbershop`,
           html: `Your booking has been confirmed for ${booking.date} at ${booking.time}.`
         }
@@ -273,12 +290,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
   const sendInvoice = async (booking: Booking) => {
     try {
-      let customerEmail = booking.customer_email;
-      
-      if (!customerEmail && booking.customer_id) {
+      // Resolve customer email from customers table
+      let customerEmail = '';
+      if (booking.customer_id) {
         try {
           const customer = await customerService.getCustomerById(booking.customer_id);
-          customerEmail = customer?.email;
+          customerEmail = customer?.email || '';
         } catch (error) {
           console.error('Error fetching customer email:', error);
         }
@@ -289,8 +306,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         return;
       }
 
-      const bookingWithEmail = { ...booking, customer_email: customerEmail };
-      const result = await InvoiceService.sendInvoice(bookingWithEmail);
+      // Pass booking through; InvoiceService now resolves email itself when creating invoice
+      const bookingWithResolved = { ...booking, resolved_customer_email: customerEmail };
+      const result = await InvoiceService.sendInvoice(bookingWithResolved);
 
       if (result.ok) {
         modal.notify('Invoice sent successfully!', 'success');

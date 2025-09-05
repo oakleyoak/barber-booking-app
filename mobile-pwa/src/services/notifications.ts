@@ -2,8 +2,8 @@ import { supabase, supabaseUrl, supabaseKey } from '../lib/supabase';
 
 // Helper: resolve customer email from booking payload
 const resolveCustomerEmail = async (booking: any): Promise<string> => {
+  // Always resolve from customers.email using customer_id when available.
   if (!booking) return '';
-  if (booking.customer_email) return booking.customer_email;
   if (booking.customer_id) {
     try {
       const { data: cust, error: custErr } = await supabase
@@ -149,9 +149,15 @@ export const NotificationsService = {
   sendNotification: async (payload: any) => {
     try {
       console.log('🚀 Sending email notification...');
-      console.log('📧 Payload:', JSON.stringify(payload, null, 2));
+        console.log('📧 Payload:', JSON.stringify(payload, null, 2));
       
-      let emailContent = { subject: '', html: '', to: '' };
+        // Normalize any provided email_content for direct sends (to/subject/html)
+        const provided = payload.email_content || {};
+        let providedTo = payload.to || provided.to || '';
+        let providedSubject = payload.subject || provided.subject || '';
+        let providedHtml = payload.html || provided.html || '';
+
+        let emailContent = { subject: '', html: '', to: '' };
       
       // Handle different notification types
       if (payload.type === 'booking_created' && payload.booking_data) {
@@ -202,8 +208,30 @@ export const NotificationsService = {
         emailContent = {
           subject: template.subject,
           html: template.html,
-          to: resolved || booking.customer_email || 'edgeandcobarber@gmail.com'
+          to: resolved || providedTo || 'edgeandcobarber@gmail.com'
         };
+      } else if (payload.type === 'customer_notification' && payload.booking_data) {
+        // Explicitly handle customer_notification and prefer provided email_content.to
+        console.log('👥 Using customer notification template');
+        const booking = payload.booking_data;
+
+        // If caller provided email_content (to/subject/html) use it directly
+        if (providedTo || providedSubject || providedHtml) {
+          emailContent = {
+            subject: providedSubject || `✂️ Booking Confirmation - Edge & Co Barbershop`,
+            html: providedHtml || generateBookingConfirmationEmail(booking).html,
+            to: providedTo || ''
+          };
+        } else {
+          // Fallback: resolve from customers table
+          const template = generateBookingConfirmationEmail(booking);
+          const resolved = await resolveCustomerEmail(booking);
+          emailContent = {
+            subject: template.subject,
+            html: template.html,
+            to: resolved || 'edgeandcobarber@gmail.com'
+          };
+        }
       } else if (payload.type === 'invoice' && payload.email_content) {
         // Use direct invoice template provided by InvoiceService
         console.log('💰 Using invoice template');
@@ -220,7 +248,7 @@ export const NotificationsService = {
         emailContent = {
           subject: template.subject,
           html: template.html,
-          to: payload.to || resolved || booking?.customer_email || 'edgeandcobarber@gmail.com'
+          to: payload.to || resolved || 'edgeandcobarber@gmail.com'
         };
       } else if (payload.to && (payload.subject || payload.html)) {
         // Direct email sending
