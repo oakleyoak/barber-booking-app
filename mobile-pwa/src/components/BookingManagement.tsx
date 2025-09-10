@@ -376,6 +376,23 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     }
   };
 
+  // Handler to start editing a booking from All Bookings list
+  const handleEditBooking = (booking: Booking) => {
+    setBookingFormData({
+      customer_name: booking.customer_name,
+      customer_id: booking.customer_id || '',
+      service_type: booking.service,
+      staff_member: booking.user_id || '',
+      booking_date: booking.date,
+      booking_time: booking.time.length > 5 ? booking.time.substring(0,5) : booking.time,
+      price: booking.price,
+      notes: booking.notes || ''
+    });
+    // mark selectedBooking as the one we're editing
+    setSelectedBooking(booking);
+    setShowBookingForm(true);
+  };
+
   // Load upcoming bookings
   const loadUpcomingBookings = async () => {
     try {
@@ -667,6 +684,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     </button>
                   )}
                 </div>
+                <div className="flex items-center gap-1 ml-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleEditBooking(booking); }}
+                    className="bg-gray-100 text-gray-700 p-2 rounded-lg hover:bg-gray-200 transition-colors shadow-sm ml-2"
+                    title="Edit booking"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
@@ -814,7 +840,40 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 </button>
               </div>
               
-              <form onSubmit={(e) => { e.preventDefault(); createBooking(); }} className="space-y-4">
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  // If selectedBooking is set, update existing booking
+                  if (selectedBooking) {
+                    const updates = {
+                      customer_name: bookingFormData.customer_name,
+                      customer_id: bookingFormData.customer_id || undefined,
+                      service: bookingFormData.service_type,
+                      price: bookingFormData.price,
+                      date: bookingFormData.booking_date,
+                      time: bookingFormData.booking_time,
+                      notes: bookingFormData.notes
+                    };
+                    const updated = await bookingService.updateBooking(selectedBooking.id, updates);
+                    if (updated) {
+                      modal.notify('Booking updated successfully!', 'success');
+                      // Refresh bookings in current view
+                      if (currentView === 'upcoming') await loadUpcomingBookings();
+                      else if (currentView === 'history') await loadBookingHistory();
+                      else await loadAllBookings();
+                    }
+                    setSelectedBooking(null);
+                    setShowBookingForm(false);
+                    return;
+                  }
+
+                  // Otherwise create new booking
+                  await createBooking();
+                } catch (err) {
+                  console.error('Error saving booking:', err);
+                  modal.notify('Failed to save booking', 'error');
+                }
+              }} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
                   <input
@@ -933,7 +992,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     type="submit"
                     className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors"
                   >
-                    Create Booking
+                    {selectedBooking ? 'Update Booking' : 'Create Booking'}
                   </button>
                   <button
                     type="button"
