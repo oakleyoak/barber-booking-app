@@ -28,6 +28,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     customer_id?: string;
     service: string;
     price: string;
+    date: string;
     time: string;
     status: 'scheduled' | 'completed' | 'cancelled';
     notes: string;
@@ -38,6 +39,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     customer_id: undefined,
     service: '',
     price: '',
+    date: selectedDate,
     time: '',
     status: 'scheduled',
     notes: ''
@@ -115,7 +117,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   customer_id: formData.customer_id || undefined,
         service: formData.service,
         price: Number(formData.price),
-        date: selectedDate,
+        date: formData.date || selectedDate,
         time: formattedTime,
         status: formData.status,
   notes: formData.notes,
@@ -149,7 +151,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         }
       }
 
-  setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: '', status: 'scheduled', notes: '' });
+  setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' });
       setEditingBooking(null);
       setShowModal(false);
       await loadData();
@@ -168,10 +170,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   customer_id: booking.customer_id || undefined,
       service: booking.service,
       price: booking.price.toString(),
+      date: booking.date,
       time: normalizedTime,
       status: booking.status
   ,notes: booking.notes || ''
     });
+    // update selected date so calendar highlights the booking's date while editing
+    setSelectedDate(booking.date);
     setShowModal(true);
   };
 
@@ -525,7 +530,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                           ))}
                         </div>
                       ) : (
-                        <div className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" onClick={() => { setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: time, status: 'scheduled', notes: '' }); setShowModal(true); }}>
+                        <div className="text-sm text-gray-400 italic cursor-pointer hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" onClick={() => { setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: time, status: 'scheduled', notes: '' }); setShowModal(true); }}>
                           Click to book this slot
                         </div>
                       )}
@@ -627,12 +632,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData(prev => ({...prev, price: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter custom amount" />
                       <p className="text-xs text-gray-500 mt-1">Modify this amount as needed</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                      <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
-                        <option value="">Select time</option>
-                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                          <option value="">Select time</option>
+                          {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -643,7 +655,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       </select>
                     </div>
                     <div className="flex justify-end space-x-3 pt-4">
-                      <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
+                      <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
                       <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
                     </div>
                   </form>
