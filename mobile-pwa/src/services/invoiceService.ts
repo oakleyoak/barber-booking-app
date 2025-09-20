@@ -484,13 +484,27 @@ export const InvoiceService = {
     whatsappText += `💳 Processing Fee: ${formattedFee}\n`;
     whatsappText += `💰 *Total: ${formattedTotal}*\n\n`;
 
+    // Payment Methods Section
+    whatsappText += `💳 *PAYMENT METHODS*\n\n`;
+
+    // Card Payment (if available)
     if (paymentUrl) {
-      whatsappText += `💳 *Pay Now:* ${paymentUrl}\n\n`;
+      whatsappText += `💳 *Credit/Debit Card:*\n`;
+      whatsappText += `${paymentUrl}\n\n`;
     }
+
+    // Bank Transfer (IBAN)
+    whatsappText += `🏦 *Bank Transfer (IBAN):*\n`;
+    whatsappText += `IBAN: ${BusinessConfig.iban}\n`;
+    whatsappText += `Account Holder: ${BusinessConfig.accountHolder}\n`;
+    whatsappText += `Bank: ${BusinessConfig.bankName}\n`;
+    whatsappText += `BIC: ${BusinessConfig.bic}\n`;
+    whatsappText += `Reference: ${invoice.invoice_number}\n\n`;
 
     whatsappText += `🙏 Thank you for choosing Edge & Co!\n`;
     whatsappText += `📍 Your trusted barbershop\n`;
-    whatsappText += `📞 Contact: +90 123 456 7890\n\n`;
+    whatsappText += `� edgeandcobarber@gmail.com\n`;
+    whatsappText += `📞 +90 533 854 67 96\n\n`;
     whatsappText += `#EdgeAndCo #Barbershop #Invoice`;
 
     return whatsappText;
