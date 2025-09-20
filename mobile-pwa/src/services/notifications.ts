@@ -1,6 +1,18 @@
 import { supabase, supabaseUrl, supabaseKey } from '../lib/supabase';
 import { BusinessConfig } from '../config/businessConfig';
 
+// Unified translation loader for all templates
+const unifiedGetTranslations = async (language: string) => {
+  switch (language) {
+    case 'tr': return (await import('../i18n/translations/tr')).default;
+    case 'ar': return (await import('../i18n/translations/ar')).default;
+    case 'fa': return (await import('../i18n/translations/fa')).default;
+    case 'el': return (await import('../i18n/translations/el')).default;
+    case 'ru': return (await import('../i18n/translations/ru')).default;
+    default: return (await import('../i18n/translations/en')).default;
+  }
+};
+
 // Helper: resolve customer email from booking payload
 const resolveCustomerEmail = async (booking: any): Promise<string> => {
   // Always resolve from customers.email using customer_id when available.
@@ -21,68 +33,59 @@ const resolveCustomerEmail = async (booking: any): Promise<string> => {
 };
 
 // Email templates
-const generateBookingNotificationForBarber = (booking: any) => {
+const generateBookingNotificationForBarber = async (booking: any, language: string = 'en') => {
+  const t = await unifiedGetTranslations(language);
   return {
-    subject: `✂️ New Booking Assignment - Edge & Co Barbershop`,
+    subject: `✂️ ${t.notification?.barberAssigned || 'New Booking Assignment'} - Edge & Co Barbershop`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
           <div>
             <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
-            <div style="font-size:12px; color:#666;">Appointment assigned</div>
+            <div style="font-size:12px; color:#666;">${t.notification?.barberAssigned || 'Appointment assigned'}</div>
           </div>
         </div>
 
         <div style="background-color: #eef8ff; padding: 16px; border-radius: 8px; margin-bottom: 14px; border-left: 4px solid #3498db;">
-          <h3 style="color: #2c3e50; margin-top: 0;">📅 You have a new appointment</h3>
-          <p>Hi ${booking.barber_name || 'Team Member'},</p>
-          <p>Your manager has booked a new appointment for you. See details below.</p>
+          <h3 style="color: #2c3e50; margin-top: 0;">📅 ${t.notification?.barberAssigned || 'You have a new appointment'}</h3>
+          <p>${t.notification?.hello || 'Hi'} ${booking.barber_name || t.notification?.teamMember || 'Team Member'},</p>
+          <p>${t.notification?.managerBooked || 'Your manager has booked a new appointment for you. See details below.'}</p>
         </div>
 
         <div style="background-color: #f8f9fa; padding: 14px; border-radius: 8px; margin-bottom: 14px;">
-          <h4 style="color: #2c3e50; margin-top: 0;">Appointment Details</h4>
-          <p style="margin:6px 0;"><strong>Customer:</strong> ${booking.customer_name || '—'}</p>
-          <p style="margin:6px 0;"><strong>Service:</strong> ${booking.service || '—'}</p>
-          <p style="margin:6px 0;"><strong>Date:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString() : '—'}</p>
-          <p style="margin:6px 0;"><strong>Time:</strong> ${booking.time || '—'}</p>
-          <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
+          <h4 style="color: #2c3e50; margin-top: 0;">${t.notification?.title || 'Appointment Details'}</h4>
+          <p style="margin:6px 0;"><strong>${t.customer?.name || 'Customer'}:</strong> ${booking.customer_name || '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.service || 'Service'}:</strong> ${booking.service || '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.date || 'Date'}:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US') : '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.time || 'Time'}:</strong> ${booking.time || '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.price || 'Price'}:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
         </div>
 
         <div style="background-color: #e8f5e8; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-          <p style="margin: 0; color: #27ae60;"><strong>✅ Please prepare for this appointment</strong></p>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">Open your schedule to accept or reschedule if needed.</p>
+          <p style="margin: 0; color: #27ae60;"><strong>✅ ${t.notification?.prepare || 'Please prepare for this appointment'}</strong></p>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">${t.notification?.openSchedule || 'Open your schedule to accept or reschedule if needed.'}</p>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: ${BusinessConfig.businessAddress}</div>
+          <div style="color:#555;">${t.business?.address ? t.business.address : `Shop address: ${BusinessConfig.businessAddress}`}</div>
           <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
           <div style="margin-top:8px;">
-            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
           </div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #999;">You received this email because you are a staff member at Edge & Co Barbershop.</p>
+          <p style="font-size: 12px; color: #999;">${t.notification?.staffFooter || 'You received this email because you are a staff member at Edge & Co Barbershop.'}</p>
         </div>
       </div>
     `
   };
 };
 
-const getTranslations = async (language: string) => {
-  switch (language) {
-    case 'tr': return (await import('../i18n/translations/tr')).default;
-    case 'ar': return (await import('../i18n/translations/ar')).default;
-    case 'fa': return (await import('../i18n/translations/fa')).default;
-    case 'el': return (await import('../i18n/translations/el')).default;
-    case 'ru': return (await import('../i18n/translations/ru')).default;
-    default: return (await import('../i18n/translations/en')).default;
-  }
-};
+// Deprecated: use unifiedGetTranslations instead
+const getTranslations = unifiedGetTranslations;
 
 export const generateBookingConfirmationEmail = async (booking: any, language: string = 'en') => {
-  console.log('🔄 Generating booking confirmation email for language:', language);
-  const t = await getTranslations(language);
-  console.log('📝 Loaded translations for language:', language, t?.notification?.bookingConfirmed);
+  const t = await unifiedGetTranslations(language);
   const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
   return {
     subject: `✅ ${t.notification.bookingConfirmed || 'Booking Confirmed'} - Edge & Co Barbershop`,
@@ -122,9 +125,9 @@ export const generateBookingConfirmationEmail = async (booking: any, language: s
           <div style="color:#555;">${t.business.address ? t.business.address : `Shop address: ${BusinessConfig.businessAddress}`}</div>
           <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 12px; color: #999;">You received this email because you booked an appointment with Edge & Co Barbershop.</p>
+          <p style="font-size: 12px; color: #999;">${t.notification?.customerFooter || 'You received this email because you booked an appointment with Edge & Co Barbershop.'}</p>
           <p style="font-size: 13px; color: #3498db; margin-top: 10px;">
-            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
           </p>
         </div>
       </div>

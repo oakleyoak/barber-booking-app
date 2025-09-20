@@ -149,6 +149,14 @@ export default {
     bookingConfirmed: 'Booking Confirmed',
     confirmationMessage: 'Thank you for choosing Edge & Co Barbershop. We look forward to serving you!',
     arrivalInstructions: 'Please arrive 5-10 minutes before your scheduled time. If you need to make any changes, please contact us as soon as possible.',
+  barberAssigned: 'New Booking Assignment',
+  hello: 'Hi',
+  teamMember: 'Team Member',
+  managerBooked: 'Your manager has booked a new appointment for you. See details below.',
+  prepare: 'Please prepare for this appointment',
+  openSchedule: 'Open your schedule to accept or reschedule if needed.',
+  staffFooter: 'You received this email because you are a staff member at Edge & Co Barbershop.',
+  customerFooter: 'You received this email because you booked an appointment with Edge & Co Barbershop.',
   },
   language: {
     title: 'Language',
@@ -170,5 +178,6 @@ export default {
     iban: 'TR00 0000 0000 0000 0000 0000 00',
     bankName: 'Your Bank Name',
     accountHolder: 'Edge & Co Barbershop',
+  reviewLink: 'Click here to review us on Google',
   },
 };
