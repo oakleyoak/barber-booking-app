@@ -137,7 +137,7 @@ export default {
     push: 'Push Bildirim',
     emailSubject: 'Randevu onayınız',
     emailBody: 'Sayın {{customerName}},\n\n{{date}} tarihinde saat {{time}} için randevunuz onaylanmıştır.\n\nHizmet: {{service}}\nBerber: {{barber}}\nFiyat: {{price}} ₺\n\nEdge & Co Berber\'i tercih ettiğiniz için teşekkür ederiz!\n\nSaygılarımla,\nEdge & Co Ekibi',
-  whatsappMessage: '📅 *Randevu Onayı*\n\nSayın {{customerName}},\n\n✅ Randevunuz onaylandı!\n\n📅 Tarih: {{date}}\n🕐 Saat: {{time}}\n💇 Hizmet: {{service}}\n👨 Berber: {{barber}}\n💰 Fiyat: {{price}} ₺\n\n📍 Adres: Edge & Co Berber\n\nBizi tercih ettiğiniz için teşekkür ederiz!\n\n💳 Ödeme Bağlantısı: {{paymentLink}}\n🏦 Banka Havalesi - IBAN: {{iban}}\n\n⭐️ Lütfen bizi değerlendirin: https://g.page/r/CQv1Qw1Qw1QwEAI/review',
+  whatsappMessage: '📅 *Randevu Onayı*\n\nSayın {{customerName}},\n\n✅ Randevunuz onaylandı!\n\n📅 Tarih: {{date}}\n🕐 Saat: {{time}}\n💇 Hizmet: {{service}}\n👨 Berber: {{barber}}\n💰 Fiyat: {{price}} ₺\n\n📍 Adres: Edge & Co Berber\n\nBizi tercih ettiğiniz için teşekkür ederiz!\n\n⭐️ Lütfen bizi değerlendirin: https://g.page/r/CQv1Qw1Qw1QwEAI/review',
   smsMessage: 'Randevunuz onaylandı!\nTarih: {{date}}\nSaat: {{time}}\nHizmet: {{service}}\nBerber: {{barber}}\nFiyat: {{price}} ₺\nEdge & Co\'yu tercih ettiğiniz için teşekkürler!\nDeğerlendir: https://g.page/r/CQv1Qw1Qw1QwEAI/review',
     guidelines: 'Randevu Kuralları',
     arriveEarly: 'Lütfen randevu saatinden 5 dakika önce geliniz',

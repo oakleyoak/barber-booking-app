@@ -604,9 +604,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       const lang = langCtx.language || 'en';
       let t: any;
       try {
-        t = (await import(`../i18n/translations/${lang}`)).default;
+        t = (await import(`../i18n/translations/${lang}.ts`)).default;
       } catch {
-        t = (await import(`../i18n/translations/en`)).default;
+        t = (await import(`../i18n/translations/en.ts`)).default;
       }
       const formattedDate = formatDate(booking.date);
       const formattedTime = formatTime(booking.time);
