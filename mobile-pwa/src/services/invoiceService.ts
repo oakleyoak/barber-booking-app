@@ -76,7 +76,8 @@ export const InvoiceService = {
         // Expecting { id, url }
         return { id: result.id, url: result.url };
       } else {
-        console.error('Failed to create Stripe payment link:', response.status);
+        const errorText = await response.text();
+        console.error('Failed to create Stripe payment link:', response.status, errorText);
         return null;
       }
     } catch (error) {
@@ -391,18 +392,31 @@ export const InvoiceService = {
 
       // Get payment link (reuse existing if available)
       let finalStripeUrl = '';
+      let stripePaymentId: string | undefined = undefined;
+      let invoiceUrl: string | undefined = undefined;
 
       const existingStripeId = booking.stripe_payment_id;
       const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
 
       if (existingStripeId && existingInvoiceUrl && booking.payment_status !== 'paid') {
         console.log('🔄 Reusing existing payment link for clipboard invoice:', existingInvoiceNumber);
+        stripePaymentId = existingStripeId;
+        invoiceUrl = existingInvoiceUrl;
         finalStripeUrl = existingInvoiceUrl;
       } else if (booking.payment_status !== 'paid') {
         console.log('🆕 Creating new payment link for clipboard invoice:', invoice.invoice_number);
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
+          stripePaymentId = created.id;
+          invoiceUrl = created.url;
           finalStripeUrl = created.url;
+          console.log('✅ Payment link created successfully:', created.url);
+        } else {
+          console.error('❌ Failed to create payment link for clipboard invoice - invoice will be copied without payment link');
+          // Show user notification about payment link failure
+          if (typeof window !== 'undefined' && (window as any).showNotification) {
+            (window as any).showNotification('Payment link creation failed. Invoice copied without payment link.', 'warning');
+          }
         }
       }
 
@@ -423,7 +437,7 @@ export const InvoiceService = {
       }
 
       // Update booking with invoice data (same as email sending)
-      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, existingStripeId || undefined, finalStripeUrl || undefined, !!existingInvoiceNumber);
+      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId, invoiceUrl, !!existingInvoiceNumber);
 
       return { ok: true };
     } catch (error) {

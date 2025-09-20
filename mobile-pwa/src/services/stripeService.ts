@@ -17,7 +17,7 @@ export interface StripePaymentLink {
 export const StripeService = {
   // Configuration (you'll update these with your actual Stripe keys)
   config: {
-    publishableKey: 'pk_test_...', // Replace with your publishable key
+    publishableKey: 'pk_live_51S2uCgIyRLJZciJjHt6zrvEGMc8YfQGDsGo2vCDzE0E0KRpTWYRGnqQ26An4VfJkFOmPswYV8tTJxTQYKNep1pzJ00brzV4vsy', // Your live publishable key
     // Secret key should be in environment variables or backend only
   },
 

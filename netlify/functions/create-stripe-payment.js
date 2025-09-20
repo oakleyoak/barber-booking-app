@@ -1,4 +1,20 @@
-// Use Stripe secret from environment only. Do NOT commit secrets to the repository.
+// Use Stripe secret from environment only. Do NOT commit secrets to the               allow_promotion_codes: true,
+      metadata: {
+        invoice_number: invoiceNumber,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        business: 'Edge & Co Barbershop'
+      },ta: {
+        invoice_number: invoiceNumber,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        business: 'Edge & Co Barbershop'
+      },ta: {
+        invoice_number: invoiceNumber,
+        customer_email: customerEmail,
+        customer_name: customerName,
+        business: 'Edge & Co Barbershop'
+      },tory.
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) {
   console.error('Missing STRIPE_SECRET_KEY environment variable');
@@ -72,8 +88,7 @@ exports.handler = async (event, context) => {
       allow_promotion_codes: true,
       metadata: {
         invoice_number: invoiceNumber,
-  // accept customerEmail (client) or customer_email (legacy) keys
-  customer_email: customerEmail || eventBody.customer_email,
+    customer_email: customerEmail,
         customer_name: customerName,
         business: 'Edge & Co Barbershop'
       },
