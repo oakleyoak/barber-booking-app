@@ -266,8 +266,7 @@ const NotificationsService = {
         // Ensure we send to the barber's email (barber_email or user_email) not the customer
         console.log('📋 Using barber notification template');
         const booking = payload.booking_data;
-
-        const template = generateBookingNotificationForBarber(booking);
+        const template = await generateBookingNotificationForBarber(booking, payload.language || 'en');
 
         // Determine recipient email. Prefer barber_email (explicit), then attempt to lookup
         // by booking.user_id in the users table, then fall back to user_email, then default.
