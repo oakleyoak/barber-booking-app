@@ -14,8 +14,8 @@ export const BusinessConfig = {
   // Business Information
   businessName: 'Edge & Co Barbershop',
   businessEmail: 'edgeandcobarber@gmail.com',
-  businessPhone: '+90 555 123 45 67', // Replace with your actual phone number
-  businessAddress: 'Istanbul, Turkey', // Replace with your actual business address
+  businessPhone: '+90 XXX XXX XX XX', // Replace with your phone
+  businessAddress: 'Your Business Address', // Replace with your address
   
   // Payment Settings
   invoiceDueDays: 7, // Days until payment is due
