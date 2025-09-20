@@ -149,6 +149,14 @@ export default {
     bookingConfirmed: 'رزرو تأیید شد',
     confirmationMessage: 'از انتخاب آرایشگاه Edge & Co سپاسگزاریم. منتظر خدمت‌رسانی به شما هستیم!',
     arrivalInstructions: 'لطفاً 5-10 دقیقه قبل از وقت رزرو خود حضور یابید. اگر نیاز به هرگونه تغییر دارید، لطفاً در اولین فرصت با ما تماس بگیرید.',
+  barberAssigned: 'اختصاص رزرو جدید',
+  hello: 'سلام',
+  teamMember: 'عضو تیم',
+  managerBooked: 'مدیر شما یک وقت جدید برای شما رزرو کرده است. جزئیات زیر را ببینید.',
+  prepare: 'لطفاً برای این قرار آماده شوید',
+  openSchedule: 'در صورت نیاز برنامه خود را باز کنید و قبول یا مجدداً برنامه‌ریزی کنید.',
+  staffFooter: 'این ایمیل را به این دلیل دریافت کردید که کارمند Edge & Co Barbershop هستید.',
+  customerFooter: 'این ایمیل را به این دلیل دریافت کردید که با Edge & Co Barbershop وقت رزرو کردید.',
   },
   language: {
     title: 'زبان',
@@ -170,5 +178,6 @@ export default {
     iban: 'TR00 0000 0000 0000 0000 0000 00',
     bankName: 'نام بانک شما',
     accountHolder: 'آرایشگاه Edge & Co',
+  reviewLink: 'برای ثبت نظر در Google اینجا کلیک کنید',
   },
 };

@@ -149,6 +149,14 @@ export default {
     bookingConfirmed: 'تم تأكيد الحجز',
     confirmationMessage: 'شكراً لاختيارك صالون Edge & Co. نتطلع إلى خدمتك!',
     arrivalInstructions: 'يرجى الوصول قبل 5-10 دقائق من وقت الحجز المحدد. إذا كنت بحاجة إلى أي تغييرات، يرجى الاتصال بنا في أقرب وقت ممكن.',
+  barberAssigned: 'تعيين حجز جديد',
+  hello: 'مرحبًا',
+  teamMember: 'عضو الفريق',
+  managerBooked: 'قام مديرك بحجز موعد جديد لك. راجع التفاصيل أدناه.',
+  prepare: 'يرجى الاستعداد لهذا الموعد',
+  openSchedule: 'افتح جدولك لقبول أو إعادة جدولة إذا لزم الأمر.',
+  staffFooter: 'تلقيت هذا البريد الإلكتروني لأنك موظف في Edge & Co Barbershop.',
+  customerFooter: 'تلقيت هذا البريد الإلكتروني لأنك حجزت موعدًا مع Edge & Co Barbershop.',
   },
   language: {
     title: 'اللغة',
@@ -170,5 +178,6 @@ export default {
     iban: 'TR00 0000 0000 0000 0000 0000 00',
     bankName: 'اسم بنكك',
     accountHolder: 'صالون Edge & Co',
+  reviewLink: 'انقر هنا لتقييمنا على Google',
   },
 };

@@ -149,6 +149,14 @@ export default {
     bookingConfirmed: 'Randevu Onaylandı',
     confirmationMessage: 'Edge & Co Berber\'i tercih ettiğiniz için teşekkür ederiz. Sizi ağırlamaktan memnuniyet duyarız!',
     arrivalInstructions: 'Lütfen randevu saatinden 5-10 dakika önce geliniz. Herhangi bir değişiklik ihtiyacınız olursa, lütfen bizimle iletişime geçiniz.',
+  barberAssigned: 'Yeni Randevu Ataması',
+  hello: 'Merhaba',
+  teamMember: 'Ekip Üyesi',
+  managerBooked: 'Yöneticiniz sizin için yeni bir randevu oluşturdu. Detaylar aşağıda.',
+  prepare: 'Lütfen bu randevuya hazırlanın',
+  openSchedule: 'Gerekirse programınızı açıp kabul edin veya yeniden planlayın.',
+  staffFooter: 'Bu e-postayı Edge & Co Berber çalışanı olduğunuz için aldınız.',
+  customerFooter: 'Bu e-postayı Edge & Co Berber ile randevu aldığınız için aldınız.',
   },
   language: {
     title: 'Dil',
@@ -170,5 +178,6 @@ export default {
     iban: 'TR00 0000 0000 0000 0000 0000 00',
     bankName: 'Banka Adınız',
     accountHolder: 'Edge & Co Berber',
+  reviewLink: 'Google üzerinden bizi değerlendirmek için tıklayın',
   },
 };
