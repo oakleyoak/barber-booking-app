@@ -158,9 +158,7 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <div className="hidden sm:block">
-                    <LanguageSelector className="w-32" />
-                  </div>
+                  <LanguageSelector className="w-32" />
                   <span className="text-xs text-gray-700">
                     {currentUser.name} ({currentUser.role})
                   </span>

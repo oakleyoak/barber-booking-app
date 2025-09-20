@@ -6,7 +6,7 @@ interface LanguageSelectorProps {
 }
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const languages = [
     { code: 'en' as Language, name: 'English', flag: '🇺🇸' },
@@ -23,14 +23,12 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({ className = '' }) =
 
   return (
     <div className={`relative ${className}`}>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
-        {t('language.selectLanguage')}
-      </label>
       <select
         value={language}
         onChange={(e) => handleLanguageChange(e.target.value as Language)}
-        className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
-        aria-label={t('language.selectLanguage')}
+        className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm text-sm"
+        aria-label="Select Language"
+        title="Select Language"
       >
         {languages.map((lang) => (
           <option key={lang.code} value={lang.code}>
