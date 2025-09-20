@@ -6,6 +6,7 @@ import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
 import { supabase } from '../lib/supabase';
 import { getTodayLocal, getLocalDateString } from '../utils/dateUtils';
+import { useLanguage } from '../i18n/LanguageContext';
 import type { Booking, Customer, User as UserType } from '../lib/supabase';
 
 interface BookingCalendarProps {
@@ -14,6 +15,7 @@ interface BookingCalendarProps {
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const modal = useModal();
+  const { language } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(() => getTodayLocal());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'day' | 'list'>('day');
@@ -313,7 +315,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
 
       // Pass booking through; InvoiceService now resolves email itself when creating invoice
       const bookingWithResolved = { ...booking, resolved_customer_email: customerEmail };
-      const result = await InvoiceService.sendInvoice(bookingWithResolved);
+      const result = await InvoiceService.sendInvoice(bookingWithResolved, language);
 
       if (result.ok) {
         modal.notify('Invoice sent successfully!', 'success');

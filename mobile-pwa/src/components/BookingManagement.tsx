@@ -36,6 +36,7 @@ import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService, SERVICES } from '../services/servicePricing';
 import { UserManagementService } from '../services/userManagementService';
 import { getTodayLocal } from '../utils/dateUtils';
+import { useLanguage } from '../i18n/LanguageContext';
 
 interface BookingManagementProps {
   currentUser: {
@@ -49,6 +50,7 @@ interface BookingManagementProps {
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const modal = useModal();
+  const { language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -309,9 +311,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .single();
       if (fetchError || !latest) {
         console.warn('Could not fetch latest booking, using current booking object.');
-        await InvoiceService.sendInvoice(booking);
+        await InvoiceService.sendInvoice(booking, language);
       } else {
-        await InvoiceService.sendInvoice(latest);
+        await InvoiceService.sendInvoice(latest, language);
       }
       modal.notify('Invoice sent successfully!', 'success');
     } catch (error) {
@@ -331,9 +333,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         .single();
       if (fetchError || !latest) {
         console.warn('Could not fetch latest booking, using current booking object.');
-        await InvoiceService.copyInvoiceToClipboard(booking);
+        await InvoiceService.copyInvoiceToClipboard(booking, language);
       } else {
-        await InvoiceService.copyInvoiceToClipboard(latest);
+        await InvoiceService.copyInvoiceToClipboard(latest, language);
       }
       modal.notify('Invoice copied to clipboard! 📋', 'success');
     } catch (error) {
