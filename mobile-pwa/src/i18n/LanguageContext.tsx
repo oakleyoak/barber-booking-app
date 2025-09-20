@@ -24,6 +24,8 @@ interface LanguageProviderProps {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>('en');
+  const [translations, setTranslations] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load language preference from localStorage on mount
   useEffect(() => {
@@ -33,6 +35,25 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     }
   }, []);
 
+  // Load translations when language changes
+  useEffect(() => {
+    const loadTranslations = async () => {
+      try {
+        const translationModule = await getTranslations(language);
+        setTranslations(translationModule);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading translations:', error);
+        // Fallback to English
+        const englishModule = await getTranslations('en');
+        setTranslations(englishModule);
+        setIsLoading(false);
+      }
+    };
+
+    loadTranslations();
+  }, [language]);
+
   // Save language preference to localStorage
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
@@ -41,8 +62,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   // Translation function
   const t = (key: string, params?: Record<string, string>): string => {
-    // Import translations dynamically
-    const translations = getTranslations(language);
+    if (isLoading || !translations) {
+      return key; // Return key while loading
+    }
+
     const keys = key.split('.');
     let value: any = translations;
 
@@ -52,15 +75,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     }
 
     if (typeof value !== 'string') {
-      // Fallback to English if translation not found
-      const englishTranslations = getTranslations('en');
-      value = englishTranslations;
-      for (const k of keys) {
-        value = value?.[k];
-      }
-      if (typeof value !== 'string') {
-        return key; // Return key if no translation found
-      }
+      return key; // Return key if no translation found
     }
 
     // Replace parameters if provided
@@ -73,6 +88,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     return value;
   };
 
+  if (isLoading) {
+    return null; // Return null while loading translations
+  }
+
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
       {children}
@@ -81,21 +100,21 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 };
 
 // Dynamic import of translations
-const getTranslations = (lang: Language) => {
+const getTranslations = async (lang: Language) => {
   const translationModules = {
-    en: () => require('./translations/en').default,
-    tr: () => require('./translations/tr').default,
-    ar: () => require('./translations/ar').default,
-    fa: () => require('./translations/fa').default,
-    el: () => require('./translations/el').default,
-    ru: () => require('./translations/ru').default,
+    en: () => import('./translations/en').then(m => m.default),
+    tr: () => import('./translations/tr').then(m => m.default),
+    ar: () => import('./translations/ar').then(m => m.default),
+    fa: () => import('./translations/fa').then(m => m.default),
+    el: () => import('./translations/el').then(m => m.default),
+    ru: () => import('./translations/ru').then(m => m.default),
   };
 
   try {
-    return translationModules[lang]();
+    return await translationModules[lang]();
   } catch (error) {
     // Fallback to English if translation not found
     console.warn(`Translation for language '${lang}' not found, falling back to English`);
-    return translationModules.en();
+    return await translationModules.en();
   }
 };
