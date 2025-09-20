@@ -3,7 +3,11 @@ const stripeSecret = process.env.STRIPE_SECRET_KEY;
 if (!stripeSecret) {
   console.error('Missing STRIPE_SECRET_KEY environment variable');
 }
-const stripe = require('stripe')(stripeSecret);
+
+let stripe = null;
+if (stripeSecret) {
+  stripe = require('stripe')(stripeSecret);
+}
 
 exports.handler = async (event, context) => {
   // Handle CORS
@@ -22,6 +26,20 @@ exports.handler = async (event, context) => {
       statusCode: 405,
       headers,
       body: JSON.stringify({ error: 'Method not allowed' })
+    };
+  }
+
+  // Check if Stripe is properly configured
+  if (!stripe) {
+    console.error('❌ Stripe not configured - missing STRIPE_SECRET_KEY');
+    return {
+      statusCode: 500,
+      headers,
+      body: JSON.stringify({
+        success: false,
+        error: 'Stripe payment service not configured',
+        message: 'Payment service is temporarily unavailable'
+      })
     };
   }
 
