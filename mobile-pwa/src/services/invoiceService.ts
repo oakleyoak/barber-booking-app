@@ -133,7 +133,7 @@ export const InvoiceService = {
         invoice_data: invoice,
         email_content: {
           to: invoice.customer_email,
-          subject: InvoiceService.getTranslatedEmailSubject(invoice, language),
+          subject: await InvoiceService.getTranslatedEmailSubject(invoice, language),
           html: invoiceHTML,
           preview: preview,
           language: language
@@ -190,7 +190,7 @@ export const InvoiceService = {
         }
       }
 
-      const whatsappText = InvoiceService.formatInvoiceForWhatsApp(invoice, finalStripeUrl, language);
+      const whatsappText = await InvoiceService.formatInvoiceForWhatsApp(invoice, finalStripeUrl, language);
 
       await navigator.clipboard.writeText(whatsappText);
       return { ok: true };
@@ -201,8 +201,8 @@ export const InvoiceService = {
   },
 
   // Format invoice data as WhatsApp-friendly text
-  formatInvoiceForWhatsApp: (invoice: InvoiceData, paymentUrl: string, language: Language = 'en'): string => {
-    const translations = InvoiceService.getTranslations(language);
+  formatInvoiceForWhatsApp: async (invoice: InvoiceData, paymentUrl: string, language: Language = 'en'): Promise<string> => {
+    const translations = await InvoiceService.getTranslations(language);
 
     const formattedPrice = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
       style: 'currency',
@@ -267,27 +267,27 @@ export const InvoiceService = {
   },
 
   // Get translated email subject
-  getTranslatedEmailSubject: (invoice: InvoiceData, language: Language): string => {
-    const translations = InvoiceService.getTranslations(language);
+  getTranslatedEmailSubject: async (invoice: InvoiceData, language: Language): Promise<string> => {
+    const translations = await InvoiceService.getTranslations(language);
     return `💰 ${translations.invoice.title} ${invoice.invoice_number} - Edge & Co Barbershop`;
   },
 
   // Get translations for the given language
-  getTranslations: (language: Language) => {
+  getTranslations: async (language: Language) => {
     const translationModules = {
-      en: () => require('../i18n/translations/en').default,
-      tr: () => require('../i18n/translations/tr').default,
-      ar: () => require('../i18n/translations/ar').default,
-      fa: () => require('../i18n/translations/fa').default,
-      el: () => require('../i18n/translations/el').default,
-      ru: () => require('../i18n/translations/ru').default,
+      en: () => import('../i18n/translations/en').then(m => m.default),
+      tr: () => import('../i18n/translations/tr').then(m => m.default),
+      ar: () => import('../i18n/translations/ar').then(m => m.default),
+      fa: () => import('../i18n/translations/fa').then(m => m.default),
+      el: () => import('../i18n/translations/el').then(m => m.default),
+      ru: () => import('../i18n/translations/ru').then(m => m.default),
     };
 
     try {
-      return translationModules[language]();
+      return await translationModules[language]();
     } catch (error) {
       console.warn(`Translation for language '${language}' not found, falling back to English`);
-      return translationModules.en();
+      return await translationModules.en();
     }
   },
 
