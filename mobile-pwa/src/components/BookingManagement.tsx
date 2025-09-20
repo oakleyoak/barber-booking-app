@@ -235,17 +235,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       }
 
       // Use the booking confirmation template for customer notifications
-      const { subject, html } = await generateBookingConfirmationEmail(booking, language);
+      console.log('📧 Sending booking confirmation notification with language:', language);
       await NotificationsService.sendNotification({
-        type: 'customer_notification',
+        type: 'customer_confirmation',
         booking_id: booking.id,
         booking_data: booking,
         language,
-        email_content: {
-          to: toEmail,
-          subject,
-          html
-        }
+        to: toEmail
       });
       modal.notify('Notification sent successfully!', 'success');
     } catch (error) {
