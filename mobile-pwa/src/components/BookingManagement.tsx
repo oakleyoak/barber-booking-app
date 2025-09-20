@@ -1217,7 +1217,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
                 <button
                   onClick={async () => {
-                    await copyInvoiceToClipboard(selectedBooking);
+                    await copyBookingConfirmationToClipboard(selectedBooking);
                     setShowNotificationOptions(false);
                     closeBookingDetails();
                   }}
@@ -1230,6 +1230,46 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
                   </div>
                 </button>
+  // Copy booking confirmation to clipboard for WhatsApp (i18n, with review link, no invoice/payment info)
+  const copyBookingConfirmationToClipboard = async (booking: Booking) => {
+    try {
+      // Get translation for selected language
+      const lang = langCtx.language || 'en';
+      let t: any;
+      try {
+        t = (await import(`../i18n/translations/${lang}`)).default;
+      } catch {
+        t = (await import(`../i18n/translations/en`)).default;
+      }
+      const formattedDate = formatDate(booking.date);
+      const formattedTime = formatTime(booking.time);
+      let whatsappText = t.notification?.whatsappMessage
+        ? t.notification.whatsappMessage
+        : `Booking Confirmed!\nDate: {{date}}\nTime: {{time}}\nService: {{service}}\nBarber: {{barber}}\nPrice: {{price}} ₺\nThank you for choosing Edge & Co!\nReview: https://g.page/r/CQv1Qw1Qw1QwEAI/review`;
+      whatsappText = whatsappText
+        .replace(/{{customerName}}/g, booking.customer_name)
+        .replace(/{{date}}/g, formattedDate)
+        .replace(/{{time}}/g, formattedTime)
+        .replace(/{{service}}/g, booking.service)
+        .replace(/{{barber}}/g, booking.users?.name || booking.barber_name || 'Edge & Co Team')
+        .replace(/{{price}}/g, booking.price);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(whatsappText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      modal.notify('Booking confirmation copied to clipboard! Share via WhatsApp.', 'success');
+    } catch (error) {
+      console.error('Error copying booking confirmation to clipboard:', error);
+      modal.notify('Failed to copy booking confirmation', 'error');
+    }
+  };
               </div>
 
               <div className="pt-4 border-t border-gray-200">
