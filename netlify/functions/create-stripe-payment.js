@@ -52,9 +52,9 @@ exports.handler = async (event, context) => {
     const finalInvoiceNumber = invoiceNumber || metadata?.invoice_number || 'INV-' + Date.now();
     const finalServices = services || [{
       name: metadata?.service || description || 'Service',
-      price: Math.round(amount / 100) // Convert from cents to TRY
+      price: Math.round(amount / 100) // Convert from cents to TRY - this is the TOTAL amount
     }];
-    const finalCardProcessingFee = cardProcessingFee || 50; // Default 50 TRY
+    const finalCardProcessingFee = cardProcessingFee || 0; // Don't add extra fee by default
 
     console.log('🔐 Creating Stripe payment link for:', { 
       amount, 
@@ -76,6 +76,7 @@ exports.handler = async (event, context) => {
       quantity: 1,
     }));
 
+    // Only add card processing fee if explicitly provided and > 0
     if (finalCardProcessingFee && finalCardProcessingFee > 0) {
       lineItems.push({
         price_data: {

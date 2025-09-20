@@ -112,6 +112,21 @@ export const InvoiceService = {
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
+      // Save invoice number to booking if it doesn't exist
+      if (!booking.invoice_number) {
+        try {
+          const { error: updateError } = await supabase
+            .from('bookings')
+            .update({ invoice_number: invoice.invoice_number })
+            .eq('id', booking.id);
+          if (updateError) {
+            console.warn('Error updating booking with invoice number:', updateError);
+          }
+        } catch (e) {
+          console.warn('Error updating booking with invoice number:', e);
+        }
+      }
+
       // Get payment methods
       let finalStripeUrl = '';
 
@@ -178,6 +193,21 @@ export const InvoiceService = {
         due_date: InvoiceService.calculateDueDate(),
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
+
+      // Save invoice number to booking if it doesn't exist
+      if (!booking.invoice_number) {
+        try {
+          const { error: updateError } = await supabase
+            .from('bookings')
+            .update({ invoice_number: invoice.invoice_number })
+            .eq('id', booking.id);
+          if (updateError) {
+            console.warn('Error updating booking with invoice number:', updateError);
+          }
+        } catch (e) {
+          console.warn('Error updating booking with invoice number:', e);
+        }
+      }
 
       // Get payment methods
       let finalStripeUrl = '';
