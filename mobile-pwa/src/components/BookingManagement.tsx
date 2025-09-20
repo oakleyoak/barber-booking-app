@@ -665,6 +665,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       <DollarSign className="h-3.5 w-3.5 text-gray-400" />
                       <span>₺{booking.price} - {booking.service}</span>
                     </div>
+                    {booking.users?.name && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <User className="h-3.5 w-3.5 text-gray-400" />
+                        <span>Barber: {booking.users.name}</span>
+                      </div>
+                    )}
                     
                     {/* Status Badges */}
                     <div className="flex items-center gap-2 mt-2">
@@ -765,7 +771,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   </div>
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-gray-500" />
+                      <User className="h-4 w-4 text-gray-500" />
                       <span className="text-sm text-gray-600">Service & Price</span>
                     </div>
                     <div className="text-right">
@@ -773,6 +779,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       <div className="text-sm text-gray-500">{selectedBooking.service}</div>
                     </div>
                   </div>
+                  {selectedBooking.users?.name && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Barber</span>
+                      </div>
+                      <span className="font-medium">{selectedBooking.users.name}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <User className="h-4 w-4 text-gray-500" />
