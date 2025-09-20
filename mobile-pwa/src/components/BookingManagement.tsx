@@ -1217,7 +1217,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
                 <button
                   onClick={async () => {
-                    await copyBookingToClipboard(selectedBooking);
+                    await copyInvoiceToClipboard(selectedBooking);
                     setShowNotificationOptions(false);
                     closeBookingDetails();
                   }}
