@@ -37,6 +37,25 @@ import { ServicePricingService, SERVICES } from '../services/servicePricing';
 import { UserManagementService } from '../services/userManagementService';
 import { getTodayLocal } from '../utils/dateUtils';
 import { useLanguage } from '../i18n/LanguageContext';
+import en from '../i18n/translations/en';
+import tr from '../i18n/translations/tr';
+import ar from '../i18n/translations/ar';
+import fa from '../i18n/translations/fa';
+import el from '../i18n/translations/el';
+import ru from '../i18n/translations/ru';
+// Simple translation hook for BookingManagement
+const translationMap = { en, tr, ar, fa, el, ru };
+function useT(language: string) {
+  const translations = translationMap[language as keyof typeof translationMap] || en;
+  return (key: string, fallback?: string) => {
+    const keys = key.split('.');
+    let value: any = translations;
+    for (const k of keys) {
+      value = value && value[k];
+    }
+    return value || fallback || key;
+  };
+}
 
 interface BookingManagementProps {
   currentUser: {
@@ -50,6 +69,10 @@ interface BookingManagementProps {
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
   const modal = useModal();
+  // Only declare language if not already declared above
+  // If 'language' is already declared, use a different variable name
+  const langCtx = useLanguage();
+  const t = useT(langCtx.language);
   const { language } = useLanguage();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
@@ -1188,8 +1211,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <Mail className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Send via Email</div>
-                    <div className="text-sm text-gray-600">Send professional email notification</div>
+                    <div className="font-semibold text-gray-900">{t('notification.sendNotification', 'Send Notification')}</div>
+                    <div className="text-sm text-gray-600">{t('notification.email', 'Send professional email notification')}</div>
                   </div>
                 </button>
 
@@ -1205,10 +1228,22 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <Copy className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
-                    <div className="text-sm text-gray-600">Copy booking details to share via WhatsApp</div>
+                    <div className="font-semibold text-gray-900">{t('notification.whatsapp', 'Copy for WhatsApp')}</div>
+                    <div className="text-sm text-gray-600">{t('notification.whatsappMessage', 'Copy booking details to share via WhatsApp')}</div>
                   </div>
                 </button>
+
+                <div className="pt-2 text-xs text-gray-500 flex items-center gap-2">
+                  <span>⭐️</span>
+                  <a
+                    href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:text-blue-600"
+                  >
+                    {t('business.reviewLink', 'Click here to review us on Google')}
+                  </a>
+                </div>
               </div>
 
               <div className="pt-4 border-t border-gray-200">

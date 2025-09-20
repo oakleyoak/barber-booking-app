@@ -264,67 +264,54 @@ export const InvoiceService = {
 
   // Format invoice data as WhatsApp-friendly text
   formatInvoiceForWhatsApp: async (invoice: InvoiceData, paymentUrl: string, language: Language = 'en'): Promise<string> => {
-    const translations = await InvoiceService.getTranslations(language);
+    const t = await InvoiceService.getTranslations(language);
 
-    const formattedPrice = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
-      style: 'currency',
-      currency: 'TRY'
-    }).format(invoice.price);
-
-    const formattedFee = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
-      style: 'currency',
-      currency: 'TRY'
-    }).format(invoice.card_processing_fee);
-
+    // Format currency and dates
+    const locale = language === 'tr' ? 'tr-TR' : language === 'el' ? 'el-GR' : language === 'ru' ? 'ru-RU' : language === 'fa' ? 'fa-IR' : language === 'ar' ? 'ar-EG' : 'en-US';
+    const currency = 'TRY';
+    const formattedPrice = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(invoice.price);
+    const formattedFee = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(invoice.card_processing_fee);
     const totalAmount = invoice.price + invoice.card_processing_fee;
-    const formattedTotal = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
-      style: 'currency',
-      currency: 'TRY'
-    }).format(totalAmount);
+    const formattedTotal = new Intl.NumberFormat(locale, { style: 'currency', currency }).format(totalAmount);
+    const formattedDate = new Date(invoice.date).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
+    const formattedDueDate = new Date(invoice.due_date).toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
 
-    let whatsappText = `💰 *${translations.invoice.title} - Edge & Co Barbershop*\n\n`;
-    whatsappText += `📄 ${translations.invoice.invoiceNumber}: *${invoice.invoice_number}*\n`;
-    whatsappText += `📅 ${translations.booking.date}: ${new Date(invoice.date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })}\n`;
-    whatsappText += `⏰ ${translations.booking.time}: ${invoice.time}\n`;
-    whatsappText += `📅 ${translations.invoice.dueDate}: ${new Date(invoice.due_date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })}\n\n`;
+    // WhatsApp text using i18n keys and review link
+    let whatsappText = `💰 *${t.invoice.title} - ${t.business.name || 'Edge & Co Barbershop'}*\n\n`;
+    whatsappText += `📄 ${t.invoice.invoiceNumber}: *${invoice.invoice_number}*\n`;
+    whatsappText += `📅 ${t.booking.date}: ${formattedDate}\n`;
+    whatsappText += `⏰ ${t.booking.time}: ${invoice.time}\n`;
+    whatsappText += `📅 ${t.invoice.dueDate}: ${formattedDueDate}\n\n`;
+    whatsappText += `👤 ${t.customer.name}: *${invoice.customer_name}*\n`;
+    whatsappText += `✂️ ${t.booking.service}: ${invoice.service}\n`;
+    whatsappText += `💵 ${t.invoice.unitPrice}: ${formattedPrice}\n`;
+    whatsappText += `💳 ${t.invoice.tax}: ${formattedFee}\n`;
+    whatsappText += `💰 *${t.invoice.total}: ${formattedTotal}*\n\n`;
 
-    whatsappText += `👤 ${translations.customer.name}: *${invoice.customer_name}*\n`;
-    whatsappText += `✂️ ${translations.booking.service}: ${invoice.service}\n`;
-    whatsappText += `💵 ${translations.invoice.unitPrice}: ${formattedPrice}\n`;
-    whatsappText += `💳 ${translations.invoice.tax}: ${formattedFee}\n`;
-    whatsappText += `💰 *${translations.invoice.total}: ${formattedTotal}*\n\n`;
-
-    // Payment Methods Section
-    whatsappText += `💳 *PAYMENT METHODS*\n\n`;
-
-    // Card Payment (if available)
+    // Payment Methods Section (i18n)
+    whatsappText += `💳 *${t.invoice.paymentLink || 'Payment Methods'}*\n\n`;
     if (paymentUrl) {
-      whatsappText += `💳 *Credit/Debit Card:*\n`;
+      whatsappText += `💳 *${t.invoice.paymentLink || 'Credit/Debit Card'}:*\n`;
       whatsappText += `${paymentUrl}\n\n`;
     }
-
-    // Bank Transfer (IBAN)
-    whatsappText += `🏦 *Bank Transfer (IBAN):*\n`;
-    whatsappText += `IBAN: ${BusinessConfig.iban}\n`;
-    whatsappText += `Account Holder: ${BusinessConfig.accountHolder}\n`;
-    whatsappText += `Bank: ${BusinessConfig.bankName}\n`;
+    whatsappText += `🏦 *${t.invoice.bankTransfer || 'Bank Transfer (IBAN)'}:*\n`;
+    whatsappText += `${t.invoice.iban || 'IBAN'}: ${BusinessConfig.iban}\n`;
+    whatsappText += `${t.invoice.accountHolder || 'Account Holder'}: ${BusinessConfig.accountHolder}\n`;
+    whatsappText += `${t.invoice.bankName || 'Bank'}: ${BusinessConfig.bankName}\n`;
     whatsappText += `BIC: ${BusinessConfig.bic}\n`;
-    whatsappText += `Reference: ${invoice.invoice_number}\n\n`;
+    whatsappText += `${t.invoice.invoiceNumber}: ${invoice.invoice_number}\n\n`;
 
-    whatsappText += `🙏 ${translations.invoice.thankYou}\n`;
-    whatsappText += `📍 ${BusinessConfig.businessName}\n`;
+    whatsappText += `🙏 ${t.invoice.thankYou}\n`;
+    whatsappText += `📍 ${t.business.name || BusinessConfig.businessName}\n`;
     whatsappText += `📧 ${BusinessConfig.businessEmail}\n`;
     whatsappText += `📞 ${BusinessConfig.businessPhone}\n`;
-    whatsappText += `🗺️ <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu">Click here to review us on Google Maps</a>\n\n`;
-    whatsappText += `#EdgeAndCo #Barbershop #${translations.invoice.title}`;
+
+    // Google review link (i18n)
+    const reviewLink = t.business.reviewLink || 'Click here to review us on Google';
+    const reviewUrl = 'https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu';
+    whatsappText += `⭐️ ${reviewLink}: ${reviewUrl}\n\n`;
+
+    whatsappText += `#EdgeAndCo #Barbershop #${t.invoice.title}`;
 
     return whatsappText;
   },
