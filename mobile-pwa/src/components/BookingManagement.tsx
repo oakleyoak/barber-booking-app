@@ -31,7 +31,7 @@ import { useModal } from './ui/ModalProvider';
 import { supabase, type Booking } from '../lib/supabase';
 import { EarningsService } from '../services/earningsService';
 import { userService, customerService, bookingService } from '../services/completeDatabase';
-import { NotificationsService, generateAppointmentReminder } from '../services/notifications';
+import { NotificationsService, generateAppointmentReminder, generateBookingConfirmationEmail } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
 import { ServicePricingService, SERVICES } from '../services/servicePricing';
 import { UserManagementService } from '../services/userManagementService';
@@ -234,12 +234,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         return;
       }
 
-      // Use the professional template for appointment reminders
-      const { subject, html } = generateAppointmentReminder(booking);
+      // Use the booking confirmation template for customer notifications
+      const { subject, html } = await generateBookingConfirmationEmail(booking, language);
       await NotificationsService.sendNotification({
         type: 'customer_notification',
         booking_id: booking.id,
         booking_data: booking,
+        language,
         email_content: {
           to: toEmail,
           subject,

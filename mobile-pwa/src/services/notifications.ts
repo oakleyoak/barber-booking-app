@@ -55,8 +55,8 @@ const generateBookingNotificationForBarber = (booking: any) => {
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+          <div style="color:#555;">Shop address: ${BusinessConfig.businessAddress}</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
           <div style="margin-top:8px;">
             <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
           </div>
@@ -68,47 +68,57 @@ const generateBookingNotificationForBarber = (booking: any) => {
   };
 };
 
-const generateBookingConfirmationEmail = (booking: any) => {
-  // Check for payment URL from booking data
-  const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
+const getTranslations = async (language: string) => {
+  switch (language) {
+    case 'tr': return (await import('../i18n/translations/tr')).default;
+    case 'ar': return (await import('../i18n/translations/ar')).default;
+    case 'fa': return (await import('../i18n/translations/fa')).default;
+    case 'el': return (await import('../i18n/translations/el')).default;
+    case 'ru': return (await import('../i18n/translations/ru')).default;
+    default: return (await import('../i18n/translations/en')).default;
+  }
+};
 
+export const generateBookingConfirmationEmail = async (booking: any, language: string = 'en') => {
+  const t = await getTranslations(language);
+  const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
   return {
-    subject: `✂️ Booking Confirmation - Edge & Co Barbershop`,
+    subject: `✅ ${t.notification.bookingConfirmed || 'Booking Confirmed'} - Edge & Co Barbershop`,
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background:#fff; border-radius:8px;">
         <div style="display:flex; align-items:center; gap:12px; margin-bottom: 18px;">
           <div>
             <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
-            <div style="font-size:12px; color:#666;">Booking Confirmation</div>
+            <div style="font-size:12px; color:#666;">${t.notification.bookingConfirmed || 'Booking Confirmation'}</div>
           </div>
         </div>
 
         <div style="background-color: #f8f9fa; padding: 14px; border-radius: 8px; margin-bottom: 14px;">
-          <h4 style="color: #2c3e50; margin-top: 0;">Appointment Details</h4>
-          <p style="margin:6px 0;"><strong>Customer:</strong> ${booking.customer_name}</p>
-          <p style="margin:6px 0;"><strong>Service:</strong> ${booking.service}</p>
-          <p style="margin:6px 0;"><strong>Date:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString() : '—'}</p>
-          <p style="margin:6px 0;"><strong>Time:</strong> ${booking.time || '—'}</p>
-          <p style="margin:6px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
+          <h4 style="color: #2c3e50; margin-top: 0;">${t.notification.title || 'Appointment Details'}</h4>
+          <p style="margin:6px 0;"><strong>${t.customer?.name || 'Customer'}:</strong> ${booking.customer_name}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.service || 'Service'}:</strong> ${booking.service}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.date || 'Date'}:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US') : '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.time || 'Time'}:</strong> ${booking.time || '—'}</p>
+          <p style="margin:6px 0;"><strong>${t.booking?.price || 'Price'}:</strong> ${booking.price ? `₺${booking.price}` : '—'}</p>
         </div>
 
         ${paymentUrl ? `
           <div style="background-color: #fff9e6; padding: 14px; border-radius: 8px; margin-bottom: 14px; border-left: 4px solid #f39c12;">
-            <h4 style="color: #2c3e50; margin-top: 0;">💳 Payment Options</h4>
-            <p style="margin: 0; color: #856404;">You can pay securely online for this appointment:</p>
-            <p style="margin: 8px 0 0 0;"><a href="${paymentUrl}" style="background: #3498db; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: 700;">Pay Now</a></p>
+            <h4 style="color: #2c3e50; margin-top: 0;">💳 ${t.invoice?.paymentLink || 'Payment Options'}</h4>
+            <p style="margin: 0; color: #856404;">${t.invoice?.payNow || 'You can pay securely online for this appointment:'}</p>
+            <p style="margin: 8px 0 0 0;"><a href="${paymentUrl}" style="background: #3498db; color: #fff; text-decoration: none; padding: 10px 16px; border-radius: 6px; font-weight: 700;">${t.invoice?.payNow || 'Pay Now'}</a></p>
           </div>
         ` : ''}
 
         <div style="background-color: #e8f5e8; padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-          <p style="margin: 0; color: #27ae60;"><strong>✅ Your appointment is confirmed!</strong></p>
-          <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">We look forward to seeing you at Edge & Co Barbershop.</p>
+          <p style="margin: 0; color: #27ae60;"><strong>✅ ${t.notification?.bookingConfirmed || 'Your appointment is confirmed!'}</strong></p>
+          <p style="margin: 6px 0 0 0; font-size: 13px; color:#444;">${t.notification?.confirmationMessage || 'Thank you for choosing Edge & Co Barbershop. We look forward to seeing you!'}</p>
         </div>
 
         <div style="border-top: 1px solid #eee; padding-top: 14px; text-align: left; font-size: 13px; color: #666;">
           <div style="font-weight:700;">Edge & Co Barbershop</div>
-          <div style="color:#555;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
-          <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+          <div style="color:#555;">${t.business?.address ? t.business.address : `Shop address: ${BusinessConfig.businessAddress}`}</div>
+          <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">You received this email because you booked an appointment with Edge & Co Barbershop.</p>
           <p style="font-size: 13px; color: #3498db; margin-top: 10px;">
@@ -120,12 +130,13 @@ const generateBookingConfirmationEmail = (booking: any) => {
   };
 };
 
-export const generateAppointmentReminder = (booking: any) => {
+export const generateAppointmentReminder = async (booking: any, language: string = 'en') => {
+  const t = await getTranslations(language);
   const paymentUrl = booking?.stripe_payment_url || booking?.invoice_url || booking?.payment_url || '';
   const color = '#3498db'; // Match invoice accent color
 
   return {
-    subject: `⏰ Appointment Reminder - Edge & Co Barbershop`,
+    subject: `⏰ ${t.notification?.title || 'Appointment Reminder'} - Edge & Co Barbershop`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width: 720px; margin: 0 auto; padding: 20px; background:#f4f6f8;">
         <div style="background:#ffffff; padding:22px; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
@@ -133,43 +144,43 @@ export const generateAppointmentReminder = (booking: any) => {
             <div style="display:flex; align-items:center; gap:12px;">
               <div>
                 <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
-                <div style="font-size:13px; color:#666;">Professional Grooming Services</div>
+                <div style="font-size:13px; color:#666;">${t.notification?.title || 'Professional Grooming Services'}</div>
               </div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:12px; color:#666;">Appointment Reminder</div>
+              <div style="font-size:12px; color:#666;">${t.notification?.title || 'Appointment Reminder'}</div>
               <div style="font-weight:700; font-size:16px; color:${color};">Tomorrow</div>
             </div>
           </div>
 
           <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
             <div style="flex:1; min-width:240px;">
-              <div style="font-size:13px; color:#888; margin-bottom:6px;">Appointment Details</div>
-              <div style="font-weight:700; font-size:15px; color:#222;">${booking.customer_name || 'Valued Customer'}</div>
+              <div style="font-size:13px; color:#888; margin-bottom:6px;">${t.notification?.title || 'Appointment Details'}</div>
+              <div style="font-weight:700; font-size:15px; color:#222;">${booking.customer_name || t.customer?.name || 'Valued Customer'}</div>
               <div style="color:#555; font-size:13px;">${booking.customer_email || ''}</div>
               <div style="margin-top:12px;">
-                <div style="font-size:13px; margin:4px 0;"><strong>Service:</strong> ${booking.service || '—'}</div>
-                <div style="font-size:13px; margin:4px 0;"><strong>Date:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString() : '—'}</div>
-                <div style="font-size:13px; margin:4px 0;"><strong>Time:</strong> ${booking.time || '—'}</div>
-                <div style="font-size:13px; margin:4px 0;"><strong>Barber:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
-                <div style="font-size:13px; margin:4px 0;"><strong>Price:</strong> ${booking.price ? `₺${booking.price}` : '—'}</div>
+                <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.service || 'Service'}:</strong> ${booking.service || '—'}</div>
+                <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.date || 'Date'}:</strong> ${booking.date ? new Date(booking.date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US') : '—'}</div>
+                <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.time || 'Time'}:</strong> ${booking.time || '—'}</div>
+                <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.barber || 'Barber'}:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
+                <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.price || 'Price'}:</strong> ${booking.price ? `₺${booking.price}` : '—'}</div>
               </div>
             </div>
 
             ${paymentUrl ? `
               <div style="width:300px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
-                <div style="font-weight:700; margin-bottom:6px;">💳 Outstanding Payment</div>
-                <div style="font-size:13px; margin:4px 0; color:#444;">Your appointment payment is still pending</div>
+                <div style="font-weight:700; margin-bottom:6px;">💳 ${t.invoice?.paymentLink || 'Outstanding Payment'}</div>
+                <div style="font-size:13px; margin:4px 0; color:#444;">${t.invoice?.payNow || 'Your appointment payment is still pending'}</div>
                 <div style="margin-top:12px;">
-                  <a href="${paymentUrl}" style="display:inline-block; background:#e74c3c; color:#fff; text-decoration:none; padding:10px 14px; border-radius:6px; font-weight:700;">Pay Now</a>
+                  <a href="${paymentUrl}" style="display:inline-block; background:#e74c3c; color:#fff; text-decoration:none; padding:10px 14px; border-radius:6px; font-weight:700;">${t.invoice?.payNow || 'Pay Now'}</a>
                 </div>
                 <div style="font-size:12px; color:#666; margin-top:8px;">Secure payment via Stripe</div>
               </div>
             ` : `
               <div style="width:300px; min-width:220px; background:#f8f9fa; padding:12px; border-radius:8px;">
-                <div style="font-weight:700; margin-bottom:6px;">✅ Payment Status</div>
-                <div style="font-size:13px; color:#27ae60; margin:4px 0;">Payment Complete</div>
-                <div style="font-size:12px; color:#666; margin-top:8px;">Thank you for your payment</div>
+                <div style="font-weight:700; margin-bottom:6px;">✅ ${t.invoice.paymentStatus || 'Payment Status'}</div>
+                <div style="font-size:13px; color:#27ae60; margin:4px 0;">${t.invoice.paymentComplete || 'Payment Complete'}</div>
+                <div style="font-size:12px; color:#666; margin-top:8px;">${t.invoice?.thankYou || 'Thank you for your payment'}</div>
               </div>
             `}
           </div>
@@ -178,9 +189,9 @@ export const generateAppointmentReminder = (booking: any) => {
             <table style="width:100%; border-collapse:collapse;">
               <thead>
                 <tr style="background:${color}; color:#fff; text-align:left;">
-                  <th style="padding:12px;">Service</th>
-                  <th style="padding:12px;">Barber</th>
-                  <th style="padding:12px; text-align:right;">Price</th>
+                  <th style="padding:12px;">${t.booking?.service || 'Service'}</th>
+                  <th style="padding:12px;">${t.booking?.barber || 'Barber'}</th>
+                  <th style="padding:12px; text-align:right;">${t.booking?.price || 'Price'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -194,30 +205,30 @@ export const generateAppointmentReminder = (booking: any) => {
           </div>
 
           <div style="background:#fff7ea; padding:12px; border-radius:8px; border-left:4px solid #ffc107; margin-bottom:12px;">
-            <div style="font-weight:700; color:#856404;">📋 Appointment Guidelines</div>
+            <div style="font-weight:700; color:#856404;">📋 ${t.notification.guidelines || 'Appointment Guidelines'}</div>
             <ul style="color:#856404; margin:8px 0 0 18px;">
-              <li>Please arrive 5 minutes before your scheduled appointment time</li>
-              <li>Bring a valid form of identification if this is your first visit</li>
-              <li>Contact us immediately at +90 533 854 67 96 if you need to reschedule</li>
-              <li>Late arrivals may result in shortened service time or rescheduling</li>
-              <li>We maintain strict hygiene standards and use sanitized equipment</li>
+              <li>${t.notification.arriveEarly || 'Please arrive 5 minutes before your scheduled appointment time'}</li>
+              <li>${t.notification.bringId || 'Bring a valid form of identification if this is your first visit'}</li>
+              <li>${t.notification.contact || `Contact us immediately at ${BusinessConfig.businessPhone} if you need to reschedule`}</li>
+              <li>${t.notification.lateArrival || 'Late arrivals may result in shortened service time or rescheduling'}</li>
+              <li>${t.notification.hygiene || 'We maintain strict hygiene standards and use sanitized equipment'}</li>
             </ul>
           </div>
 
           <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin-bottom:16px;">
             <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
-              <div style="font-weight:700; margin-bottom:6px;">Barber Details</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Name:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Phone:</strong> +90 533 854 67 96</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Shop Address:</strong> Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
-              <div style="font-size:12px; color:#666; margin-top:8px;">Contact your barber directly for any changes</div>
+                <div style="font-weight:700; margin-bottom:6px;">${t.booking?.barber || 'Barber'} Details</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>${t.booking?.barber || 'Name'}:</strong> ${booking.barber_name || booking.users?.name || 'Edge & Co Team'}</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>${t.business?.phone || 'Phone'}:</strong> ${BusinessConfig.businessPhone}</div>
+              <div style="font-size:13px; margin:4px 0;"><strong>${t.business?.address || 'Shop Address'}:</strong> ${BusinessConfig.businessAddress}</div>
+              <div style="font-size:12px; color:#666; margin-top:8px;">${t.notification.contactBarber || 'Contact your barber directly for any changes'}</div>
             </div>
           </div>
 
           <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
             <div style="font-size:13px; color:#444;">
               <div style="font-weight:700;">Edge & Co Barbershop</div>
-              <div style="margin-top:6px;">📧 <a href="mailto:edgeandcobarber@gmail.com">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
+              <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
               <div style="margin-top:8px;">
                 <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
               </div>
@@ -288,7 +299,7 @@ const NotificationsService = {
         console.log('👤 Using customer confirmation template');
         const booking = payload.booking_data;
 
-        const template = generateBookingConfirmationEmail(booking);
+        const template = await generateBookingConfirmationEmail(booking, payload.language || 'en');
         const resolved = await resolveCustomerEmail(booking);
         emailContent = {
           subject: template.subject,
@@ -302,14 +313,15 @@ const NotificationsService = {
 
         // If caller provided email_content (to/subject/html) use it directly
         if (providedTo || providedSubject || providedHtml) {
+          const template = await generateBookingConfirmationEmail(booking, payload.language || 'en');
           emailContent = {
-            subject: providedSubject || `✂️ Booking Confirmation - Edge & Co Barbershop`,
-            html: providedHtml || generateBookingConfirmationEmail(booking).html,
+            subject: providedSubject || template.subject,
+            html: providedHtml || template.html,
             to: providedTo || ''
           };
         } else {
           // Fallback: resolve from customers table
-          const template = generateBookingConfirmationEmail(booking);
+          const template = await generateBookingConfirmationEmail(booking, payload.language || 'en');
           const resolved = await resolveCustomerEmail(booking);
           emailContent = {
             subject: template.subject,
@@ -329,7 +341,7 @@ const NotificationsService = {
         // Backwards compatible: treat booking_reminder as appointment_reminder
         console.log('⏰ Using booking_reminder template (compat)');
         const booking = payload.booking_data || {};
-        const template = generateAppointmentReminder(booking);
+  const template = await generateAppointmentReminder(booking, payload.language || 'en');
         // prefer provided email_content.to or payload.to, then resolved customer email
         const provided = payload.email_content || {};
         const toResolved = await resolveCustomerEmail(booking);
@@ -341,7 +353,7 @@ const NotificationsService = {
       } else if (payload.type === 'appointment_reminder') {
         console.log('⏰ Using appointment reminder template');
         const booking = payload.booking_data;
-        const template = generateAppointmentReminder(booking);
+  const template = await generateAppointmentReminder(booking, payload.language || 'en');
         const resolved = await resolveCustomerEmail(booking);
         emailContent = {
           subject: template.subject,

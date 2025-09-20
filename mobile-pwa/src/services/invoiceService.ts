@@ -127,14 +127,30 @@ export const InvoiceService = {
         }
       }
 
-      // Get payment methods
+      // Get payment methods - reuse existing payment link if available
       let finalStripeUrl = '';
 
-      // Create new payment link if not already paid
-      if (booking.payment_status !== 'paid') {
+      // Check if booking already has a payment link
+      if (booking.invoice_url && booking.invoice_url.trim() !== '') {
+        finalStripeUrl = booking.invoice_url;
+        console.log('Reusing existing payment link:', finalStripeUrl);
+      } else if (booking.payment_status !== 'paid') {
+        // Create new payment link only if none exists
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
           finalStripeUrl = created.url;
+          console.log('Created new payment link:', finalStripeUrl);
+
+          // Save the payment link to the booking (only update existing field)
+          try {
+            await supabase
+              .from('bookings')
+              .update({ invoice_url: finalStripeUrl })
+              .eq('id', booking.id);
+            console.log('Saved payment link to database');
+          } catch (e) {
+            console.warn('Error saving payment link to booking:', e);
+          }
         }
       }
 
@@ -209,14 +225,30 @@ export const InvoiceService = {
         }
       }
 
-      // Get payment methods
+      // Get payment methods - reuse existing payment link if available
       let finalStripeUrl = '';
 
-      // Create new payment link if not already paid
-      if (booking.payment_status !== 'paid') {
+      // Check if booking already has a payment link
+      if (booking.invoice_url && booking.invoice_url.trim() !== '') {
+        finalStripeUrl = booking.invoice_url;
+        console.log('Reusing existing payment link:', finalStripeUrl);
+      } else if (booking.payment_status !== 'paid') {
+        // Create new payment link only if none exists
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
           finalStripeUrl = created.url;
+          console.log('Created new payment link:', finalStripeUrl);
+
+          // Save the payment link to the booking (only update existing field)
+          try {
+            await supabase
+              .from('bookings')
+              .update({ invoice_url: finalStripeUrl })
+              .eq('id', booking.id);
+            console.log('Saved payment link to database');
+          } catch (e) {
+            console.warn('Error saving payment link to booking:', e);
+          }
         }
       }
 
@@ -288,9 +320,10 @@ export const InvoiceService = {
     whatsappText += `Reference: ${invoice.invoice_number}\n\n`;
 
     whatsappText += `🙏 ${translations.invoice.thankYou}\n`;
-    whatsappText += `📍 ${translations.business.name}\n`;
+    whatsappText += `📍 ${BusinessConfig.businessName}\n`;
     whatsappText += `📧 ${BusinessConfig.businessEmail}\n`;
-    whatsappText += `📞 ${BusinessConfig.businessPhone}\n\n`;
+    whatsappText += `📞 ${BusinessConfig.businessPhone}\n`;
+    whatsappText += `🗺️ <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu">Click here to review us on Google Maps</a>\n\n`;
     whatsappText += `#EdgeAndCo #Barbershop #${translations.invoice.title}`;
 
     return whatsappText;
@@ -433,6 +466,9 @@ export const InvoiceService = {
           <div class="footer">
             <p>Thank you for choosing Edge & Co Barbershop!</p>
             <p>Professional grooming services with a modern touch.</p>
+            <p style="margin-top: 15px;">
+              <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color: ${accentColor}; text-decoration: underline;" target="_blank">Click here to review us on Google Maps</a>
+            </p>
           </div>
         </div>
       </body>
@@ -451,9 +487,10 @@ export const InvoiceService = {
       };
 
       // Only update invoice data if it's not a resend (to preserve original data)
-      if (!isResend) {
-        updateData.invoice_data = invoice;
-      }
+      // Note: invoice_data field doesn't exist in database schema
+      // if (!isResend) {
+      //   updateData.invoice_data = invoice;
+      // }
 
       const { error } = await supabase
         .from('bookings')
