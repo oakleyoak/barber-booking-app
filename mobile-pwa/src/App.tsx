@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart } from 'lucide-react';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart, Globe } from 'lucide-react';
 import logoIcon from './assets/BWicon.png';
 import largeLogo from './assets/edgeandcoblackandwhitelogobackground.png';
 import { supabase } from './lib/supabase';
@@ -15,8 +15,11 @@ import InventoryManager from './components/InventoryManager';
 import SuppliesInventory from './components/SuppliesInventory';
 import IncidentReports from './components/IncidentReports';
 import ModalProvider from './components/ui/ModalProvider';
+import LanguageSelector from './i18n/LanguageSelector';
+import { useLanguage } from './i18n/LanguageContext';
 
 function App() {
+  const { t } = useLanguage();
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [currentView, setCurrentView] = useState('calendar');
@@ -155,6 +158,9 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <div className="hidden sm:block">
+                    <LanguageSelector className="w-32" />
+                  </div>
                   <span className="text-xs text-gray-700">
                     {currentUser.name} ({currentUser.role})
                   </span>

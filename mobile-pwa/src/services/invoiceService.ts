@@ -1,13 +1,13 @@
-import { NotificationsService } from './notifications';
+﻿import { NotificationsService } from './notifications';
 import { BusinessConfig } from '../config/businessConfig';
 import { StripePaymentLinks } from './stripeService';
 import { supabase } from '../lib/supabase';
+import { Language } from '../i18n/LanguageContext';
 
 export interface InvoiceData {
   booking_id: string;
   customer_name: string;
   customer_email: string;
-  // note: customer_email here is a runtime/resolved value (from customers.email)
   service: string;
   price: number;
   card_processing_fee: number;
@@ -16,7 +16,7 @@ export interface InvoiceData {
   invoice_number: string;
   due_date: string;
   barber_name: string;
-  stripe_payment_url?: string; // Add Stripe payment URL
+  stripe_payment_url?: string;
 }
 
 export interface PaymentMethod {
@@ -46,7 +46,6 @@ export const InvoiceService = {
   },
 
   // Create Stripe payment link for invoice
-  // Returns an object with id and url, or null on failure
   createStripePaymentLink: async (invoice: InvoiceData): Promise<{ id: string; url: string } | null> => {
     try {
       const response = await fetch('/.netlify/functions/create-stripe-payment', {
@@ -55,217 +54,36 @@ export const InvoiceService = {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          amount: Math.round((invoice.price + invoice.card_processing_fee) * 100), // Convert to kuruş
-          currency: 'TRY',
-          description: `${invoice.service} - Edge & Co Barbershop`,
-          invoiceNumber: invoice.invoice_number,
-          customerEmail: invoice.customer_email,
-          customerName: invoice.customer_name,
-          services: [
-            {
-              name: invoice.service,
-              price: invoice.price
-            }
-          ],
-          cardProcessingFee: invoice.card_processing_fee
-        })
+          amount: Math.round((invoice.price + invoice.card_processing_fee) * 100), // Convert to cents
+          currency: 'try',
+          description: `Invoice ${invoice.invoice_number} - ${invoice.service}`,
+          customer_email: invoice.customer_email,
+          metadata: {
+            invoice_number: invoice.invoice_number,
+            customer_name: invoice.customer_name,
+            service: invoice.service,
+            booking_date: invoice.date,
+            booking_time: invoice.time,
+          },
+        }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        // Expecting { id, url }
-        return { id: result.id, url: result.url };
-      } else {
-        const errorText = await response.text();
-        console.error('Failed to create Stripe payment link:', response.status, errorText);
-        return null;
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
+
+      const data = await response.json();
+      return { id: data.id, url: data.url };
     } catch (error) {
       console.error('Error creating Stripe payment link:', error);
       return null;
     }
   },
 
-  // Update booking with invoice and payment information
-  updateBookingInvoiceData: async (bookingId: string, invoiceData: InvoiceData, stripePaymentId?: string, invoiceUrl?: string, isResend: boolean = false): Promise<void> => {
+  // Send invoice
+  sendInvoice: async (booking: any, language: Language = 'en', preview: boolean = false): Promise<{ ok: boolean; error?: string }> => {
     try {
-      // Get existing booking data to check what needs updating
-      const { data: existingBooking } = await supabase
-        .from('bookings')
-        .select('invoice_number, stripe_payment_id, invoice_url, payment_status')
-        .eq('id', bookingId)
-        .single();
-
-      // Build update object - only update fields that need updating
-      const updateData: any = {
-        invoice_sent_at: new Date().toISOString(), // Always update when sending
-      };
-
-      // Only update invoice_number if it doesn't exist
-      if (!existingBooking?.invoice_number) {
-        updateData.invoice_number = invoiceData.invoice_number;
-      }
-
-      // Only update payment info if not already paid and we have new payment details
-      if (existingBooking?.payment_status !== 'paid') {
-        if (stripePaymentId) updateData.stripe_payment_id = stripePaymentId;
-        if (invoiceUrl) updateData.invoice_url = invoiceUrl;
-        updateData.payment_status = 'pending';
-        updateData.payment_amount = invoiceData.price + invoiceData.card_processing_fee;
-      }
-
-      const { error } = await supabase
-        .from('bookings')
-        .update(updateData)
-        .eq('id', bookingId);
-
-      if (error) {
-        console.error('Failed to update booking with invoice data:', error);
-        throw error;
-      }
-
-      console.log('✅ Updated booking with invoice data:', bookingId, isResend ? '(resend)' : '(new)');
-    } catch (error) {
-      console.error('Error updating booking invoice data:', error);
-      throw error;
-    }
-  },
-
-  // Available payment methods
-  getPaymentMethods: (invoice: InvoiceData, stripeUrl?: string): PaymentMethod[] => {
-    return [
-      {
-        id: 'iban_tr',
-        name: 'Bank Transfer (IBAN)',
-        type: 'iban',
-        details: BusinessConfig.iban,
-        icon: '🏦'
-      },
-      {
-        id: 'stripe',
-        name: 'Credit/Debit Card (Stripe)',
-        type: 'online',
-        details: stripeUrl || 'Pay securely with your card',
-        icon: '💳'
-      },
-      // PayPal removed
-    ];
-  },
-
-  // Generate invoice HTML template
-  generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[], accentColor?: string): string => {
-    const ibanMethod = paymentMethods.find(pm => pm.type === 'iban');
-    const onlineMethods = paymentMethods.filter(pm => pm.type === 'online');
-  const onlineUrl = onlineMethods.length ? onlineMethods[0].details : '';
-    const color = accentColor || BusinessConfig.accentColor || '#3498db';
-
-    return `
-      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; max-width: 720px; margin: 0 auto; padding: 20px; background:#f4f6f8;">
-        <div style="background:#ffffff; padding:22px; border-radius:10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px;">
-            <div style="display:flex; align-items:center; gap:12px;">
-              <div>
-                <div style="font-weight:700; color:#2c3e50; font-size:18px;">Edge & Co Barbershop</div>
-                <div style="font-size:13px; color:#666;">Shop address: Şair Nedim Sok, Sakarya, Dış Kapı No: Zemin Kat, Gazimağusa Bel. / Gazimağusa KKTC</div>
-              </div>
-            </div>
-              <div style="text-align:right;">
-              <div style="font-size:12px; color:#666;">Invoice #</div>
-              <div style="font-weight:700; font-size:16px; color:${color};">${invoice.invoice_number}</div>
-            </div>
-          </div>
-
-          <div style="display:flex; flex-wrap:wrap; gap:16px; margin-bottom:18px;">
-            <div style="flex:1; min-width:240px;">
-              <div style="font-size:13px; color:#888; margin-bottom:6px;">Bill To</div>
-              <div style="font-weight:700; font-size:15px; color:#222;">${invoice.customer_name}</div>
-              <div style="color:#555; font-size:13px;">${invoice.customer_email}</div>
-              <div style="margin-top:8px; font-size:13px; color:#444;">Appointment: ${new Date(invoice.date).toLocaleDateString()} at ${invoice.time}</div>
-            </div>
-
-            <div style="width:300px; min-width:220px; background:#fafafa; padding:12px; border-radius:8px;">
-              <div style="font-size:13px; color:#888;">Invoice Details</div>
-              <div style="margin-top:8px; font-size:13px; color:#333;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
-              <div style="margin-top:6px; font-size:13px; color:#333;"><strong>Due Date:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</div>
-            </div>
-          </div>
-
-          <div style="margin-bottom:18px;">
-            <table style="width:100%; border-collapse:collapse;">
-              <thead>
-                <tr style="background:${color}; color:#fff; text-align:left;">
-                  <th style="padding:12px;">Service</th>
-                  <th style="padding:12px;">Barber</th>
-                  <th style="padding:12px; text-align:right;">Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style="background:#fff;">
-                  <td style="padding:12px; border-bottom:1px solid #eee;">${invoice.service}</td>
-                  <td style="padding:12px; border-bottom:1px solid #eee;">${invoice.barber_name}</td>
-                  <td style="padding:12px; border-bottom:1px solid #eee; text-align:right; font-weight:700;">₺${invoice.price.toLocaleString('tr-TR')}</td>
-                </tr>
-                <tr>
-                  <td style="padding:12px;">Card Processing Fee</td>
-                  <td style="padding:12px;">-</td>
-                  <td style="padding:12px; text-align:right;">₺${invoice.card_processing_fee.toLocaleString('tr-TR')}</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="2" style="padding:12px; text-align:right; font-weight:800;">Total</td>
-                  <td style="padding:12px; text-align:right; font-weight:800;">₺${(invoice.price + invoice.card_processing_fee).toLocaleString('tr-TR')}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          ${onlineUrl ? `
-            <div style="text-align:right; margin-bottom:18px;">
-              <a href="${onlineUrl}" style="background:${color}; color:#fff; text-decoration:none; padding:10px 14px; border-radius:8px; font-weight:700;">Pay Invoice</a>
-            </div>
-          ` : ''}
-
-          <div style="display:flex; flex-wrap:wrap; gap:16px; align-items:flex-start; margin-bottom:16px;">
-            <div style="width:320px; min-width:220px; background:#fff; padding:12px; border-radius:8px; border:1px solid #eee;">
-              <div style="font-weight:700; margin-bottom:6px;">Payment Details</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>IBAN:</strong> ${BusinessConfig.iban}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Account Holder:</strong> ${BusinessConfig.accountHolder}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>Bank:</strong> ${BusinessConfig.bankName}</div>
-              <div style="font-size:13px; margin:4px 0;"><strong>BIC:</strong> ${BusinessConfig.bic}</div>
-              <div style="font-size:12px; color:#777; margin-top:8px;">${BusinessConfig.bankAddress}</div>
-              <div style="font-size:12px; color:#555; margin-top:8px;"><strong>Reference:</strong> ${invoice.invoice_number}</div>
-            </div>
-          </div>
-
-          <div style="background:#fff7ea; padding:12px; border-radius:8px; border-left:4px solid #ffc107; margin-bottom:12px;">
-            <div style="font-weight:700; color:#856404;">📋 Payment Terms</div>
-            <ul style="color:#856404; margin:8px 0 0 18px;">
-              <li>Payment is due within 7 days of invoice date</li>
-              <li>Late payments may incur additional charges</li>
-              <li>Please contact us if you have any questions about this invoice</li>
-            </ul>
-          </div>
-
-          <div style="border-top:1px solid #eee; padding-top:14px; display:flex; justify-content:space-between; align-items:center; gap:12px;">
-              <div style="font-size:13px; color:#444;">
-                <div style="font-weight:700;">Edge & Co Barbershop</div>
-                <div style="margin-top:6px;">📧 <a href=\"mailto:edgeandcobarber@gmail.com\">edgeandcobarber@gmail.com</a> | 📞 +90 533 854 67 96</div>
-                <div style="margin-top:8px;">
-                  <a href=\"https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu\" style=\"color:#3498db; text-decoration:underline;\" target=\"_blank\">Click here to review us on Google</a>
-                </div>
-              </div>
-            <div style="font-size:12px; color:#999; text-align:right;">Automated invoice • Edge & Co</div>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  // Send invoice via email
-  sendInvoice: async (booking: any, preview: boolean = false): Promise<{ ok: boolean; error?: string }> => {
-    try {
-  // Resolve customer email from customers table when available (do not rely on bookings.customer_email)
+      // Resolve customer email from customers table when available
       let resolvedCustomerEmail = '';
       if (booking.customer_id) {
         try {
@@ -280,9 +98,6 @@ export const InvoiceService = {
         }
       }
 
-      // For resending invoices, reuse existing invoice number if it exists
-      const existingInvoiceNumber = booking.invoice_number;
-      
       const invoice: InvoiceData = {
         booking_id: booking.id,
         customer_name: booking.customer_name,
@@ -292,59 +107,36 @@ export const InvoiceService = {
         card_processing_fee: 50,
         date: booking.date,
         time: booking.time,
-        invoice_number: existingInvoiceNumber || InvoiceService.generateInvoiceNumber(), // Reuse existing number
+        invoice_number: booking.invoice_number || InvoiceService.generateInvoiceNumber(),
         due_date: InvoiceService.calculateDueDate(),
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
-      // Get payment methods after determining stripe URL
+      // Get payment methods
       let finalStripeUrl = '';
-      
-      // For resending invoices, always reuse existing payment link if available and not paid
-      const existingStripeId = booking.stripe_payment_id;
-      const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
-      let stripePaymentId: string | undefined = undefined;
-      let invoiceUrl: string | undefined = undefined;
 
-      // If invoice exists and payment is still pending, reuse the existing payment link
-      if (existingStripeId && existingInvoiceUrl && booking.payment_status !== 'paid') {
-        console.log('🔄 Reusing existing payment link for unpaid invoice:', existingInvoiceNumber);
-        stripePaymentId = existingStripeId;
-        invoiceUrl = existingInvoiceUrl;
-        finalStripeUrl = existingInvoiceUrl;
-      } else if (booking.payment_status !== 'paid') {
-        // Only create new payment link if not already paid
-        console.log('🆕 Creating new payment link for invoice:', invoice.invoice_number);
+      // Create new payment link if not already paid
+      if (booking.payment_status !== 'paid') {
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
-          stripePaymentId = created.id;
-          invoiceUrl = created.url;
           finalStripeUrl = created.url;
         }
-      } else {
-        // Payment already received, no need for payment link
-        console.log('✅ Invoice already paid, not creating payment link');
       }
 
       const paymentMethods = InvoiceService.getPaymentMethods(invoice, finalStripeUrl);
       const invoiceHTML = InvoiceService.generateInvoiceHTML(invoice, paymentMethods, BusinessConfig.accentColor);
 
-      // Determine if this is a resend (invoice number already exists)
-      const isResend = !!existingInvoiceNumber;
-
-      // Update booking with invoice data (store both id and url)
-      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId || undefined, invoiceUrl || undefined, isResend);
-
       // Send via NotificationsService
-    const result = await NotificationsService.sendNotification({
+      const result = await NotificationsService.sendNotification({
         type: 'invoice',
         booking_id: booking.id,
         invoice_data: invoice,
         email_content: {
           to: invoice.customer_email,
-          subject: `💰 Invoice ${invoice.invoice_number} - Edge & Co Barbershop`,
-      html: invoiceHTML,
-      preview: preview
+          subject: InvoiceService.getTranslatedEmailSubject(invoice, language),
+          html: invoiceHTML,
+          preview: preview,
+          language: language
         }
       });
 
@@ -356,7 +148,7 @@ export const InvoiceService = {
   },
 
   // Copy invoice to clipboard for WhatsApp sharing
-  copyInvoiceToClipboard: async (booking: any): Promise<{ ok: boolean; error?: string }> => {
+  copyInvoiceToClipboard: async (booking: any, language: Language = 'en'): Promise<{ ok: boolean; error?: string }> => {
     try {
       // Resolve customer email from customers table when available
       let resolvedCustomerEmail = '';
@@ -373,9 +165,6 @@ export const InvoiceService = {
         }
       }
 
-      // For resending invoices, reuse existing invoice number if it exists
-      const existingInvoiceNumber = booking.invoice_number;
-
       const invoice: InvoiceData = {
         booking_id: booking.id,
         customer_name: booking.customer_name,
@@ -385,60 +174,25 @@ export const InvoiceService = {
         card_processing_fee: 50,
         date: booking.date,
         time: booking.time,
-        invoice_number: existingInvoiceNumber || InvoiceService.generateInvoiceNumber(),
+        invoice_number: booking.invoice_number || InvoiceService.generateInvoiceNumber(),
         due_date: InvoiceService.calculateDueDate(),
         barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
       };
 
-      // Get payment link (reuse existing if available)
+      // Get payment methods
       let finalStripeUrl = '';
-      let stripePaymentId: string | undefined = undefined;
-      let invoiceUrl: string | undefined = undefined;
 
-      const existingStripeId = booking.stripe_payment_id;
-      const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
-
-      if (existingStripeId && existingInvoiceUrl && booking.payment_status !== 'paid') {
-        console.log('🔄 Reusing existing payment link for clipboard invoice:', existingInvoiceNumber);
-        stripePaymentId = existingStripeId;
-        invoiceUrl = existingInvoiceUrl;
-        finalStripeUrl = existingInvoiceUrl;
-      } else if (booking.payment_status !== 'paid') {
-        console.log('🆕 Creating new payment link for clipboard invoice:', invoice.invoice_number);
+      // Create new payment link if not already paid
+      if (booking.payment_status !== 'paid') {
         const created = await InvoiceService.createStripePaymentLink(invoice);
         if (created) {
-          stripePaymentId = created.id;
-          invoiceUrl = created.url;
           finalStripeUrl = created.url;
-          console.log('✅ Payment link created successfully:', created.url);
-        } else {
-          console.error('❌ Failed to create payment link for clipboard invoice - invoice will be copied without payment link');
-          // Show user notification about payment link failure
-          if (typeof window !== 'undefined' && (window as any).showNotification) {
-            (window as any).showNotification('Payment link creation failed. Invoice copied without payment link.', 'warning');
-          }
         }
       }
 
-      // Format invoice as WhatsApp-friendly text
-      const whatsappText = InvoiceService.formatInvoiceForWhatsApp(invoice, finalStripeUrl);
+      const whatsappText = InvoiceService.formatInvoiceForWhatsApp(invoice, finalStripeUrl, language);
 
-      // Copy to clipboard
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(whatsappText);
-      } else {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = whatsappText;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-      }
-
-      // Update booking with invoice data (same as email sending)
-      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, stripePaymentId, invoiceUrl, !!existingInvoiceNumber);
-
+      await navigator.clipboard.writeText(whatsappText);
       return { ok: true };
     } catch (error) {
       console.error('Error copying invoice to clipboard:', error);
@@ -447,42 +201,44 @@ export const InvoiceService = {
   },
 
   // Format invoice data as WhatsApp-friendly text
-  formatInvoiceForWhatsApp: (invoice: InvoiceData, paymentUrl: string): string => {
-    const formattedPrice = new Intl.NumberFormat('tr-TR', {
+  formatInvoiceForWhatsApp: (invoice: InvoiceData, paymentUrl: string, language: Language = 'en'): string => {
+    const translations = InvoiceService.getTranslations(language);
+
+    const formattedPrice = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
       style: 'currency',
       currency: 'TRY'
     }).format(invoice.price);
 
-    const formattedFee = new Intl.NumberFormat('tr-TR', {
+    const formattedFee = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
       style: 'currency',
       currency: 'TRY'
     }).format(invoice.card_processing_fee);
 
     const totalAmount = invoice.price + invoice.card_processing_fee;
-    const formattedTotal = new Intl.NumberFormat('tr-TR', {
+    const formattedTotal = new Intl.NumberFormat(language === 'tr' ? 'tr-TR' : 'en-US', {
       style: 'currency',
       currency: 'TRY'
     }).format(totalAmount);
 
-    let whatsappText = `💰 *INVOICE - Edge & Co Barbershop*\n\n`;
-    whatsappText += `📄 Invoice #: *${invoice.invoice_number}*\n`;
-    whatsappText += `📅 Date: ${new Date(invoice.date).toLocaleDateString('en-US', {
+    let whatsappText = `💰 *${translations.invoice.title} - Edge & Co Barbershop*\n\n`;
+    whatsappText += `📄 ${translations.invoice.invoiceNumber}: *${invoice.invoice_number}*\n`;
+    whatsappText += `📅 ${translations.booking.date}: ${new Date(invoice.date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })}\n`;
-    whatsappText += `⏰ Time: ${invoice.time}\n`;
-    whatsappText += `📅 Due Date: ${new Date(invoice.due_date).toLocaleDateString('en-US', {
+    whatsappText += `⏰ ${translations.booking.time}: ${invoice.time}\n`;
+    whatsappText += `📅 ${translations.invoice.dueDate}: ${new Date(invoice.due_date).toLocaleDateString(language === 'tr' ? 'tr-TR' : 'en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })}\n\n`;
 
-    whatsappText += `👤 Customer: *${invoice.customer_name}*\n`;
-    whatsappText += `✂️ Service: ${invoice.service}\n`;
-    whatsappText += `💵 Service Price: ${formattedPrice}\n`;
-    whatsappText += `💳 Processing Fee: ${formattedFee}\n`;
-    whatsappText += `💰 *Total: ${formattedTotal}*\n\n`;
+    whatsappText += `👤 ${translations.customer.name}: *${invoice.customer_name}*\n`;
+    whatsappText += `✂️ ${translations.booking.service}: ${invoice.service}\n`;
+    whatsappText += `💵 ${translations.invoice.unitPrice}: ${formattedPrice}\n`;
+    whatsappText += `💳 ${translations.invoice.tax}: ${formattedFee}\n`;
+    whatsappText += `💰 *${translations.invoice.total}: ${formattedTotal}*\n\n`;
 
     // Payment Methods Section
     whatsappText += `💳 *PAYMENT METHODS*\n\n`;
@@ -501,12 +257,184 @@ export const InvoiceService = {
     whatsappText += `BIC: ${BusinessConfig.bic}\n`;
     whatsappText += `Reference: ${invoice.invoice_number}\n\n`;
 
-    whatsappText += `🙏 Thank you for choosing Edge & Co!\n`;
-    whatsappText += `📍 Your trusted barbershop\n`;
-    whatsappText += `� edgeandcobarber@gmail.com\n`;
-    whatsappText += `📞 +90 533 854 67 96\n\n`;
-    whatsappText += `#EdgeAndCo #Barbershop #Invoice`;
+    whatsappText += `🙏 ${translations.invoice.thankYou}\n`;
+    whatsappText += `📍 ${translations.business.name}\n`;
+    whatsappText += `📧 ${BusinessConfig.businessEmail}\n`;
+    whatsappText += `📞 ${BusinessConfig.businessPhone}\n\n`;
+    whatsappText += `#EdgeAndCo #Barbershop #${translations.invoice.title}`;
 
     return whatsappText;
+  },
+
+  // Get translated email subject
+  getTranslatedEmailSubject: (invoice: InvoiceData, language: Language): string => {
+    const translations = InvoiceService.getTranslations(language);
+    return `💰 ${translations.invoice.title} ${invoice.invoice_number} - Edge & Co Barbershop`;
+  },
+
+  // Get translations for the given language
+  getTranslations: (language: Language) => {
+    const translationModules = {
+      en: () => require('../i18n/translations/en').default,
+      tr: () => require('../i18n/translations/tr').default,
+      ar: () => require('../i18n/translations/ar').default,
+      fa: () => require('../i18n/translations/fa').default,
+      el: () => require('../i18n/translations/el').default,
+      ru: () => require('../i18n/translations/ru').default,
+    };
+
+    try {
+      return translationModules[language]();
+    } catch (error) {
+      console.warn(`Translation for language '${language}' not found, falling back to English`);
+      return translationModules.en();
+    }
+  },
+
+  // Get payment methods
+  getPaymentMethods: (invoice: InvoiceData, stripeUrl: string): PaymentMethod[] => {
+    const methods: PaymentMethod[] = [];
+
+    if (stripeUrl) {
+      methods.push({
+        id: 'card',
+        name: 'Credit/Debit Card',
+        type: 'online',
+        details: stripeUrl,
+        icon: ''
+      });
+    }
+
+    methods.push({
+      id: 'iban',
+      name: 'Bank Transfer (IBAN)',
+      type: 'iban',
+      details: `IBAN: ${BusinessConfig.iban}\nAccount Holder: ${BusinessConfig.accountHolder}\nBank: ${BusinessConfig.bankName}`,
+      icon: '🏦'
+    });
+
+    return methods;
+  },
+
+  // Generate invoice HTML
+  generateInvoiceHTML: (invoice: InvoiceData, paymentMethods: PaymentMethod[], accentColor: string): string => {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Invoice ${invoice.invoice_number}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; }
+          .invoice { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+          .header { text-align: center; border-bottom: 2px solid ${accentColor}; padding-bottom: 20px; margin-bottom: 30px; }
+          .company-info { margin-bottom: 30px; }
+          .invoice-details { display: flex; justify-content: space-between; margin-bottom: 30px; }
+          .customer-info, .invoice-info { flex: 1; }
+          .services { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+          .services th, .services td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+          .services th { background: ${accentColor}; color: white; }
+          .total { text-align: right; font-size: 18px; font-weight: bold; margin-bottom: 30px; }
+          .payment-methods { margin-bottom: 30px; }
+          .payment-method { background: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 5px; }
+          .footer { text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="invoice">
+          <div class="header">
+            <h1>Edge & Co Barbershop</h1>
+            <p>Professional Hair & Beard Services</p>
+          </div>
+
+          <div class="company-info">
+            <p><strong>Address:</strong> ${BusinessConfig.businessAddress}</p>
+            <p><strong>Email:</strong> ${BusinessConfig.businessEmail}</p>
+            <p><strong>Phone:</strong> ${BusinessConfig.businessPhone}</p>
+          </div>
+
+          <div class="invoice-details">
+            <div class="customer-info">
+              <h3>Bill To:</h3>
+              <p><strong>${invoice.customer_name}</strong></p>
+              <p>${invoice.customer_email}</p>
+            </div>
+            <div class="invoice-info">
+              <h3>Invoice Details:</h3>
+              <p><strong>Invoice #:</strong> ${invoice.invoice_number}</p>
+              <p><strong>Date:</strong> ${new Date(invoice.date).toLocaleDateString()}</p>
+              <p><strong>Due Date:</strong> ${new Date(invoice.due_date).toLocaleDateString()}</p>
+            </div>
+          </div>
+
+          <table class="services">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>${invoice.service} - ${invoice.barber_name}</td>
+                <td>₺${invoice.price.toFixed(2)}</td>
+              </tr>
+              <tr>
+                <td>Card Processing Fee</td>
+                <td>₺${invoice.card_processing_fee.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="total">
+            <p>Total: ₺${(invoice.price + invoice.card_processing_fee).toFixed(2)}</p>
+          </div>
+
+          <div class="payment-methods">
+            <h3>Payment Methods:</h3>
+            ${paymentMethods.map(method => `
+              <div class="payment-method">
+                <h4>${method.icon} ${method.name}</h4>
+                <p>${method.details.replace('\n', '<br>')}</p>
+              </div>
+            `).join('')}
+          </div>
+
+          <div class="footer">
+            <p>Thank you for choosing Edge & Co Barbershop!</p>
+            <p>Professional grooming services with a modern touch.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  },
+
+  // Update booking with invoice data
+  updateBookingInvoiceData: async (bookingId: string, invoice: InvoiceData, stripeId?: string, invoiceUrl?: string, isResend: boolean = false): Promise<void> => {
+    try {
+      const updateData: any = {
+        invoice_number: invoice.invoice_number,
+        invoice_url: invoiceUrl,
+        stripe_payment_id: stripeId,
+        updated_at: new Date().toISOString()
+      };
+
+      // Only update invoice data if it's not a resend (to preserve original data)
+      if (!isResend) {
+        updateData.invoice_data = invoice;
+      }
+
+      const { error } = await supabase
+        .from('bookings')
+        .update(updateData)
+        .eq('id', bookingId);
+
+      if (error) {
+        console.error('Error updating booking with invoice data:', error);
+      }
+    } catch (error) {
+      console.error('Error updating booking invoice data:', error);
+    }
   }
 };

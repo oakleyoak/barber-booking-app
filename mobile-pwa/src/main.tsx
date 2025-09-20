@@ -2,13 +2,16 @@ import React from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App'
 import './App.css'
+import { LanguageProvider } from './i18n/LanguageContext'
 
 const container = document.getElementById('root')
 if (container) {
   const root = createRoot(container)
   root.render(
     <React.StrictMode>
-      <App />
+      <LanguageProvider>
+        <App />
+      </LanguageProvider>
     </React.StrictMode>
   )
 }
