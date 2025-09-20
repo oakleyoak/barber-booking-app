@@ -352,5 +352,133 @@ export const InvoiceService = {
       console.error('Error sending invoice:', error);
       return { ok: false, error: (error as Error).message };
     }
+  },
+
+  // Copy invoice to clipboard for WhatsApp sharing
+  copyInvoiceToClipboard: async (booking: any): Promise<{ ok: boolean; error?: string }> => {
+    try {
+      // Resolve customer email from customers table when available
+      let resolvedCustomerEmail = '';
+      if (booking.customer_id) {
+        try {
+          const { data: cust, error: custErr } = await supabase
+            .from('customers')
+            .select('email')
+            .eq('id', booking.customer_id)
+            .single();
+          if (!custErr && cust && cust.email) resolvedCustomerEmail = cust.email;
+        } catch (e) {
+          console.warn('Error resolving customer email for clipboard invoice:', e);
+        }
+      }
+
+      // For resending invoices, reuse existing invoice number if it exists
+      const existingInvoiceNumber = booking.invoice_number;
+
+      const invoice: InvoiceData = {
+        booking_id: booking.id,
+        customer_name: booking.customer_name,
+        customer_email: resolvedCustomerEmail || '',
+        service: booking.service,
+        price: booking.price,
+        card_processing_fee: 50,
+        date: booking.date,
+        time: booking.time,
+        invoice_number: existingInvoiceNumber || InvoiceService.generateInvoiceNumber(),
+        due_date: InvoiceService.calculateDueDate(),
+        barber_name: booking.barber_name || booking.users?.name || 'Edge & Co Team'
+      };
+
+      // Get payment link (reuse existing if available)
+      let finalStripeUrl = '';
+
+      const existingStripeId = booking.stripe_payment_id;
+      const existingInvoiceUrl = booking.invoice_url || booking.stripe_payment_url || null;
+
+      if (existingStripeId && existingInvoiceUrl && booking.payment_status !== 'paid') {
+        console.log('🔄 Reusing existing payment link for clipboard invoice:', existingInvoiceNumber);
+        finalStripeUrl = existingInvoiceUrl;
+      } else if (booking.payment_status !== 'paid') {
+        console.log('🆕 Creating new payment link for clipboard invoice:', invoice.invoice_number);
+        const created = await InvoiceService.createStripePaymentLink(invoice);
+        if (created) {
+          finalStripeUrl = created.url;
+        }
+      }
+
+      // Format invoice as WhatsApp-friendly text
+      const whatsappText = InvoiceService.formatInvoiceForWhatsApp(invoice, finalStripeUrl);
+
+      // Copy to clipboard
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(whatsappText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      // Update booking with invoice data (same as email sending)
+      await InvoiceService.updateBookingInvoiceData(booking.id, invoice, existingStripeId || undefined, finalStripeUrl || undefined, !!existingInvoiceNumber);
+
+      return { ok: true };
+    } catch (error) {
+      console.error('Error copying invoice to clipboard:', error);
+      return { ok: false, error: (error as Error).message };
+    }
+  },
+
+  // Format invoice data as WhatsApp-friendly text
+  formatInvoiceForWhatsApp: (invoice: InvoiceData, paymentUrl: string): string => {
+    const formattedPrice = new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY'
+    }).format(invoice.price);
+
+    const formattedFee = new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY'
+    }).format(invoice.card_processing_fee);
+
+    const totalAmount = invoice.price + invoice.card_processing_fee;
+    const formattedTotal = new Intl.NumberFormat('tr-TR', {
+      style: 'currency',
+      currency: 'TRY'
+    }).format(totalAmount);
+
+    let whatsappText = `💰 *INVOICE - Edge & Co Barbershop*\n\n`;
+    whatsappText += `📄 Invoice #: *${invoice.invoice_number}*\n`;
+    whatsappText += `📅 Date: ${new Date(invoice.date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}\n`;
+    whatsappText += `⏰ Time: ${invoice.time}\n`;
+    whatsappText += `📅 Due Date: ${new Date(invoice.due_date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}\n\n`;
+
+    whatsappText += `👤 Customer: *${invoice.customer_name}*\n`;
+    whatsappText += `✂️ Service: ${invoice.service}\n`;
+    whatsappText += `💵 Service Price: ${formattedPrice}\n`;
+    whatsappText += `💳 Processing Fee: ${formattedFee}\n`;
+    whatsappText += `💰 *Total: ${formattedTotal}*\n\n`;
+
+    if (paymentUrl) {
+      whatsappText += `💳 *Pay Now:* ${paymentUrl}\n\n`;
+    }
+
+    whatsappText += `🙏 Thank you for choosing Edge & Co!\n`;
+    whatsappText += `📍 Your trusted barbershop\n`;
+    whatsappText += `📞 Contact: +90 123 456 7890\n\n`;
+    whatsappText += `#EdgeAndCo #Barbershop #Invoice`;
+
+    return whatsappText;
   }
 };

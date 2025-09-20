@@ -24,7 +24,8 @@ import {
   X,
   Plus,
   Save,
-  UserPlus
+  UserPlus,
+  Copy
 } from 'lucide-react';
 import { useModal } from './ui/ModalProvider';
 import { supabase, type Booking } from '../lib/supabase';
@@ -268,6 +269,28 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } catch (error) {
       console.error('Error sending invoice:', error);
       modal.notify('Failed to send invoice', 'error');
+    }
+  };
+
+  // Copy invoice to clipboard for WhatsApp sharing
+  const copyInvoiceToClipboard = async (booking: Booking) => {
+    try {
+      // Fetch the latest booking data from the database
+      const { data: latest, error: fetchError } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('id', booking.id)
+        .single();
+      if (fetchError || !latest) {
+        console.warn('Could not fetch latest booking, using current booking object.');
+        await InvoiceService.copyInvoiceToClipboard(booking);
+      } else {
+        await InvoiceService.copyInvoiceToClipboard(latest);
+      }
+      modal.notify('Invoice copied to clipboard! 📋', 'success');
+    } catch (error) {
+      console.error('Error copying invoice to clipboard:', error);
+      modal.notify('Failed to copy invoice', 'error');
     }
   };
 
@@ -808,8 +831,18 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   }}
                   className="flex items-center justify-center gap-2 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
                 >
-                  <Receipt className="h-4 w-4" />
-                  Send Invoice
+                  <Mail className="h-4 w-4" />
+                  Send Invoice (Email)
+                </button>
+                <button
+                  onClick={() => {
+                    copyInvoiceToClipboard(selectedBooking);
+                    closeBookingDetails();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy Invoice (WhatsApp)
                 </button>
               </div>
               

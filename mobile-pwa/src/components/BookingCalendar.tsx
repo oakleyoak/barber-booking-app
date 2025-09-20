@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useModal } from './ui/ModalProvider';
-import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy } from 'lucide-react';
 import { bookingService, customerService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
@@ -326,6 +326,21 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     }
   };
 
+  const copyInvoiceToClipboard = async (booking: Booking) => {
+    try {
+      const result = await InvoiceService.copyInvoiceToClipboard(booking);
+
+      if (result.ok) {
+        modal.notify('Invoice copied to clipboard! 📋', 'success');
+      } else {
+        modal.notify('Failed to copy invoice: ' + result.error, 'error');
+      }
+    } catch (err) {
+      console.error('Error copying invoice to clipboard:', err);
+      modal.notify('Failed to copy invoice', 'error');
+    }
+  };
+
   const timeSlots = [
     '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
     '12:00', '12:30', '13:00', '13:30', '14:00', '14:30',
@@ -516,8 +531,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                                     <button onClick={() => sendCustomerNotification(booking)} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Send Customer Notification">
                                       <Mail className="w-4 h-4" />
                                     </button>
-                                    <button onClick={() => sendInvoice(booking)} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Send Invoice">
-                                      <Receipt className="w-4 h-4" />
+                                    <button onClick={() => sendInvoice(booking)} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Send Invoice (Email)">
+                                      <Mail className="w-4 h-4" />
+                                    </button>
+                                    <button onClick={() => copyInvoiceToClipboard(booking)} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Copy Invoice (WhatsApp)">
+                                      <Copy className="w-4 h-4" />
                                     </button>
                                   </div>
                                   <div className="flex items-center gap-2">
