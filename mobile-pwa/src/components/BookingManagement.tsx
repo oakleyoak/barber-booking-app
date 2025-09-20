@@ -55,6 +55,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>(
     currentUser.role === 'Barber' ? 'all' : 'upcoming'
   );
+  const [showNotificationOptions, setShowNotificationOptions] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -247,6 +248,53 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } catch (error) {
       console.error('Error sending notification:', error);
       modal.notify('Failed to send notification', 'error');
+    }
+  };
+
+  // Copy booking details to clipboard for WhatsApp
+  const copyBookingToClipboard = async (booking: Booking) => {
+    try {
+      const formattedDate = formatDate(booking.date);
+      const formattedTime = formatTime(booking.time);
+
+      let whatsappText = `📅 *BOOKING CONFIRMATION - Edge & Co Barbershop*\n\n`;
+      whatsappText += `👤 Customer: *${booking.customer_name}*\n`;
+      whatsappText += `✂️ Service: ${booking.service}\n`;
+      whatsappText += `💰 Price: ₺${booking.price}\n`;
+      whatsappText += `📅 Date: ${formattedDate}\n`;
+      whatsappText += `⏰ Time: ${formattedTime}\n`;
+
+      if (booking.users?.name) {
+        whatsappText += `👨‍💼 Barber: ${booking.users.name}\n`;
+      }
+
+      whatsappText += `📊 Status: ${booking.status}\n`;
+
+      if (booking.notes) {
+        whatsappText += `📝 Notes: ${booking.notes}\n`;
+      }
+
+      whatsappText += `\n🙏 Thank you for choosing Edge & Co!\n`;
+      whatsappText += `📍 Your trusted barbershop\n`;
+      whatsappText += `📞 +90 533 854 67 96\n\n`;
+      whatsappText += `#EdgeAndCo #Barbershop #Booking`;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(whatsappText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+
+      modal.notify('Booking details copied to clipboard! Share via WhatsApp.', 'success');
+    } catch (error) {
+      console.error('Error copying booking to clipboard:', error);
+      modal.notify('Failed to copy booking details', 'error');
     }
   };
 
@@ -567,6 +615,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
           <button
             onClick={() => setSearchTerm('')}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            aria-label="Clear search"
           >
             <X className="h-4 w-4" />
           </button>
@@ -698,6 +747,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                         markAsPaid(booking.id);
                       }}
                       className="bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 transition-colors shadow-sm"
+                      aria-label="Mark as paid"
                     >
                       <CheckSquare className="h-4 w-4" />
                     </button>
@@ -708,6 +758,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                         markAsUnpaid(booking.id);
                       }}
                       className="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition-colors shadow-sm"
+                      aria-label="Mark as unpaid"
                     >
                       <XCircle className="h-4 w-4" />
                     </button>
@@ -747,6 +798,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 <button
                   onClick={closeBookingDetails}
                   className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                  aria-label="Close booking details"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -831,8 +883,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 )}
                 <button
                   onClick={() => {
-                    sendCustomerNotification(selectedBooking);
-                    closeBookingDetails();
+                    setSelectedBooking(selectedBooking);
+                    setShowNotificationOptions(true);
                   }}
                   className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
@@ -883,7 +935,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Create New Booking</h3>
-                <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600">
+                <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close booking form">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -930,6 +982,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     onChange={(e) => setBookingFormData(prev => ({ ...prev, customer_name: e.target.value }))}
                     className="w-full p-2 border rounded-lg"
                     required
+                    placeholder="Enter customer name"
+                    aria-label="Customer name"
                   />
                 </div>
                 
@@ -946,6 +1000,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       }));
                     }}
                     className="w-full p-2 border rounded-lg"
+                    aria-label="Select existing customer"
                   >
                     <option value="">Select existing customer...</option>
                     {customers.map(customer => (
@@ -965,6 +1020,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     }))}
                     className="w-full p-2 border rounded-lg"
                     required
+                    aria-label="Select service type"
                   >
                     {Object.entries(SERVICES).map(([key, service]) => (
                       <option key={key} value={key}>{service.name} - ₺{service.price}</option>
@@ -979,6 +1035,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     onChange={(e) => setBookingFormData(prev => ({ ...prev, staff_member: e.target.value }))}
                     className="w-full p-2 border rounded-lg"
                     required
+                    aria-label="Select staff member"
                   >
                     {staffMembers.map(staff => (
                       <option key={staff.id} value={staff.id}>{staff.name}</option>
@@ -995,6 +1052,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_date: e.target.value }))}
                       className="w-full p-2 border rounded-lg"
                       required
+                      aria-label="Booking date"
                     />
                   </div>
                   
@@ -1005,6 +1063,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                       onChange={(e) => setBookingFormData(prev => ({ ...prev, booking_time: e.target.value }))}
                       className="w-full p-2 border rounded-lg"
                       required
+                      aria-label="Select booking time"
                     >
                       {timeSlots.map(time => (
                         <option key={time} value={time}>{time}</option>
@@ -1022,6 +1081,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     onChange={(e) => setBookingFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))}
                     className="w-full p-2 border rounded-lg"
                     required
+                    placeholder="0.00"
+                    aria-label="Price in Turkish Lira"
                   />
                 </div>
                 
@@ -1032,6 +1093,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     onChange={(e) => setBookingFormData(prev => ({ ...prev, notes: e.target.value }))}
                     className="w-full p-2 border rounded-lg"
                     rows={3}
+                    placeholder="Add any additional notes..."
+                    aria-label="Booking notes"
                   />
                 </div>
                 
@@ -1080,6 +1143,83 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Options Modal */}
+      {showNotificationOptions && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] px-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                    <Mail className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Send Notification</h3>
+                    <p className="text-blue-100 text-sm">Choose how to notify {selectedBooking.customer_name}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowNotificationOptions(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                  aria-label="Close notification options"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-3">
+                <button
+                  onClick={async () => {
+                    await sendCustomerNotification(selectedBooking);
+                    setShowNotificationOptions(false);
+                    closeBookingDetails();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                >
+                  <div className="bg-blue-600 p-2 rounded-full">
+                    <Mail className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">Send via Email</div>
+                    <div className="text-sm text-gray-600">Send professional email notification</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    await copyBookingToClipboard(selectedBooking);
+                    setShowNotificationOptions(false);
+                    closeBookingDetails();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                >
+                  <div className="bg-green-600 p-2 rounded-full">
+                    <Copy className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
+                    <div className="text-sm text-gray-600">Copy booking details to share via WhatsApp</div>
+                  </div>
+                </button>
+              </div>
+
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowNotificationOptions(false)}
+                  className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
