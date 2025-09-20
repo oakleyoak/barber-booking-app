@@ -44,11 +44,28 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    const { amount, currency, description, invoiceNumber, customerEmail, customerName, services, cardProcessingFee } = JSON.parse(event.body);
+    const { amount, currency, description, customer_email, customerEmail, metadata, invoiceNumber, customerName, services, cardProcessingFee } = JSON.parse(event.body);
 
-    console.log('🔐 Creating Stripe payment link for:', { amount, currency, description });
+    // Handle both old and new parameter names for backward compatibility
+    const finalCustomerEmail = customer_email || customerEmail || '';
+    const finalCustomerName = customerName || metadata?.customer_name || 'Customer';
+    const finalInvoiceNumber = invoiceNumber || metadata?.invoice_number || 'INV-' + Date.now();
+    const finalServices = services || [{
+      name: metadata?.service || description || 'Service',
+      price: Math.round(amount / 100) // Convert from cents to TRY
+    }];
+    const finalCardProcessingFee = cardProcessingFee || 50; // Default 50 TRY
 
-    const lineItems = services.map(service => ({
+    console.log('🔐 Creating Stripe payment link for:', { 
+      amount, 
+      currency, 
+      description, 
+      customerEmail: finalCustomerEmail,
+      customerName: finalCustomerName,
+      invoiceNumber: finalInvoiceNumber
+    });
+
+    const lineItems = finalServices.map(service => ({
       price_data: {
         currency: currency.toLowerCase(),
         product_data: {
@@ -59,14 +76,14 @@ exports.handler = async (event, context) => {
       quantity: 1,
     }));
 
-    if (cardProcessingFee && cardProcessingFee > 0) {
+    if (finalCardProcessingFee && finalCardProcessingFee > 0) {
       lineItems.push({
         price_data: {
           currency: currency.toLowerCase(),
           product_data: {
             name: 'Card Processing Fee',
           },
-          unit_amount: cardProcessingFee * 100,
+          unit_amount: finalCardProcessingFee * 100,
         },
         quantity: 1,
       });
@@ -89,9 +106,9 @@ exports.handler = async (event, context) => {
       },
       allow_promotion_codes: true,
       metadata: {
-        invoice_number: invoiceNumber,
-        customer_email: customerEmail,
-        customer_name: customerName,
+        invoice_number: finalInvoiceNumber,
+        customer_email: finalCustomerEmail,
+        customer_name: finalCustomerName,
         business: 'Edge & Co Barbershop'
       },
     });
