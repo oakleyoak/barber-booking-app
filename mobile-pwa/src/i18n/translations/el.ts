@@ -137,7 +137,7 @@ export default {
     push: 'Push Ειδοποίηση',
     emailSubject: 'Επιβεβαίωση κράτησής σας',
     emailBody: 'Αγαπητέ {{customerName}},\n\nΗ κράτησή σας επιβεβαιώθηκε για {{date}} στις {{time}}.\n\nΥπηρεσία: {{service}}\nΚομμωτής: {{barber}}\nΤιμή: {{price}} ₺\n\nΕυχαριστούμε που επιλέξατε το Edge & Co Barbershop!\n\nΜε εκτίμηση,\nΗ ομάδα Edge & Co',
-  whatsappMessage: '📅 *Επιβεβαίωση Κράτησης*\n\nΑγαπητέ {{customerName}},\n\n✅ Η κράτησή σας επιβεβαιώθηκε!\n\n📅 Ημερομηνία: {{date}}\n🕐 Ώρα: {{time}}\n💇 Υπηρεσία: {{service}}\n👨 Κομμωτής: {{barber}}\n💰 Τιμή: {{price}} ₺\n\n📍 Τοποθεσία: Edge & Co Barbershop\n\nΕυχαριστούμε που μας επιλέξατε!\n\n⭐️ Παρακαλούμε αξιολογήστε μας: https://search.google.com/local/reviews?placeid=ChIJswvBq9vJ3hARNtqiZsTOVFE',
+  whatsappMessage: '📅 *Επιβεβαίωση Κράτησης*\n\nΑγαπητέ {{customerName}},\n\n✅ Η κράτησή σας επιβεβαιώθηκε!\n\n📅 Ημερομηνία: {{date}}\n🕐 Ώρα: {{time}}\n💇 Υπηρεσία: {{service}}\n👨 Κομμωτής: {{barber}}\n💰 Τιμή: {{price}} ₺\n\n📍 Τοποθεσία: Edge & Co Barbershop\n\nΕυχαριστούμε που μας επιλέξατε!\n\n⭐️ Παρακαλούμε αξιολογήστε μας: https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8',
   smsMessage: 'Η κράτηση επιβεβαιώθηκε!\nΗμερομηνία: {{date}}\nΏρα: {{time}}\nΥπηρεσία: {{service}}\nΚομμωτής: {{barber}}\nΤιμή: {{price}} ₺\nΕυχαριστούμε που επιλέξατε το Edge & Co!\nΑξιολόγηση: https://search.google.com/local/reviews?placeid=ChIJswvBq9vJ3hARNtqiZsTOVFE',
     guidelines: 'Οδηγίες Κράτησης',
     arriveEarly: 'Παρακαλώ φτάστε 5 λεπτά πριν την προγραμματισμένη ώρα κράτησής σας',

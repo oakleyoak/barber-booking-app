@@ -71,7 +71,7 @@ const generateBookingNotificationForBarber = async (booking: any, language: stri
           <div style="color:#555;">${t.business?.address ? t.business.address : `Shop address: ${BusinessConfig.businessAddress}`}</div>
           <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
           <div style="margin-top:8px;">
-            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
+            <a href="https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
           </div>
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">${t.notification?.staffFooter || 'You received this email because you are a staff member at Edge & Co Barbershop.'}</p>
@@ -127,7 +127,7 @@ export const generateBookingConfirmationEmail = async (booking: any, language: s
           <hr style="margin: 12px 0; border: none; border-top: 1px solid #eee;">
           <p style="font-size: 12px; color: #999;">${t.notification?.customerFooter || 'You received this email because you booked an appointment with Edge & Co Barbershop.'}</p>
           <p style="font-size: 13px; color: #3498db; margin-top: 10px;">
-            <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
+            <a href="https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8" style="color:#3498db; text-decoration:underline;" target="_blank">${t.business?.reviewLink || 'Click here to review us on Google'}</a>
           </p>
         </div>
       </div>
@@ -235,7 +235,7 @@ export const generateAppointmentReminder = async (booking: any, language: string
               <div style="font-weight:700;">Edge & Co Barbershop</div>
               <div style="margin-top:6px;">📧 <a href="mailto:${BusinessConfig.businessEmail}">${BusinessConfig.businessEmail}</a> | 📞 ${BusinessConfig.businessPhone}</div>
               <div style="margin-top:8px;">
-                <a href="https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
+                <a href="https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8" style="color:#3498db; text-decoration:underline;" target="_blank">Click here to review us on Google</a>
               </div>
             </div>
             <div style="font-size:12px; color:#999; text-align:right;">Automated reminder • Edge & Co</div>

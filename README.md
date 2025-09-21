@@ -1,6 +1,6 @@
 # Edge & Co Barbershop Management System
 
-A comprehensive business management system for Edge & Co Barbershop with booking management, earnings tracking, inventory management, and administrative features.
+A comprehensive business management system for Edge & Co Barbershop with booking management, earnings tracking, inventory management, multi-language support, and advanced communication features.
 
 ## 🚀 Features
 
@@ -28,10 +28,24 @@ A comprehensive business management system for Edge & Co Barbershop with booking
 - **Operations Manual** - Digital operations guide and procedures
 - **Role-Based Access** - Owner, Manager, Barber, and Apprentice roles
 
+### 🌐 Multi-Language Support
+- **6 Languages** - English, Turkish, Arabic, Persian, Greek, Russian
+- **WhatsApp Integration** - Localized booking confirmations and invoice sharing
+- **Email Notifications** - Multi-language email confirmations and reminders
+- **Dynamic Translation** - Real-time language switching without page reload
+
+### 📱 Communication & Integration
+- **WhatsApp Bookings** - Send booking confirmations via WhatsApp in customer's language
+- **WhatsApp Invoices** - Share invoices directly through WhatsApp
+- **Email Notifications** - Automated email confirmations with review links
+- **Google Maps Integration** - Direct links to leave reviews: `https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8`
+- **Stripe Payments** - Secure online payment processing
+
 ### 📱 Mobile Features
-- **Progressive Web App (PWA)** - Works on mobile devices
+- **Progressive Web App (PWA)** - Works on mobile devices with offline capabilities
 - **Android APK** - Native Android app via Capacitor
 - **Responsive Design** - Optimized for all screen sizes
+- **Touch-Optimized UI** - Native mobile experience
 
 ## 🏗️ Tech Stack
 
@@ -42,6 +56,9 @@ A comprehensive business management system for Edge & Co Barbershop with booking
 - **Icons**: Lucide React
 - **Mobile**: Capacitor v6 for Android APK generation
 - **Deployment**: Netlify (auto-deploy from GitHub)
+- **Internationalization**: Custom i18n system with 6 languages
+- **Communication**: WhatsApp API integration, Email notifications
+- **Payments**: Stripe integration for online payments
 
 ## 🔐 User Roles & Permissions
 
@@ -55,6 +72,7 @@ A comprehensive business management system for Edge & Co Barbershop with booking
 ### Prerequisites
 - Node.js 16+
 - npm or yarn
+- Git (for cloning)
 
 ### Installation
 
@@ -90,12 +108,32 @@ npm run build
 ### Android APK Generation
 
 ```bash
-# Build and sync to Android
-npm run android:sync
+# Build the web app
+npm run build
+
+# Sync web assets to Android project
+npx cap sync android
 
 # Open Android Studio for APK generation
-npm run android
+npx cap open android
 ```
+
+## 🌐 Multi-Language Support
+
+The application supports 6 languages with full localization:
+
+- **English** (en)
+- **Turkish** (tr) - Default language
+- **Arabic** (ar)
+- **Persian** (fa)
+- **Greek** (el)
+- **Russian** (ru)
+
+### Language Features
+- **Real-time switching** - Change language without page reload
+- **WhatsApp integration** - Booking confirmations sent in customer's language
+- **Email notifications** - Localized email templates
+- **RTL support** - Proper right-to-left layout for Arabic and Persian
 
 ## 🌐 Deployment
 
@@ -103,10 +141,28 @@ This application is configured for automatic deployment on Netlify:
 - **Production**: Deployed automatically from the `main` branch
 - **Database**: Supabase backend handles all data operations
 - **CDN**: Netlify provides global CDN for fast loading
+- **Domain**: Connected to custom domain via Netlify
 
 ### Environment Configuration
 
 Update the Supabase configuration in `mobile-pwa/src/lib/supabase.ts` with your project details.
+
+## 📱 Communication Features
+
+### WhatsApp Integration
+- **Booking Confirmations** - Send localized booking confirmations via WhatsApp
+- **Invoice Sharing** - Share invoices directly through WhatsApp
+- **Multi-language Support** - Messages sent in customer's preferred language
+
+### Email Notifications
+- **Booking Confirmations** - Automated email confirmations with booking details
+- **Staff Notifications** - Email alerts for new bookings and schedule changes
+- **Review Links** - Direct links to Google Maps for customer reviews
+
+### Google Maps Integration
+- **Review Link**: `https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8`
+- **Integrated in all communications** - WhatsApp messages, emails, and invoices
+- **Multi-language review prompts** - Localized "please review us" messages
 
 ## 📋 Business Configuration
 
@@ -115,22 +171,32 @@ The system is configured for Edge & Co Barbershop with:
 - Turkish Lira (₺) currency
 - Barbershop-specific services and pricing
 - Turkish business hours and operations
+- Multi-language support for international clientele
+- WhatsApp integration for customer communication
+- Google Maps integration for reviews and directions
 
-## 🔧 Custom Features
+## 🔧 Advanced Features
 
 - **Custom Pricing**: All services, products, and expenses support custom amounts
-- **Invoice Generation**: Automated invoice creation and email delivery
-- **Stripe Integration**: Payment processing for online transactions
-- **Email Notifications**: Automated email confirmations and reminders
+- **Invoice Generation**: Automated invoice creation with WhatsApp sharing
+- **Stripe Integration**: Secure payment processing for online transactions
+- **Email Notifications**: Automated multi-language email confirmations and reminders
 - **Data Analytics**: Comprehensive reporting and analytics dashboard
+- **Real-time Updates**: Live booking updates and synchronization
+- **Offline Capability**: PWA works offline with data synchronization
+- **Role-based Security**: Granular permissions for different user types
 
 ## 📱 Mobile App
 
 The system includes a native Android app generated with Capacitor:
-- Full offline capability
-- Native mobile UI/UX
-- Push notifications support
-- Camera integration for photos
+- Full offline capability with data synchronization
+- Native mobile UI/UX optimized for touch
+- WhatsApp integration for booking confirmations
+- Multi-language support (6 languages)
+- Google Maps integration for reviews
+- Push notification support (configurable)
+- Camera integration for photos and documentation
+- Native Android APK for Play Store distribution
 
 ## 🤝 Support
 

@@ -137,7 +137,7 @@ export default {
     push: 'Push Notification',
     emailSubject: 'Your booking confirmation',
     emailBody: 'Dear {{customerName}},\n\nYour booking has been confirmed for {{date}} at {{time}}.\n\nService: {{service}}\nBarber: {{barber}}\nPrice: {{price}} ₺\n\nThank you for choosing Edge & Co Barbershop!\n\nBest regards,\nEdge & Co Team',
-  whatsappMessage: '📅 *Booking Confirmation*\n\nDear {{customerName}},\n\n✅ Your booking is confirmed!\n\n📅 Date: {{date}}\n🕐 Time: {{time}}\n💇 Service: {{service}}\n👨 Barber: {{barber}}\n💰 Price: {{price}} ₺\n\n📍 Location: Edge & Co Barbershop\n\nThank you for choosing us!\n\n⭐️ Please review us: https://search.google.com/local/reviews?placeid=ChIJswvBq9vJ3hARNtqiZsTOVFE',
+  whatsappMessage: '📅 *Booking Confirmation*\n\nDear {{customerName}},\n\n✅ Your booking is confirmed!\n\n📅 Date: {{date}}\n🕐 Time: {{time}}\n💇 Service: {{service}}\n👨 Barber: {{barber}}\n💰 Price: {{price}} ₺\n\n📍 Location: Edge & Co Barbershop\n\nThank you for choosing us!\n\n⭐️ Please review us: https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8',
   smsMessage: 'Booking Confirmed!\nDate: {{date}}\nTime: {{time}}\nService: {{service}}\nBarber: {{barber}}\nPrice: {{price}} ₺\nThank you for choosing Edge & Co!\nReview: https://search.google.com/local/reviews?placeid=ChIJswvBq9vJ3hARNtqiZsTOVFE',
     guidelines: 'Appointment Guidelines',
     arriveEarly: 'Please arrive 5 minutes before your scheduled appointment time',

@@ -308,7 +308,7 @@ export const InvoiceService = {
 
     // Google review link (i18n)
     const reviewLink = t.business.reviewLink || 'Click here to review us on Google';
-    const reviewUrl = 'https://www.google.com/maps/place/Edge+%26+Co.+Barbershop/@35.1352688,33.9168446,17z/data=!3m1!4b1!4m6!3m5!1s0x14dfc9db6a1cb8b3:0x514ecec66a829d27!8m2!3d35.1352689!4d33.9217155!16s%2Fg%2F11g2_6cpyb?authuser=0&entry=ttu';
+    const reviewUrl = 'https://maps.app.goo.gl/SXLM36Vh5qfqMV6W8';
     whatsappText += `⭐️ ${reviewLink}: ${reviewUrl}\n\n`;
 
     whatsappText += `#EdgeAndCo #Barbershop #${t.invoice.title}`;
