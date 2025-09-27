@@ -236,7 +236,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     };
   }, [showBookingDetails]);
 
-  // Swipe-to-close gesture for mobile top sheet
+  // Swipe-to-close gesture for mobile bottom sheet
   useEffect(() => {
     if (!showBookingDetails) return;
     const sheet = bottomSheetRef.current;
@@ -249,13 +249,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     const handleTouchMove = (e: TouchEvent) => {
       if (dragStartY.current !== null) {
         dragCurrentY.current = e.touches[0].clientY;
-        const offset = dragCurrentY.current - dragStartY.current; // Allow negative for upward drag
+        const offset = Math.max(0, dragCurrentY.current - dragStartY.current); // Only allow downward drag
         setDragOffset(offset);
       }
     };
     const handleTouchEnd = () => {
       if (dragStartY.current !== null && dragCurrentY.current !== null) {
-        if (dragStartY.current - dragCurrentY.current > 80) { // Upward swipe to close
+        if (dragCurrentY.current - dragStartY.current > 80) { // Downward swipe to close
           closeBookingDetails();
         } else {
           setDragOffset(0);
@@ -748,29 +748,32 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
   return (
     <div className="w-full max-w-full overflow-hidden">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <CalendarIcon className="h-6 w-6 text-blue-600" />
+      {/* Main Content - Hidden when modal is open */}
+      {!showBookingDetails && (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-blue-100 p-2 rounded-lg">
+                <CalendarIcon className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Booking Management</h2>
+                <p className="text-sm text-gray-600">{filteredBookings.length} {currentView} bookings</p>
+              </div>
+            </div>
+            
+            {/* Create Booking Button for Owner/Manager */}
+            {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+              <button
+                onClick={() => setShowBookingForm(true)}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
+              >
+                <Plus className="h-4 w-4" />
+                Create Booking
+              </button>
+            )}
           </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">Booking Management</h2>
-            <p className="text-sm text-gray-600">{filteredBookings.length} {currentView} bookings</p>
-          </div>
-        </div>
-        
-        {/* Create Booking Button for Owner/Manager */}
-        {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-          <button
-            onClick={() => setShowBookingForm(true)}
-            className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
-          >
-            <Plus className="h-4 w-4" />
-            Create Booking
-          </button>
-        )}
-      </div>
 
       {/* Sticky Search Bar (present in all tabs) */}
       <div className="sticky top-0 z-20 bg-white pb-2 mb-4">
@@ -952,13 +955,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         </div>
       )}
 
+      </>
+      )}
+
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed left-0 right-0 z-[1000] flex items-start md:items-center justify-center bg-black bg-opacity-60"
-          style={{ top: '112px', bottom: 0 }} // 112px = header + tabs + search bar height, adjust as needed
+          className="fixed left-0 right-0 z-[1000] flex items-end md:items-center justify-center bg-black bg-opacity-60"
+          style={{ top: 0, bottom: 0 }}
         >
-          {/* Full-screen top sheet modal for mobile, centered modal for desktop */}
+          {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
             className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
