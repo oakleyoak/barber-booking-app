@@ -1,27 +1,27 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
 import { generateTimeSlots } from '../utils/timeSlots';
-import { 
-  Clock, 
-  User, 
-  DollarSign, 
-  CheckCircle, 
-  XCircle, 
-  Edit2, 
-  Search, 
-  Filter, 
-  Phone, 
-  Mail, 
-  Receipt, 
-  CheckSquare, 
-  AlertTriangle, 
-  History, 
-  ChevronDown, 
-  ChevronUp, 
-  Calendar as CalendarIcon, 
-  TrendingUp, 
-  Eye, 
-  Download, 
+import {
+  Clock,
+  User,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  Edit2,
+  Search,
+  Filter,
+  Phone,
+  Mail,
+  Receipt,
+  CheckSquare,
+  AlertTriangle,
+  History,
+  ChevronDown,
+  ChevronUp,
+  Calendar as CalendarIcon,
+  TrendingUp,
+  Eye,
+  Download,
   RefreshCw,
   X,
   Plus,
@@ -39,145 +39,49 @@ import { ServicePricingService, SERVICES } from '../services/servicePricing';
 import { UserManagementService } from '../services/userManagementService';
 import { getTodayLocal } from '../utils/dateUtils';
 import { useLanguage } from '../i18n/LanguageContext';
-import en from '../i18n/translations/en';
-import tr from '../i18n/translations/tr';
-import ar from '../i18n/translations/ar';
-import fa from '../i18n/translations/fa';
-import el from '../i18n/translations/el';
-import ru from '../i18n/translations/ru';
-// Simple translation hook for BookingManagement
-const translationMap = { en, tr, ar, fa, el, ru };
-function useT(language: string) {
-  const translations = translationMap[language as keyof typeof translationMap] || en;
-  return (key: string, fallback?: string) => {
-    const keys = key.split('.');
-    let value: any = translations;
-    for (const k of keys) {
-      value = value && value[k];
-    }
-    return value || fallback || key;
-  };
-}
+import type { User as UserType } from '../lib/supabase';
 
 interface BookingManagementProps {
-  currentUser: {
-    id?: string;
-    name: string;
-    email: string;
-    role: string;
-    shop_name: string;
-  };
+  currentUser: UserType;
   onModalStateChange?: (isOpen: boolean) => void;
 }
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onModalStateChange }) => {
-  // For bottom sheet modal drag/swipe
-  const bottomSheetRef = useRef<HTMLDivElement>(null);
-  const dragStartY = useRef<number | null>(null);
-  const dragCurrentY = useRef<number | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [shopSettings, setShopSettings] = useState<any>(null);
-  const [timeSlots, setTimeSlots] = useState<string[]>([]);
-  const modal = useModal();
-  // Only declare language if not already declared above
-  // If 'language' is already declared, use a different variable name
-  const langCtx = useLanguage();
-  const t = useT(langCtx.language);
-  const { language } = useLanguage();
+  // State declarations
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [filteredBookings, setFilteredBookings] = useState<Booking[]>([]);
+  const [currentView, setCurrentView] = useState<'all' | 'upcoming' | 'history'>('upcoming');
   const [searchTerm, setSearchTerm] = useState('');
-  const [currentView, setCurrentView] = useState<'upcoming' | 'history' | 'all'>(
-    currentUser.role === 'Barber' ? 'all' : 'upcoming'
-  );
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showNotificationOptions, setShowNotificationOptions] = useState(false);
+  const [showCreateBooking, setShowCreateBooking] = useState(false);
+  const [showBookingForm, setShowBookingForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bookingToDelete, setBookingToDelete] = useState<Booking | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [showBookingDetails, setShowBookingDetails] = useState(false);
-  
-  // New booking form state
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [staffMembers, setStaffMembers] = useState<any[]>([]);
-  const [customers, setCustomers] = useState<any[]>([]);
+  const [dragOffset, setDragOffset] = useState(0);
   const [bookingFormData, setBookingFormData] = useState({
     customer_name: '',
     customer_id: '',
-    service_type: 'Haircut',
     staff_member: '',
-    booking_date: new Date().toISOString().split('T')[0],
-    booking_time: '09:00',
-    price: ServicePricingService.getServicePrice('Haircut'),
+    service: '',
+    service_type: '',
+    price: 0,
+    date: '',
+    booking_date: '',
+    time: '',
+    booking_time: '',
     notes: ''
   });
+  const [staffMembers, setStaffMembers] = useState<UserType[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const bottomSheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragCurrentY = useRef<number | null>(null);
+  const modal = useModal();
+  const { language } = useLanguage();
 
-  // Time slots for booking
-  useEffect(() => {
-    const loadSettings = async () => {
-      const settings = await ShopSettingsService.getSettings(currentUser.shop_name || 'Edge & Co');
-      setShopSettings(settings);
-      const open = (settings.opening_time || '09:00').slice(0,5);
-      const close = (settings.closing_time || '20:00').slice(0,5);
-      setTimeSlots(generateTimeSlots(open, close));
-    };
-    loadSettings();
-  }, [currentUser.shop_name]);
-
-  // Load staff and customers when component mounts
-  useEffect(() => {
-    if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
-      loadStaffAndCustomers();
-    }
-  }, [currentUser]);
-
-  // Search and filter bookings
-  useEffect(() => {
-    const filtered = bookings.filter(booking =>
-      booking.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (booking.notes && booking.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    setFilteredBookings(filtered);
-  }, [bookings, searchTerm]);
-
-  const loadStaffAndCustomers = async () => {
-    try {
-      // Load staff members
-      await UserManagementService.syncStaffToCurrentShop(currentUser.shop_name);
-      const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
-      setStaffMembers(staff);
-      
-      // Load customers
-      const customerList = await customerService.getCustomers();
-      setCustomers(customerList);
-      
-      // Set default staff member
-      if (staff.length > 0) {
-        setBookingFormData(prev => ({ ...prev, staff_member: staff[0].id }));
-      }
-    } catch (error) {
-      console.error('Error loading staff and customers:', error);
-    }
-  };
-
-  // Load bookings based on view
-  useEffect(() => {
-    if (currentView === 'upcoming') {
-      loadPersonalUpcomingBookings();
-    } else if (currentView === 'history') {
-      loadPersonalBookingHistory();
-    } else {
-      // Only Owner can see all bookings
-      if (currentUser.role === 'Owner') {
-        loadAllBookings();
-      } else {
-        // Fallback: show personal upcoming bookings
-        loadPersonalUpcomingBookings();
-      }
-    }
-  }, [currentView, currentUser]);
-
-  // Load only the current user's upcoming bookings
   const loadPersonalUpcomingBookings = async () => {
     try {
       const today = getTodayLocal();
@@ -280,6 +184,20 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     const hasAnyModalOpen = showBookingDetails || showBookingForm || showDeleteModal || showNotificationOptions;
     onModalStateChange?.(hasAnyModalOpen);
   }, [showBookingDetails, showBookingForm, showDeleteModal, showNotificationOptions, onModalStateChange]);
+
+  // Debug notification modal
+  useEffect(() => {
+    if (showNotificationOptions) {
+      console.log('Notification modal should be visible:', { 
+        showNotificationOptions, 
+        selectedBooking: selectedBooking?.id,
+        selectedBookingName: selectedBooking?.customer_name,
+        modalRendered: showNotificationOptions && selectedBooking
+      });
+    } else {
+      console.log('Notification modal hidden:', { showNotificationOptions, selectedBooking: !!selectedBooking });
+    }
+  }, [showNotificationOptions, selectedBooking]);
 
   // Format date helper
   const formatDate = (dateString: string) => {
@@ -559,10 +477,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       setBookingFormData({
         customer_name: '',
         customer_id: '',
+        service: 'Haircut',
         service_type: 'Haircut',
         staff_member: staffMembers[0]?.id || '',
         booking_date: new Date().toISOString().split('T')[0],
+        date: new Date().toISOString().split('T')[0],
         booking_time: '09:00',
+        time: '09:00',
         price: ServicePricingService.getServicePrice('Haircut'),
         notes: ''
       });
@@ -589,10 +510,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     setBookingFormData({
       customer_name: booking.customer_name,
       customer_id: booking.customer_id || '',
+      service: booking.service,
       service_type: booking.service,
       staff_member: booking.user_id || '',
       booking_date: booking.date,
+      date: booking.date,
       booking_time: booking.time.length > 5 ? booking.time.substring(0,5) : booking.time,
+      time: booking.time.length > 5 ? booking.time.substring(0,5) : booking.time,
       price: booking.price,
       notes: booking.notes || ''
     });
@@ -716,7 +640,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
   const copyBookingConfirmationToClipboard = async (booking: Booking) => {
     try {
       // Get translation for selected language
-      const lang = langCtx.language || 'en';
+      const lang = language || 'en';
       let t: any;
       try {
         t = (await import(`../i18n/translations/${lang}.ts`)).default;
@@ -769,11 +693,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                 <p className="text-sm text-gray-600">{filteredBookings.length} {currentView} bookings</p>
               </div>
             </div>
-            
-            {/* Create Booking Button for Owner/Manager */}
-            {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+            {currentUser.role === 'Owner' && (
               <button
-                onClick={() => setShowBookingForm(true)}
+                onClick={() => setShowCreateBooking(true)}
                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
               >
                 <Plus className="h-4 w-4" />
@@ -969,7 +891,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       {showBookingDetails && selectedBooking && (
         <div
           className="fixed inset-0 z-[1200] flex bg-black bg-opacity-60 p-2 md:p-4"
-          style={{ pointerEvents: 'auto', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+          style={{ 
+            pointerEvents: showNotificationOptions ? 'none' : 'auto', 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            width: '100vw', 
+            height: '100vh' 
+          }}
         >
           {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
@@ -1080,8 +1009,18 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                 )}
                 <button
                   onClick={() => {
+                    console.log('[DEBUG] Notification button clicked in BookingManagement', {
+                      selectedBooking,
+                      showNotificationOptions,
+                    });
                     setSelectedBooking(selectedBooking);
                     setShowNotificationOptions(true);
+                    setTimeout(() => {
+                      console.log('[DEBUG] After setShowNotificationOptions(true)', {
+                        showNotificationOptions,
+                        selectedBooking,
+                      });
+                    }, 100);
                   }}
                   className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
                 >
@@ -1328,7 +1267,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Notification Options Modal */}
       {showNotificationOptions && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] px-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1300] px-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top mt-4 md:mt-8">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
@@ -1359,7 +1298,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   onClick={async () => {
                     await sendCustomerNotification(selectedBooking);
                     setShowNotificationOptions(false);
-                    closeBookingDetails();
+                    setSelectedBooking(null);
                   }}
                   className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                 >
@@ -1367,7 +1306,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                     <Mail className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Send via Email</div>
+                    <div className="font-semibold text-gray-900">Email Notification</div>
+                    <div className="text-sm text-gray-600">Send booking confirmation via email</div>
                   </div>
                 </button>
 
@@ -1375,7 +1315,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   onClick={async () => {
                     await copyBookingConfirmationToClipboard(selectedBooking);
                     setShowNotificationOptions(false);
-                    closeBookingDetails();
+                    setSelectedBooking(null);
                   }}
                   className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
                 >
@@ -1383,7 +1323,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                     <Copy className="h-4 w-4 text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
+                    <div className="font-semibold text-gray-900">Copy to WhatsApp</div>
+                    <div className="text-sm text-gray-600">Copy confirmation message to clipboard</div>
                   </div>
                 </button>
               </div>
@@ -1391,7 +1332,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
               <div className="pt-4 border-t border-gray-200">
                 <button
                   onClick={() => setShowNotificationOptions(false)}
-                  className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
+                  className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
                 >
                   Cancel
                 </button>
@@ -1400,6 +1341,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
           </div>
         </div>
       )}
+
     </div>
   );
 };

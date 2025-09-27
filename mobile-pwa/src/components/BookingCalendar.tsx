@@ -56,6 +56,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  const [showNotificationOptions, setShowNotificationOptions] = useState(false);
+  const [selectedBookingForNotification, setSelectedBookingForNotification] = useState<Booking | null>(null);
   type FormData = {
     customer_name: string;
     customer_id?: string;
@@ -109,7 +111,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
 
   // Modal state management for body scroll prevention and navigation integration
   useEffect(() => {
-    if (showModal) {
+    const hasModalOpen = showModal || showNotificationOptions;
+    if (hasModalOpen) {
       document.body.style.overflow = 'hidden';
       onModalStateChange?.(true);
     } else {
@@ -121,7 +124,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
       document.body.style.overflow = 'unset';
       onModalStateChange?.(false);
     };
-  }, [showModal, onModalStateChange]);
+  }, [showModal, showNotificationOptions, onModalStateChange]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -426,6 +429,62 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
   const formatCurrency = (amount: number) => `₺${amount.toLocaleString('tr-TR')}`;
   const normalizeTime = (time: string) => time.length > 5 ? time.substring(0, 5) : time;
 
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Format time to display format
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5); // Remove seconds if present
+  };
+
+  // Copy booking confirmation to clipboard for WhatsApp (i18n, with review link, no invoice/payment info)
+  const copyBookingConfirmationToClipboard = async (booking: Booking) => {
+    try {
+      // Get translation for selected language
+      const lang = language || 'en';
+      let t: any;
+      try {
+        t = (await import(`../i18n/translations/${lang}.ts`)).default;
+      } catch {
+        t = (await import(`../i18n/translations/en.ts`)).default;
+      }
+      const formattedDate = formatDate(booking.date);
+      const formattedTime = formatTime(booking.time);
+      let whatsappText = t.notification?.whatsappMessage
+        ? t.notification.whatsappMessage
+        : `Booking Confirmed!\nDate: {{date}}\nTime: {{time}}\nService: {{service}}\nBarber: {{barber}}\nPrice: {{price}} ₺\nThank you for choosing Edge & Co!\nReview: https://g.page/r/CQv1Qw1Qw1QwEAI/review`;
+      whatsappText = whatsappText
+        .replace(/{{customerName}}/g, booking.customer_name)
+        .replace(/{{date}}/g, formattedDate)
+        .replace(/{{time}}/g, formattedTime)
+        .replace(/{{service}}/g, booking.service)
+        .replace(/{{barber}}/g, booking.users?.name || 'Edge & Co Team')
+        .replace(/{{price}}/g, booking.price);
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(whatsappText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      modal.notify('Booking confirmation copied to clipboard! Share via WhatsApp.', 'success');
+    } catch (error) {
+      console.error('Error copying booking confirmation to clipboard:', error);
+      modal.notify('Failed to copy booking confirmation', 'error');
+    }
+  };
+
   const navigateMonth = (direction: 'prev' | 'next') => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(newMonth.getMonth() + (direction === 'prev' ? -1 : 1));
@@ -562,6 +621,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
                                       {booking.payment_status?.replace('_', ' ') || 'Pending Payment'}
                                     </span>
                                   </div>
+                                </div>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedBookingForNotification(booking);
+                                      setShowNotificationOptions(true);
+                                    }}
+                                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                                    title="Send notification"
+                                  >
+                                    <Mail className="h-4 w-4" />
+                                  </button>
                                 </div>
                               </div>
                             </div>
@@ -700,6 +772,84 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
                     <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
                   </div>
                 </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notification Options Modal */}
+        {showNotificationOptions && selectedBookingForNotification && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] px-4 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top mt-4 md:mt-8">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                      <Mail className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Send Notification</h3>
+                      <p className="text-blue-100 text-sm">Choose how to notify {selectedBookingForNotification.customer_name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowNotificationOptions(false)}
+                    className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                    aria-label="Close notification options"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <button
+                    onClick={async () => {
+                      await sendCustomerNotification(selectedBookingForNotification);
+                      setShowNotificationOptions(false);
+                      setSelectedBookingForNotification(null);
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                  >
+                    <div className="bg-blue-600 p-2 rounded-full">
+                      <Mail className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Send via Email</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      await copyBookingConfirmationToClipboard(selectedBookingForNotification);
+                      setShowNotificationOptions(false);
+                      setSelectedBookingForNotification(null);
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                  >
+                    <div className="bg-green-600 p-2 rounded-full">
+                      <Copy className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => {
+                      setShowNotificationOptions(false);
+                      setSelectedBookingForNotification(null);
+                    }}
+                    className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             </div>
           </div>
