@@ -335,7 +335,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const copyInvoiceToClipboard = async (booking: Booking) => {
     try {
       const result = await InvoiceService.copyInvoiceToClipboard(booking);
-
       if (result.ok) {
         modal.notify('Invoice copied to clipboard! 📋', 'success');
       } else {
@@ -346,17 +345,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       modal.notify('Failed to copy invoice', 'error');
     }
   };
-    // Load shop settings for slot generation
-    const loadSettings = async () => {
-      const settings = await ShopSettingsService.getSettings(currentUser.shop_name || 'Edge & Co');
-      setShopSettings(settings);
-      // Use fallback if missing
-      const open = (settings.opening_time || '09:00').slice(0,5);
-      const close = (settings.closing_time || '20:00').slice(0,5);
-      setTimeSlots(generateTimeSlots(open, close));
-    };
-    loadSettings();
-  }, [currentUser.shop_name]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
