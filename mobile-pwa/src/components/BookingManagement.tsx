@@ -54,6 +54,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
   const [searchTerm, setSearchTerm] = useState('');
   const [showBookingDetails, setShowBookingDetails] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [selectedBookingForNotification, setSelectedBookingForNotification] = useState<Booking | null>(null);
   const [showNotificationOptions, setShowNotificationOptions] = useState(false);
   const [showCreateBooking, setShowCreateBooking] = useState(false);
   const [showBookingForm, setShowBookingForm] = useState(false);
@@ -192,12 +193,12 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         showNotificationOptions, 
         selectedBooking: selectedBooking?.id,
         selectedBookingName: selectedBooking?.customer_name,
-        modalRendered: showNotificationOptions && selectedBooking
+        modalRendered: showNotificationOptions && selectedBookingForNotification
       });
     } else {
-      console.log('Notification modal hidden:', { showNotificationOptions, selectedBooking: !!selectedBooking });
+      console.log('Notification modal hidden:', { showNotificationOptions, selectedBookingForNotification: !!selectedBookingForNotification });
     }
-  }, [showNotificationOptions, selectedBooking]);
+  }, [showNotificationOptions, selectedBookingForNotification]);
 
   // Load bookings data when component mounts or currentView changes
   useEffect(() => {
@@ -559,26 +560,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     setShowBookingForm(true);
   };
 
-  // Load upcoming bookings
+  // Load upcoming bookings (personal only)
   const loadUpcomingBookings = async () => {
     try {
       const today = getTodayLocal();
-      let query = supabase
+      const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           users(name)
         `)
         .gte('date', today)
+        .eq('user_id', currentUser.id)
         .order('date', { ascending: true })
         .order('time', { ascending: true });
 
-      // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber') {
-        query = query.eq('user_id', currentUser.id);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       
       setBookings(data || []);
@@ -588,26 +584,21 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     }
   };
 
-  // Load booking history
+  // Load booking history (personal only)
   const loadBookingHistory = async () => {
     try {
       const today = getTodayLocal();
-      let query = supabase
+      const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           users(name)
         `)
         .lt('date', today)
+        .eq('user_id', currentUser.id)
         .order('date', { ascending: false })
         .order('time', { ascending: false });
 
-      // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber') {
-        query = query.eq('user_id', currentUser.id);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       
       setBookings(data || []);
@@ -617,10 +608,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     }
   };
 
-  // Load all bookings (for barbers to see their own bookings)
+  // Load all bookings (owner only)
   const loadAllBookings = async () => {
+    if (currentUser.role !== 'Owner') {
+      modal.notify('Access denied: Only owners can view all bookings', 'error');
+      return;
+    }
+
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
@@ -629,12 +625,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         .order('date', { ascending: false })
         .order('time', { ascending: false });
 
-      // Filter by user for barbers, show all for owners/managers
-      if (currentUser.role === 'Barber') {
-        query = query.eq('user_id', currentUser.id);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
       
       setBookings(data || []);
@@ -926,7 +916,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         <div
           className="fixed inset-0 z-[1200] flex bg-black bg-opacity-60 p-2 md:p-4"
           style={{ 
-            pointerEvents: showNotificationOptions ? 'none' : 'auto', 
             position: 'fixed', 
             top: 0, 
             left: 0, 
@@ -1047,12 +1036,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                       selectedBooking,
                       showNotificationOptions,
                     });
-                    setSelectedBooking(selectedBooking);
+                    setSelectedBookingForNotification(selectedBooking);
                     setShowNotificationOptions(true);
+                    setShowBookingDetails(false); // Close booking details modal
                     setTimeout(() => {
                       console.log('[DEBUG] After setShowNotificationOptions(true)', {
                         showNotificationOptions,
-                        selectedBooking,
+                        selectedBookingForNotification: selectedBookingForNotification?.id,
                       });
                     }, 100);
                   }}
@@ -1300,7 +1290,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       )}
 
       {/* Notification Options Modal */}
-      {showNotificationOptions && selectedBooking && (
+      {showNotificationOptions && selectedBookingForNotification && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1300] px-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top mt-4 md:mt-8">
             {/* Header */}
@@ -1312,11 +1302,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   </div>
                   <div>
                     <h3 className="text-xl font-bold">Send Notification</h3>
-                    <p className="text-blue-100 text-sm">Choose how to notify {selectedBooking.customer_name}</p>
+                    <p className="text-blue-100 text-sm">Choose how to notify {selectedBookingForNotification.customer_name}</p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowNotificationOptions(false)}
+                  onClick={() => {
+                    setShowNotificationOptions(false);
+                    setShowBookingDetails(true); // Reopen booking details modal
+                  }}
                   className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
                   aria-label="Close notification options"
                 >
@@ -1330,9 +1323,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
               <div className="space-y-3">
                 <button
                   onClick={async () => {
-                    await sendCustomerNotification(selectedBooking);
+                    await sendCustomerNotification(selectedBookingForNotification!);
                     setShowNotificationOptions(false);
-                    setSelectedBooking(null);
+                    setSelectedBookingForNotification(null);
+                    setShowBookingDetails(true); // Reopen booking details modal
                   }}
                   className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
                 >
@@ -1347,9 +1341,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
                 <button
                   onClick={async () => {
-                    await copyBookingConfirmationToClipboard(selectedBooking);
+                    await copyBookingConfirmationToClipboard(selectedBookingForNotification!);
                     setShowNotificationOptions(false);
-                    setSelectedBooking(null);
+                    setSelectedBookingForNotification(null);
+                    setShowBookingDetails(true); // Reopen booking details modal
                   }}
                   className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
                 >
@@ -1365,7 +1360,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
               <div className="pt-4 border-t border-gray-200">
                 <button
-                  onClick={() => setShowNotificationOptions(false)}
+                  onClick={() => {
+                    setShowNotificationOptions(false);
+                    setShowBookingDetails(true); // Reopen booking details modal
+                  }}
                   className="w-full py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
                 >
                   Cancel
