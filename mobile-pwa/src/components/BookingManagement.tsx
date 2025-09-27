@@ -199,6 +199,40 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     }
   }, [showNotificationOptions, selectedBooking]);
 
+  // Load bookings data when component mounts or currentView changes
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        if (currentView === 'upcoming') {
+          await loadUpcomingBookings();
+        } else if (currentView === 'history') {
+          await loadBookingHistory();
+        } else if (currentView === 'all') {
+          await loadAllBookings();
+        }
+      } catch (error) {
+        console.error('Error loading bookings data:', error);
+        modal.notify('Failed to load bookings', 'error');
+      }
+    };
+
+    loadData();
+  }, [currentView, currentUser.id]);
+
+  // Filter bookings based on search term
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredBookings(bookings);
+    } else {
+      const filtered = bookings.filter(booking =>
+        booking.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (booking.notes && booking.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
+      setFilteredBookings(filtered);
+    }
+  }, [bookings, searchTerm]);
+
   // Format date helper
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
