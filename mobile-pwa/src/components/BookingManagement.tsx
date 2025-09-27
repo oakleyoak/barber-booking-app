@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
 import { generateTimeSlots } from '../utils/timeSlots';
 import { 
@@ -70,6 +70,11 @@ interface BookingManagementProps {
 }
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
+  // For bottom sheet modal drag/swipe
+  const bottomSheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragCurrentY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const [shopSettings, setShopSettings] = useState<any>(null);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const modal = useModal();
@@ -217,7 +222,57 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   const closeBookingDetails = () => {
     setShowBookingDetails(false);
     setSelectedBooking(null);
+    setDragOffset(0);
   };
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showBookingDetails) {
+      document.body.classList.add('overflow-hidden');
+    } else {
+      document.body.classList.remove('overflow-hidden');
+    }
+    return () => {
+      document.body.classList.remove('overflow-hidden');
+    };
+  }, [showBookingDetails]);
+
+  // Swipe-to-close gesture for mobile bottom sheet
+  useEffect(() => {
+    if (!showBookingDetails) return;
+    const sheet = bottomSheetRef.current;
+    if (!sheet) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      dragStartY.current = e.touches[0].clientY;
+      dragCurrentY.current = e.touches[0].clientY;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (dragStartY.current !== null) {
+        dragCurrentY.current = e.touches[0].clientY;
+        const offset = Math.max(0, dragCurrentY.current - dragStartY.current);
+        setDragOffset(offset);
+      }
+    };
+    const handleTouchEnd = () => {
+      if (dragStartY.current !== null && dragCurrentY.current !== null) {
+        if (dragCurrentY.current - dragStartY.current > 80) {
+          closeBookingDetails();
+        } else {
+          setDragOffset(0);
+        }
+      }
+      dragStartY.current = null;
+      dragCurrentY.current = null;
+    };
+    sheet.addEventListener('touchstart', handleTouchStart);
+    sheet.addEventListener('touchmove', handleTouchMove);
+    sheet.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      sheet.removeEventListener('touchstart', handleTouchStart);
+      sheet.removeEventListener('touchmove', handleTouchMove);
+      sheet.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [showBookingDetails]);
 
   // Format date helper
   const formatDate = (dateString: string) => {
@@ -899,9 +954,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
-        <div className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-start justify-center bg-black bg-opacity-60">
-          {/* True full-screen overlay for all devices */}
-          <div className="w-full h-full max-w-md bg-white shadow-xl overflow-y-auto relative flex flex-col rounded-none sm:rounded-2xl animate-slide-up">
+        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black bg-opacity-60">
+          {/* True mobile bottom sheet overlay with swipe-to-close */}
+          <div
+            ref={bottomSheetRef}
+            className="w-full max-w-md bg-white shadow-xl rounded-t-2xl max-h-[90vh] overflow-y-auto relative flex flex-col animate-slide-up touch-pan-y"
+            style={{ transform: dragOffset ? `translateY(${dragOffset}px)` : undefined, transition: dragOffset ? 'none' : 'transform 0.2s' }}
+          >
+            {/* Drag handle */}
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-2 cursor-pointer" />
             {/* Close button */}
             <button
               onClick={closeBookingDetails}
@@ -911,7 +972,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
               <X className="h-5 w-5" />
             </button>
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-none sm:rounded-t-2xl">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="bg-white bg-opacity-20 p-2 rounded-full">
                   <CalendarIcon className="h-6 w-6" />
