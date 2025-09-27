@@ -968,15 +968,18 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-60 p-2 md:p-4"
+          className="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-60 p-2 md:p-4"
+          style={{ pointerEvents: 'auto', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
         >
           {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
-            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
+            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto ${dragOffset ? '' : 'animate-slide-up'}`}
             style={{
-              transform: dragOffset ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              touchAction: 'none',
+              marginTop: '0',
+              marginBottom: '0',
+              transform: (typeof window !== 'undefined' && window.innerWidth < 768 && dragOffset) ? `translateY(${dragOffset}px)` : 'translateY(0)',
+              touchAction: (typeof window !== 'undefined' && window.innerWidth < 768) ? 'none' : 'auto',
             }}
           >
             {/* Drag handle for swipe-to-close */}

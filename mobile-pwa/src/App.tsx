@@ -141,179 +141,172 @@ function App() {
   if (currentUser) {
     return (
       <ModalProvider>
-        {/* Branded background image for the entire app */}
-        <div aria-hidden="true" className="fixed inset-0 -z-50">
-          <div className="absolute inset-0 -z-50 opacity-20 app-bg" />
-        </div>
-  <div className="min-h-screen flex flex-col relative bg-transparent">
-    {/* Header - render only when navigation is visible or user forced it */}
-    {(isNavVisible || forceNavVisible) && (
-  <div className="bg-white/40 shadow-lg border-b border-gray-200/30 fixed left-0 w-full z-40 flex items-center px-4 py-3 transition-transform duration-200 h-16 header-top">
-        <div className="flex items-center space-x-3">
-          <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
-          <div>
-            <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
-            <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
+        <div className="min-h-screen flex flex-col relative bg-transparent">
+          {/* Branded background image for the entire app */}
+          <div aria-hidden="true" className="fixed inset-0 -z-50">
+            <div className="absolute inset-0 -z-50 opacity-20 app-bg" />
           </div>
-        </div>
-      </div>
-    )}
-
-  {/* Top-right controls: always visible and above modals */}
-  <div className="fixed top-2 right-4 z-[2000] flex items-center space-x-2">
-      <button
-        onClick={() => {
-          if (hasModalOpen) {
-            // allow user to temporarily show nav while modal is open
-            setForceNavVisible(!forceNavVisible);
-          } else {
-            setUserNavPreference(!userNavPreference);
-          }
-        }}
-        className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300 bg-white/80 backdrop-blur"
-        title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
-        aria-label={isNavVisible ? "Hide Navigation" : "Show Navigation"}
-      >
-        {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-      </button>
-  <LanguageSelector className="w-32" />
-      <span className="text-xs text-gray-700 bg-white/80 px-2 py-1 rounded">
-        {currentUser.name} ({currentUser.role})
-      </span>
-      <button
-        onClick={handleSignOut}
-        className="text-gray-600 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-xs border border-gray-300 bg-white/80 backdrop-blur"
-      >
-        Sign Out
-      </button>
-    </div>
-
-          {/* Navigation - fixed below header, fully slides out when hidden */}
-          {/* Navigation - render only when visible (no DOM occupation when hidden) */}
+          {/* Header - always visible so users can toggle navigation */}
+          <div className="bg-white/40 shadow-lg border-b border-gray-200/30 w-full z-40 flex items-center px-4 py-3 transition-transform duration-200 h-16 header-top relative">
+              <div className="flex items-center space-x-3">
+                <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
+                <div>
+                  <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
+                  <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
+                </div>
+              </div>
+              {/* Top-right controls inside header */}
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center space-x-2">
+                <button
+                  onClick={() => {
+                    if (hasModalOpen) {
+                      setForceNavVisible(!forceNavVisible);
+                    } else {
+                      setUserNavPreference(!userNavPreference);
+                    }
+                  }}
+                  className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300 bg-white/80 backdrop-blur"
+                  title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
+                  aria-label={isNavVisible ? "Hide Navigation" : "Show Navigation"}
+                >
+                  {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                </button>
+                <LanguageSelector className="w-32" />
+                <span className="text-xs text-gray-700 bg-white/80 px-2 py-1 rounded">
+                  {currentUser.name} ({currentUser.role})
+                </span>
+                <button
+                  onClick={handleSignOut}
+                  className="text-gray-600 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-xs border border-gray-300 bg-white/80 backdrop-blur"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          {/* Navigation - block below header, always pushes content down, horizontally scrollable if needed */}
           {(isNavVisible || forceNavVisible) && (
-            <div className={`bg-white/30 border-b border-gray-200/20 fixed left-0 w-full z-30 shadow-sm transition-transform duration-300 ease-in-out ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} flex justify-center top-16 h-20 overflow-hidden`}>
-          <div className="max-w-full px-2 py-3 w-full">
-            <div className="w-full">
-                <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
-                  {/* Core Features - Available to All Users */}
-                  <button
-                    onClick={() => setCurrentView('calendar')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                      currentView === 'calendar'
-                        ? 'bg-blue-700 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Calendar className="h-4 w-4 mb-1" />
-                    <span className="text-center leading-tight">Calendar</span>
-                  </button>
-                  {/* All Bookings - show to Owner/Manager/Barber and place next to Calendar */}
-                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+            <nav className="bg-white/30 border-b border-gray-200/20 w-full z-30 shadow-sm transition-all duration-300 ease-in-out flex justify-center">
+              <div className="max-w-full px-2 py-3 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                <div className="w-full">
+                  <div className="grid grid-flow-col auto-cols-min gap-2 whitespace-nowrap min-w-max">
+                    {/* Core Features - Available to All Users */}
                     <button
-                      onClick={() => setCurrentView('bookings')}
+                      onClick={() => setCurrentView('calendar')}
                       className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                        currentView === 'bookings'
+                        currentView === 'calendar'
                           ? 'bg-blue-700 text-white shadow-md'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       <Calendar className="h-4 w-4 mb-1" />
-                      <span className="text-center leading-tight">All Bookings</span>
+                      <span className="text-center leading-tight">Calendar</span>
                     </button>
-                  )}
-                  
-                  <button
-                    onClick={() => setCurrentView('earnings')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                      currentView === 'earnings'
-                        ? 'bg-red-700 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <TrendingUp className="h-4 w-4 mb-1" />
-                    <span className="text-center leading-tight">Earnings</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setCurrentView('customers')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                      currentView === 'customers'
-                        ? 'bg-blue-700 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <Users className="h-4 w-4 mb-1" />
-                    <span className="text-center leading-tight">Customers</span>
-                  </button>
-                  
-                  <button
-                    onClick={() => setCurrentView('operations')}
-                    className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
-                      currentView === 'operations'
-                        ? 'bg-blue-700 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    <ClipboardList className="h-4 w-4 mb-1" />
-                    <span className="text-center leading-tight">Operations</span>
-                  </button>
+                    {/* All Bookings - show to Owner/Manager/Barber and place next to Calendar */}
+                    {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                      <button
+                        onClick={() => setCurrentView('bookings')}
+                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                          currentView === 'bookings'
+                            ? 'bg-blue-700 text-white shadow-md'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                      >
+                        <Calendar className="h-4 w-4 mb-1" />
+                        <span className="text-center leading-tight">All Bookings</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={() => setCurrentView('earnings')}
+                      className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                        currentView === 'earnings'
+                          ? 'bg-red-700 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <TrendingUp className="h-4 w-4 mb-1" />
+                      <span className="text-center leading-tight">Earnings</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setCurrentView('customers')}
+                      className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                        currentView === 'customers'
+                          ? 'bg-blue-700 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <Users className="h-4 w-4 mb-1" />
+                      <span className="text-center leading-tight">Customers</span>
+                    </button>
+                    
+                    <button
+                      onClick={() => setCurrentView('operations')}
+                      className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs min-w-[70px] ${
+                        currentView === 'operations'
+                          ? 'bg-blue-700 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <ClipboardList className="h-4 w-4 mb-1" />
+                      <span className="text-center leading-tight">Operations</span>
+                    </button>
 
-                  {/* Management Features - Owner/Manager/Barber Access */}
-                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-                    <>
-                      <button
-                        onClick={() => setCurrentView('expenses')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                          currentView === 'expenses'
-                            ? 'bg-blue-700 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <DollarSign className="h-4 w-4 mb-1" />
-                        <span className="text-center leading-tight">Expenses</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setCurrentView('equipment')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                          currentView === 'equipment'
-                            ? 'bg-blue-700 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Package className="h-4 w-4 mb-1" />
-                        <span className="text-center leading-tight">Equipment</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setCurrentView('supplies')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                          currentView === 'supplies'
-                            ? 'bg-blue-700 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <Package className="h-4 w-4 mb-1" />
-                        <span className="text-center leading-tight">Supplies</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => setCurrentView('incidents')}
-                        className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
-                          currentView === 'incidents'
-                            ? 'bg-red-700 text-white shadow-md'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        <AlertTriangle className="h-4 w-4 mb-1" />
-                        <span className="text-center leading-tight">Incidents</span>
-                      </button>
-                    </>
-                  )}
-                  
-                  {/* Owner, Manager and Barber features */}
-                  {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-                    <>
+                    {/* Management Features - Owner/Manager/Barber Access */}
+                    {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
+                      <>
+                        <button
+                          onClick={() => setCurrentView('expenses')}
+                          className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                            currentView === 'expenses'
+                              ? 'bg-blue-700 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <DollarSign className="h-4 w-4 mb-1" />
+                          <span className="text-center leading-tight">Expenses</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => setCurrentView('equipment')}
+                          className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                            currentView === 'equipment'
+                              ? 'bg-blue-700 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Package className="h-4 w-4 mb-1" />
+                          <span className="text-center leading-tight">Equipment</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => setCurrentView('supplies')}
+                          className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                            currentView === 'supplies'
+                              ? 'bg-blue-700 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <Package className="h-4 w-4 mb-1" />
+                          <span className="text-center leading-tight">Supplies</span>
+                        </button>
+                        
+                        <button
+                          onClick={() => setCurrentView('incidents')}
+                          className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
+                            currentView === 'incidents'
+                              ? 'bg-red-700 text-white shadow-md'
+                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                          }`}
+                        >
+                          <AlertTriangle className="h-4 w-4 mb-1" />
+                          <span className="text-center leading-tight">Incidents</span>
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* Owner, Manager and Barber features */}
+                    {(currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
                       <button
                         onClick={() => setCurrentView('admin')}
                         className={`flex flex-col items-center justify-center px-3 py-2 rounded-lg transition-colors text-xs w-full ${
@@ -325,28 +318,26 @@ function App() {
                         <Shield className="h-4 w-4 mb-1" />
                         <span className="text-center leading-tight">Admin</span>
                       </button>
-                    </>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </nav>
           )}
-
-          {/* Content Area */}
-          <div className="flex-1 overflow-auto">
-            <div className="max-w-full p-4">
+          {/* Content Area - add top margin to clear header and nav */}
+          <main className="flex-1 overflow-auto">
+            <div className="max-w-full p-4 mt-4">
               <div className="brand-card rounded-xl p-4 sm:p-6">
                 {currentView === 'calendar' && (
-                  <BookingCalendar currentUser={currentUser} />
+                  <BookingCalendar currentUser={currentUser!} />
                 )}
 
                 {currentView === 'earnings' && (
-                  <RealEarningsTracker currentUser={currentUser} />
+                  <RealEarningsTracker currentUser={currentUser!} />
                 )}
 
                 {currentView === 'customers' && (
-                  <CustomerManager currentUser={currentUser} />
+                  <CustomerManager currentUser={currentUser!} />
                 )}
 
                 {currentView === 'operations' && (
@@ -354,7 +345,7 @@ function App() {
                 )}
 
                 {currentView === 'expenses' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-                  <ExpenseManager currentUserId={currentUser.id} />
+                  <ExpenseManager currentUserId={(currentUser as import('./services/completeDatabase').User).id} />
                 )}
 
                 {currentView === 'equipment' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
@@ -366,22 +357,22 @@ function App() {
                 )}
 
                 {currentView === 'incidents' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-                  <IncidentReports currentUserId={currentUser.id} />
+                  <IncidentReports currentUserId={(currentUser as import('./services/completeDatabase').User).id} />
                 )}
 
                 {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
                   <BookingManagement 
-                    currentUser={currentUser} 
+                    currentUser={currentUser!} 
                     onModalStateChange={(isOpen) => setHasModalOpen(isOpen)} 
                   />
                 )}
 
                 {currentView === 'admin' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
-                  <AdminPanel currentUser={currentUser} />
+                  <AdminPanel currentUser={currentUser!} />
                 )}
               </div>
             </div>
-          </div>
+          </main>
         </div>
       </ModalProvider>
     );
@@ -391,7 +382,6 @@ function App() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden app-bg-login">
       {/* Branded background image */}
-      {/* The background is now set via the style prop above */}
       <div className="rounded-xl shadow-xl p-8 w-full max-w-md relative z-10 bg-white/90 backdrop-blur-md border border-white/20">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
@@ -410,7 +400,6 @@ function App() {
             </p>
           )}
         </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <>
@@ -428,7 +417,6 @@ function App() {
                   />
                 </div>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
@@ -446,7 +434,6 @@ function App() {
               </div>
             </>
           )}
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <div className="relative">
@@ -494,13 +481,11 @@ function App() {
               </button>
             </div>
           </div>
-
           {error && (
             <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded-lg border border-red-200">
               {error}
             </div>
           )}
-
           <button
             type="submit"
             disabled={isLoading}
@@ -508,7 +493,6 @@ function App() {
           >
             {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
           </button>
-
           <div className="text-center">
             <button
               type="button"
