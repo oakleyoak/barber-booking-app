@@ -363,10 +363,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 Save Settings
               </button>
             </div>
-
             <div className="space-y-6">
-
-
               {/* Operating Hours */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4">Operating Hours</h3>
@@ -391,7 +388,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                 </div>
               </div>
-
               {/* Revenue Targets */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4">Revenue Targets</h3>
@@ -425,49 +421,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                 </div>
               </div>
-
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Commission Rates (%)</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Barber Commission (%)</label>
-                    <input placeholder="Enter barber commission" title="Barber Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.barber_commission}
-                      onChange={(e) => setShopSettings({ ...shopSettings, barber_commission: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Manager Commission (%)</label>
-                    <input placeholder="Enter manager commission" title="Manager Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.manager_commission || 70}
-                      onChange={(e) => setShopSettings({ ...shopSettings, manager_commission: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Apprentice Commission (%)</label>
-                    <input placeholder="Enter apprentice commission" title="Apprentice Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.apprentice_commission}
-                      onChange={(e) => setShopSettings({ ...shopSettings, apprentice_commission: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                </div>
-              </div>
-
               {/* Tax Settings */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4">Tax Settings</h3>
