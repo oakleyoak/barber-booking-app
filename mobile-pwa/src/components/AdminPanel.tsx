@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { FaChartBar, FaUsers, FaCogs, FaFileAlt, FaPlus, FaEdit, FaTrash, FaSave, FaDownload, FaTimes } from 'react-icons/fa';
 import { userManagementService, shopSettingsService } from '../services/managementServices';
 import { ShopSettingsService } from '../services/shopSettings';
 import { bookingService, customerService, expenseService } from '../services/completeDatabase';
 
-const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: string; role?: string } }) => {
+interface AdminPanelProps {
+  currentUser: { id: string; shop_name?: string; role?: string };
+  onModalStateChange?: (isOpen: boolean) => void;
+}
+
+const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange }) => {
   const modal = useModal();
   const [currentTab, setCurrentTab] = useState<'overview' | 'users' | 'settings' | 'reports'>('overview');
   const [shopSettings, setShopSettings] = useState<any>(null);
@@ -36,9 +41,60 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
     target_monthly: 8000
   });
 
+  // Remove bottom sheet modal logic for top-aligned modals
+
   useEffect(() => {
     loadAdminData();
   }, [currentUser.id]);
+
+  // Modal state management for body scroll prevention and navigation integration
+  useEffect(() => {
+    if (showUserModal) {
+      document.body.style.overflow = 'hidden';
+      onModalStateChange?.(true);
+    } else {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    };
+  }, [showUserModal, onModalStateChange]);
+
+  // Touch event handlers for swipe-to-close functionality
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+    if (diff > 0) { // Only allow downward drag
+      dragCurrentY.current = currentY;
+      setDragOffset(Math.min(diff, 300)); // Limit drag distance
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 150) { // If dragged more than 150px, close modal
+      setShowUserModal(false);
+      setEditingUser(null);
+      setNewUser({
+        name: '',
+        email: '',
+        role: 'Barber',
+        commission_rate: 60,
+        target_weekly: 2000,
+        target_monthly: 8000
+      });
+    }
+    setDragOffset(0);
+    dragStartY.current = null;
+    dragCurrentY.current = null;
+  };
 
   const loadAdminData = async () => {
     setIsLoading(true);
@@ -516,102 +572,113 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
       {/* User Modal */}
       {showUserModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-sm sm:max-w-md mx-2 sm:mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-base sm:text-lg font-semibold">
-                {editingUser ? 'Edit User' : 'Add New User'}
-              </h3>
-              <button
-                title="Close modal"
-                onClick={() => setShowUserModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1"
-              >
-                <FaTimes />
-              </button>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowUserModal(false)} />
+          <div 
+            ref={bottomSheetRef}
+            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="flex justify-center py-3 md:hidden">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
             </div>
-
-            <form onSubmit={handleUserSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input placeholder="Enter name" title="Name"
-                  type="text"
-                  value={newUser.name}
-                  onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input placeholder="Enter email" title="Email"
-                  type="email"
-                  value={newUser.email}
-                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select title="Role"
-                  value={newUser.role}
-                  onChange={(e) => {
-                    const selectedRole = e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
-                    let defaultCommission = 60; // Default barber commission
-                    
-                    if (selectedRole === 'Owner') {
-                      defaultCommission = 100;
-                    } else if (selectedRole === 'Manager') {
-                      defaultCommission = 70;
-                    } else if (selectedRole === 'Apprentice') {
-                      defaultCommission = 40;
-                    }
-                    
-                    setNewUser({ ...newUser, role: selectedRole, commission_rate: defaultCommission });
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                >
-                  <option value="Owner">Owner</option>
-                  <option value="Manager">Manager</option>
-                  <option value="Barber">Barber</option>
-                  <option value="Apprentice">Apprentice</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
-                <input title="Commission Rate"
-                  type="number"
-                  value={newUser.commission_rate}
-                  onChange={(e) => setNewUser({ ...newUser, commission_rate: parseFloat(e.target.value) || 0 })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-              </div>
-
-
-
-              <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+            <div className="px-6 pb-6 pt-0 md:p-6 overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingUser ? 'Edit User' : 'Add New User'}
+                </h3>
                 <button
-                  type="button"
+                  title="Close modal"
                   onClick={() => setShowUserModal(false)}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50 text-sm sm:text-base"
+                  className="text-gray-400 hover:text-gray-600 p-1"
                 >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm sm:text-base"
-                >
-                  {editingUser ? 'Update' : 'Create'}
+                  <FaTimes />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={handleUserSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input placeholder="Enter name" title="Name"
+                    type="text"
+                    value={newUser.name}
+                    onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input placeholder="Enter email" title="Email"
+                    type="email"
+                    value={newUser.email}
+                    onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                  <select title="Role"
+                    value={newUser.role}
+                    onChange={(e) => {
+                      const selectedRole = e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
+                      let defaultCommission = 60; // Default barber commission
+                      
+                      if (selectedRole === 'Owner') {
+                        defaultCommission = 100;
+                      } else if (selectedRole === 'Manager') {
+                        defaultCommission = 70;
+                      } else if (selectedRole === 'Apprentice') {
+                        defaultCommission = 40;
+                      }
+                      
+                      setNewUser({ ...newUser, role: selectedRole, commission_rate: defaultCommission });
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="Owner">Owner</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Barber">Barber</option>
+                    <option value="Apprentice">Apprentice</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
+                  <input title="Commission Rate"
+                    type="number"
+                    value={newUser.commission_rate}
+                    onChange={(e) => setNewUser({ ...newUser, commission_rate: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowUserModal(false)}
+                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  >
+                    {editingUser ? 'Update' : 'Create'}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

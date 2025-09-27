@@ -45,13 +45,31 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       } catch (error) {
         console.error('Error loading translations:', error);
         // Fallback to English
-        const englishModule = await getTranslations('en');
-        setTranslations(englishModule);
-        setIsLoading(false);
+        try {
+          const englishModule = await getTranslations('en');
+          setTranslations(englishModule);
+          setIsLoading(false);
+        } catch (fallbackError) {
+          console.error('Error loading English translations:', fallbackError);
+          // If even English fails, set empty translations
+          setTranslations({});
+          setIsLoading(false);
+        }
       }
     };
 
+    // Add a timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        console.warn('Translation loading timeout, falling back to English');
+        setTranslations({});
+        setIsLoading(false);
+      }
+    }, 5000); // 5 second timeout
+
     loadTranslations();
+
+    return () => clearTimeout(timeoutId);
   }, [language]);
 
   // Save language preference to localStorage
@@ -88,8 +106,13 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     return value;
   };
 
+  // Show loading screen instead of null
   if (isLoading) {
-    return null; // Return null while loading translations
+    return (
+      <div className="flex justify-center items-center h-screen font-sans">
+        <div>Loading...</div>
+      </div>
+    );
   }
 
   return (

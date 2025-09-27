@@ -3,7 +3,7 @@ import { useModal } from './ui/ModalProvider';
 import { equipmentService, type EquipmentInventory } from '../services/completeDatabase';
 
 export default function InventoryManager() {
-  const modal = useModal();
+  const modal = useModal(); // Top-aligned modals only
   const [equipment, setEquipment] = useState<EquipmentInventory[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);

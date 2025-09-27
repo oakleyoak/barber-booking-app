@@ -69,7 +69,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
 
       {/* Confirm modal */}
       {confirmState.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+  <div className="fixed inset-0 z-50 flex modal-top justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
             <h3 className="text-lg font-semibold mb-3">Confirm</h3>
             <p className="mb-4 text-sm text-gray-700">{confirmState.message}</p>
@@ -93,7 +93,7 @@ export const ModalProvider = ({ children }: { children: ReactNode }) => {
 
       {/* Prompt modal */}
       {promptState.open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+  <div className="fixed inset-0 z-50 flex modal-top justify-center bg-black bg-opacity-40">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
             <h3 className="text-lg font-semibold mb-3">Input</h3>
             <p className="mb-3 text-sm text-gray-700">{promptState.message}</p>

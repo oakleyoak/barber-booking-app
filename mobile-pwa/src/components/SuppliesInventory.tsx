@@ -3,7 +3,7 @@ import { useModal } from './ui/ModalProvider';
 import { suppliesService, type SuppliesInventory } from '../services/completeDatabase';
 
 export default function SuppliesInventory() {
-  const modal = useModal();
+  const modal = useModal(); // Top-aligned modals only
   const [supplies, setSupplies] = useState<SuppliesInventory[]>([]);
   const [lowStockItems, setLowStockItems] = useState<SuppliesInventory[]>([]);
   const [loading, setLoading] = useState(true);

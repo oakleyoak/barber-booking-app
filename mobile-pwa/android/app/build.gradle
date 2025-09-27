@@ -46,6 +46,7 @@ android {
         }
         debug {
             signingConfig signingConfigs.debug
+            minifyEnabled false
         }
     }
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
 import { customerService, type Customer, userService, bookingService } from '../services/completeDatabase';
@@ -8,10 +8,17 @@ import { NotificationsService } from '../services/notifications';
 import { Phone, Mail, User as UserIcon, Calendar, Edit, Trash2, Plus, Search, X, Clock, MapPin } from 'lucide-react';
 
 interface CustomerManagerProps {
-  currentUser: User;
+  currentUser: {
+    id?: string;
+    name: string;
+    email: string;
+    role: string;
+    shop_name: string;
+  };
+  onModalStateChange?: (isOpen: boolean) => void;
 }
 
-const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
+const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalStateChange }) => {
   const modal = useModal();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
@@ -23,6 +30,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
   const [showCustomerProfile, setShowCustomerProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allStaff, setAllStaff] = useState<{id: string, name: string, email: string}[]>([]);
+
+  // Remove bottom sheet modal logic for top-aligned modals
 
   // Form data
   const [formData, setFormData] = useState({
@@ -64,6 +73,65 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
     );
     setFilteredCustomers(filtered);
   }, [customers, searchTerm]);
+
+  // Modal state management for body scroll prevention and navigation integration
+  useEffect(() => {
+    const isAnyModalOpen = showForm || showBookingModal || showCustomerProfile;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      onModalStateChange?.(true);
+    } else {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    };
+  }, [showForm, showBookingModal, showCustomerProfile, onModalStateChange]);
+
+  // Touch event handlers for swipe-to-close functionality
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+    if (diff > 0) { // Only allow downward drag
+      dragCurrentY.current = currentY;
+      setDragOffset(Math.min(diff, 300)); // Limit drag distance
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 150) { // If dragged more than 150px, close modal
+      setShowForm(false);
+      setShowBookingModal(false);
+      setShowCustomerProfile(false);
+      setEditingCustomer(null);
+      setSelectedCustomer(null);
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        notes: ''
+      });
+      setBookingData({
+        service: 'Haircut',
+        price: 700,
+        notes: '',
+        appointment_date: new Date().toISOString().split('T')[0],
+        appointment_time: '09:00',
+        user_id: currentUser.id
+      });
+    }
+    setDragOffset(0);
+    dragStartY.current = null;
+    dragCurrentY.current = null;
+  };
 
   const loadCustomers = async () => {
     try {
@@ -332,8 +400,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
       {/* Customer Profile Modal */}
       {showCustomerProfile && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-12 sm:pt-20">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowCustomerProfile(false)} />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 md:mt-8">
             {/* Profile Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
               <div className="flex items-center justify-between">
@@ -443,162 +512,188 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser }) => {
 
       {/* Customer Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
-            </h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  rows={3}
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {editingCustomer ? 'Update' : 'Add'} Customer
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowForm(false)} />
+          <div 
+            ref={bottomSheetRef}
+            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="flex justify-center py-3 md:hidden">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+            </div>
+            <div className="px-6 pb-6 pt-0 md:p-6 overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+              </h3>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                  <textarea
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                </div>
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  >
+                    {editingCustomer ? 'Update' : 'Add'} Customer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={resetForm}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Booking Modal */}
       {showBookingModal && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4 pt-12 sm:pt-20">
-          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full max-h-[80vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">
-              Book Appointment for {selectedCustomer.name}
-            </h3>
-            <form onSubmit={handleBookingSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                <select
-                  value={bookingData.service}
-                  onChange={(e) => handleServiceChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {services.map(service => (
-                    <option key={service.name} value={service.name}>
-                      {service.name} - ₺{service.price}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={bookingData.price}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, price: Number(e.target.value) }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  required
-                  placeholder="Enter custom amount"
-                />
-                <p className="text-xs text-gray-500 mt-1">Modify this amount as needed for custom pricing</p>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                <input
-                  type="date"
-                  value={bookingData.appointment_date}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, appointment_date: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                <input
-                  type="time"
-                  value={bookingData.appointment_time}
-                  onChange={(e) => setBookingData(prev => ({ ...prev, appointment_time: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowBookingModal(false)} />
+          <div 
+            ref={bottomSheetRef}
+            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
+            style={{ transform: `translateY(${dragOffset}px)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="flex justify-center py-3 md:hidden">
+              <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+            </div>
+            <div className="px-6 pb-6 pt-0 md:p-6 overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Book Appointment for {selectedCustomer.name}
+              </h3>
+              <form onSubmit={handleBookingSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Barber</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
                   <select
-                    value={bookingData.user_id}
-                    onChange={(e) => setBookingData(prev => ({ ...prev, user_id: e.target.value }))}
+                    value={bookingData.service}
+                    onChange={(e) => handleServiceChange(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
-                    {allStaffMembers.map(staff => (
-                      <option key={staff.id} value={staff.id}>{staff.name}</option>
+                    {services.map(service => (
+                      <option key={service.name} value={service.name}>
+                        {service.name} - ₺{service.price}
+                      </option>
                     ))}
                   </select>
+                  <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
                 </div>
-              )}
-              <div className="flex space-x-3 pt-4">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                >
-                  Create Booking
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowBookingModal(false);
-                    setSelectedCustomer(null);
-                  }}
-                  className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={bookingData.price}
+                    onChange={(e) => setBookingData(prev => ({ ...prev, price: Number(e.target.value) }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    required
+                    placeholder="Enter custom amount"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Modify this amount as needed for custom pricing</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={bookingData.appointment_date}
+                    onChange={(e) => setBookingData(prev => ({ ...prev, appointment_date: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                  <input
+                    type="time"
+                    value={bookingData.appointment_time}
+                    onChange={(e) => setBookingData(prev => ({ ...prev, appointment_time: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    required
+                  />
+                </div>
+                {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign to Barber</label>
+                    <select
+                      value={bookingData.user_id}
+                      onChange={(e) => setBookingData(prev => ({ ...prev, user_id: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {allStaffMembers.map(staff => (
+                        <option key={staff.id} value={staff.id}>{staff.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <div className="flex space-x-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    Create Booking
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowBookingModal(false);
+                      setSelectedCustomer(null);
+                    }}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

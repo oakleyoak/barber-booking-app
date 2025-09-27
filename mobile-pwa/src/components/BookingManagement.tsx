@@ -968,13 +968,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed inset-0 z-[5000] flex items-center justify-center bg-black bg-opacity-60 p-2 md:p-4"
+          className="fixed inset-0 z-[1200] flex bg-black bg-opacity-60 p-2 md:p-4"
           style={{ pointerEvents: 'auto', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
         >
           {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
-            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto ${dragOffset ? '' : 'animate-slide-up'}`}
+            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto mt-4 md:mt-8 ${dragOffset ? '' : 'animate-slide-up'}`}
             style={{
               marginTop: '0',
               marginBottom: '0',
@@ -1127,8 +1127,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Create Booking Form Modal */}
       {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 md:mt-8">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Create New Booking</h3>
@@ -1299,8 +1299,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && bookingToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] p-4">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mt-4 md:mt-8">
             <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete the booking for {bookingToDelete.customer_name} on {formatDate(bookingToDelete.date)}?
@@ -1328,8 +1328,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Notification Options Modal */}
       {showNotificationOptions && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] px-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] px-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top mt-4 md:mt-8">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
               <div className="flex items-center justify-between">

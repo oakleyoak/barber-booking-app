@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
 import { generateTimeSlots } from '../utils/timeSlots';
 import { useModal } from './ui/ModalProvider';
@@ -13,9 +13,11 @@ import type { Booking, Customer, User as UserType } from '../lib/supabase';
 
 interface BookingCalendarProps {
   currentUser: UserType;
+  onModalStateChange?: (isOpen: boolean) => void;
 }
 
-const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
+const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalStateChange }) => {
+  // Remove bottom sheet modal logic for top-aligned modals
   // Always ensure shop settings exist in Supabase and use them for slot generation
   useEffect(() => {
     const ensureSettingsAndSlots = async () => {
@@ -104,6 +106,22 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       loadData();
     }
   }, [view, selectedDate]);
+
+  // Modal state management for body scroll prevention and navigation integration
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+      onModalStateChange?.(true);
+    } else {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    };
+  }, [showModal, onModalStateChange]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -608,80 +626,80 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         )}
 
         {showModal && (
-          <div className="fixed inset-0 z-50 overflow-y-auto">
-            <div className="flex min-h-screen items-center justify-center p-4">
-              <div className="fixed inset-0 bg-black bg-opacity-25" onClick={() => setShowModal(false)} />
-              <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md">
-                <div className="p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
-                  <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
+            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowModal(false)} />
+            <div 
+              className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out"
+            >
+              <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[calc(85vh-3rem)]">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer</label>
+                    <select 
+                      value={customers.find(c => c.name === formData.customer_name)?.id || ''}
+                      onChange={(e) => {
+                        const selectedCustomer = customers.find(c => c.id === e.target.value);
+                        if (selectedCustomer) {
+                          setFormData(prev => ({...prev, customer_name: selectedCustomer.name, customer_id: selectedCustomer.id, notes: (selectedCustomer as any).notes || ''}));
+                        } else {
+                          setFormData(prev => ({...prev, customer_id: undefined}));
+                        }
+                      }}
+                      aria-label="Select existing customer"
+                      title="Select existing customer"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Select existing customer...</option>
+                      {customers.map(customer => (
+                        <option key={customer.id} value={customer.id}>{customer.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                    <input type="text" value={formData.customer_name} onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Or enter new customer name" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                    <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select service">
+                      <option value="">Select a service</option>
+                      {services.map(s => <option key={s.name} value={s.name}>{s.name} - ₺{s.price}</option>)}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
+                    <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData(prev => ({...prev, price: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter custom amount" />
+                    <p className="text-xs text-gray-500 mt-1">Modify this amount as needed</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer</label>
-                      <select 
-                        value={customers.find(c => c.name === formData.customer_name)?.id || ''}
-                        onChange={(e) => {
-                          const selectedCustomer = customers.find(c => c.id === e.target.value);
-                          if (selectedCustomer) {
-                            setFormData(prev => ({...prev, customer_name: selectedCustomer.name, customer_id: selectedCustomer.id, notes: (selectedCustomer as any).notes || ''}));
-                          } else {
-                            setFormData(prev => ({...prev, customer_id: undefined}));
-                          }
-                        }}
-                        aria-label="Select existing customer"
-                        title="Select existing customer"
-                        className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select existing customer...</option>
-                        {customers.map(customer => (
-                          <option key={customer.id} value={customer.id}>{customer.name}</option>
-                        ))}
-                      </select>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                      <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select booking date" placeholder="Select date" />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                      <input type="text" value={formData.customer_name} onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Or enter new customer name" required />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                      <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select service">
-                        <option value="">Select a service</option>
-                        {services.map(s => <option key={s.name} value={s.name}>{s.name} - ₺{s.price}</option>)}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
-                      <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData(prev => ({...prev, price: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter custom amount" />
-                      <p className="text-xs text-gray-500 mt-1">Modify this amount as needed</p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select booking date" placeholder="Select date" />
-                      </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                        <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select time slot">
-                          <option value="">Select time</option>
-                          {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
-                        </select>
-                      </div>
-                    </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select value={formData.status} onChange={(e) => setFormData(prev => ({...prev, status: e.target.value as any}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" title="Select booking status">
-                        <option value="scheduled">Scheduled</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                      <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select time slot">
+                        <option value="">Select time</option>
+                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
-                    <div className="flex justify-end space-x-3 pt-4">
-                      <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
-                      <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
-                    </div>
-                  </form>
-                </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select value={formData.status} onChange={(e) => setFormData(prev => ({...prev, status: e.target.value as any}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" title="Select booking status">
+                      <option value="scheduled">Scheduled</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-end space-x-3 pt-4">
+                    <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
+                  </div>
+                </form>
               </div>
             </div>
           </div>

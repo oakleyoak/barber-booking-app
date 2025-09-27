@@ -1,3 +1,38 @@
+/* Responsive navigation grid for large screens */
+@media (min-width: 700px) {
+  .nav-2x5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 0.75rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+}
+
+/* Modal alignment at top for all screens */
+.modal-top {
+  align-items: flex-start !important;
+  justify-content: center !important;
+  padding-top: 2.5rem;
+}
+
+@media (min-width: 700px) {
+  .modal-top {
+    padding-top: 4rem;
+  }
+}
+
+/* Main content max width for large screens */
+@media (min-width: 700px) {
+  .main-content-max {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -92,6 +127,51 @@ html, body {
     left: 12px;
     right: 12px;
     padding: 12px;
+  }
+  
+  /* Reduce font sizes on mobile */
+  body, html {
+    font-size: 14px;
+  }
+  
+  /* Smaller navigation grid gap */
+  .nav-2x5 {
+    gap: 0.5rem;
+  }
+  
+  /* Reduce modal padding on mobile */
+  .modal-top {
+    padding-top: 1rem;
+  }
+  
+  /* Smaller content max width on mobile */
+  .main-content-max {
+    max-width: 95vw;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Reduce header elements */
+  .header-top {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+  
+  /* Smaller buttons */
+  button {
+    min-height: 36px;
+    font-size: 0.75rem;
+  }
+  
+  /* Smaller inputs */
+  input, select, textarea {
+    font-size: 0.875rem;
+    padding: 0.5rem;
+  }
+  
+  /* Reduce spacing in forms */
+  .space-y-4 > * + * {
+    margin-top: 0.75rem;
   }
 }
 
@@ -253,6 +333,7 @@ button {
 /* Professional card styling */
 .brand-card {
   background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useModal } from './ui/ModalProvider';
 import {
   ClipboardList,
@@ -51,7 +51,11 @@ interface OperationsData {
   statistics: any;
 }
 
-const OperationsManual: React.FC = () => {
+interface OperationsManualProps {
+  onModalStateChange?: (isOpen: boolean) => void;
+}
+
+const OperationsManual: React.FC<OperationsManualProps> = ({ onModalStateChange }) => {
   const modal = useModal();
   const [activeTab, setActiveTab] = useState('cleaning');
   const [historyFilters, setHistoryFilters] = useState({ start: '', end: '' });
@@ -83,6 +87,8 @@ const OperationsManual: React.FC = () => {
     acceptable_range: ''
   });
 
+  // Remove bottom sheet modal logic for top-aligned modals
+
   useEffect(() => {
     loadData();
   }, []);
@@ -93,6 +99,63 @@ const OperationsManual: React.FC = () => {
       loadHistory();
     }
   }, [activeTab]);
+
+  // Modal state management for body scroll prevention and navigation integration
+  useEffect(() => {
+    const isModalOpen = showAddForm !== '';
+    if (isModalOpen) {
+      document.body.style.overflow = 'hidden';
+      onModalStateChange?.(true);
+    } else {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+      onModalStateChange?.(false);
+    };
+  }, [showAddForm, onModalStateChange]);
+
+  // Touch event handlers for swipe-to-close functionality
+  const handleTouchStart = (e: React.TouchEvent) => {
+    dragStartY.current = e.touches[0].clientY;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current === null) return;
+    const currentY = e.touches[0].clientY;
+    const diff = currentY - dragStartY.current;
+    if (diff > 0) { // Only allow downward drag
+      dragCurrentY.current = currentY;
+      setDragOffset(Math.min(diff, 300)); // Limit drag distance
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (dragOffset > 150) { // If dragged more than 150px, close modal
+      setShowAddForm('');
+      setShowNewTaskForm(false);
+      setNewTask({
+        name: '',
+        description: '',
+        frequency: 'daily',
+        priority: 'medium',
+        estimated_time: 15,
+        category: '',
+        compliance_requirement: false,
+        instructions: '',
+        equipment_name: '',
+        requires_specialist: false,
+        selectedId: undefined,
+        check_type: '',
+        acceptable_range: ''
+      });
+    }
+    setDragOffset(0);
+    dragStartY.current = null;
+    dragCurrentY.current = null;
+  };
 
   const loadData = async () => {
     try {
@@ -250,9 +313,30 @@ const OperationsManual: React.FC = () => {
     }
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
-          <h3 className="text-lg font-semibold mb-4">{showNewTaskForm ? `Add New ${label}` : `Select ${label}`}</h3>
+      <>
+        {/* Backdrop */}
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200]" onClick={() => setShowAddForm('')} />
+        
+        {/* Modal */}
+        <div
+          ref={bottomSheetRef}
+          className="fixed z-[1200] w-full md:max-w-2xl md:mx-auto md:inset-x-0 md:top-4 bottom-0 left-0 right-0 bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
+          style={{
+            transform: `translateY(${dragOffset}px)`,
+            transition: dragOffset === 0 ? 'transform 0.3s ease-out' : 'none'
+          }}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
+          {/* Drag handle for mobile */}
+          <div className="md:hidden w-full flex justify-center pt-3 pb-2">
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
+          </div>
+
+          {/* Modal content */}
+          <div className="px-6 pb-6 max-h-[85vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4 pt-2 md:pt-0">{showNewTaskForm ? `Add New ${label}` : `Select ${label}`}</h3>
           {!showNewTaskForm ? (
             <>
               <div className="space-y-4">
@@ -572,8 +656,9 @@ const OperationsManual: React.FC = () => {
               </form>
             </>
           )}
+          </div>
         </div>
-      </div>
+      </>
     );
   };
 
