@@ -899,9 +899,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center">
-          {/* Full-screen overlay for mobile, centered modal for desktop */}
-          <div className="w-full h-full sm:h-auto sm:w-full max-w-md bg-white shadow-xl overflow-y-auto relative flex flex-col rounded-none sm:rounded-2xl animate-slide-up">
+        <div className="fixed top-0 left-0 w-screen h-screen z-[9999] flex items-start justify-center bg-black bg-opacity-60">
+          {/* True full-screen overlay for all devices */}
+          <div className="w-full h-full max-w-md bg-white shadow-xl overflow-y-auto relative flex flex-col rounded-none sm:rounded-2xl animate-slide-up">
             {/* Close button */}
             <button
               onClick={closeBookingDetails}
