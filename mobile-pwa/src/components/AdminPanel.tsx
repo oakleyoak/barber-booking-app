@@ -365,44 +365,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
             </div>
 
             <div className="space-y-6">
-              {/* Basic Information */}
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Basic Information</h3>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
-                    <input placeholder="Enter shop name" title="Shop Name"
-                      type="text"
-                      value={shopSettings.shop_name}
-                      onChange={(e) => setShopSettings({ ...shopSettings, shop_name: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div className="lg:col-span-1">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Closed Days</label>
-                    <div className="space-y-2">
-                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => (
-                        <label key={day} className="flex items-center">
-                          <input
-                            type="checkbox"
-                            checked={shopSettings.closed_days?.includes(day) || false}
-                            onChange={(e) => {
-                              const currentDays = shopSettings.closed_days || [];
-                              if (e.target.checked) {
-                                setShopSettings({ ...shopSettings, closed_days: [...currentDays, day] });
-                              } else {
-                                setShopSettings({ ...shopSettings, closed_days: currentDays.filter((d: string) => d !== day) });
-                              }
-                            }}
-                            className="mr-2"
-                          />
-                          <span className="text-sm">{day}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+
 
               {/* Operating Hours */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
