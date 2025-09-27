@@ -1222,8 +1222,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Notification Options Modal */}
       {showNotificationOptions && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] px-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[1200] px-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mt-8 sm:mt-16 animate-fade-in-top">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
               <div className="flex items-center justify-between">

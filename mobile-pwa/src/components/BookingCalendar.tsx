@@ -197,7 +197,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     const normalizedTime = booking.time.length > 5 ? booking.time.substring(0, 5) : booking.time;
     setEditingBooking(booking);
     setFormData({
-      customer_name: booking.customer_name,
+          customer_name: booking.customer_name,
   customer_id: booking.customer_id || undefined,
       service: booking.service,
       price: booking.price.toString(),
@@ -215,7 +215,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
     const ok = await modal.confirm('Are you sure you want to delete this booking?');
     if (!ok) return;
     try {
-      await bookingService.deleteBooking(id);
+          await bookingService.deleteBooking(id);
       setBookings(prev => prev.filter(b => b.id !== id));
       setMonthlyBookings(prev => prev.filter(b => b.id !== id));
     } catch (error) {
@@ -461,9 +461,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
         {view === 'calendar' && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <button onClick={() => navigateMonth('prev')} className="p-2 hover:bg-gray-100 rounded-lg transition"><ChevronLeft className="h-5 w-5" /></button>
+          <button onClick={() => navigateMonth('prev')} className="p-2 hover:bg-gray-100 rounded-lg transition" title="Previous month"><ChevronLeft className="h-5 w-5" /></button>
               <h3 className="text-lg font-semibold text-gray-900">{currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</h3>
-              <button onClick={() => navigateMonth('next')} className="p-2 hover:bg-gray-100 rounded-lg transition"><ChevronRight className="h-5 w-5" /></button>
+                <button onClick={() => navigateMonth('next')} className="p-2 hover:bg-gray-100 rounded-lg transition" title="Next month"><ChevronRight className="h-5 w-5" /></button>
             </div>
             <div className="grid grid-cols-7 gap-1">
               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => <div key={i} className="p-2 text-center text-xs sm:text-sm font-medium text-gray-500">{day}</div>)}
@@ -500,7 +500,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                 const d = new Date(selectedDate); 
                 d.setDate(d.getDate() - 1); 
                 setSelectedDate(getLocalDateString(d));
-              }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronLeft className="h-5 w-5" /></button>
+              }} className="p-2 hover:bg-gray-200 rounded-lg transition" title="Previous day"><ChevronLeft className="h-5 w-5" /></button>
               <div className="text-center">
                 <h3 className="text-lg font-semibold text-gray-900">{new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h3>
                 <p className="text-sm text-gray-600">{bookings.length} appointment{bookings.length !== 1 ? 's' : ''}</p>
@@ -509,7 +509,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                 const d = new Date(selectedDate); 
                 d.setDate(d.getDate() + 1); 
                 setSelectedDate(getLocalDateString(d));
-              }} className="p-2 hover:bg-gray-200 rounded-lg transition"><ChevronRight className="h-5 w-5" /></button>
+              }} className="p-2 hover:bg-gray-200 rounded-lg transition" title="Next day"><ChevronRight className="h-5 w-5" /></button>
             </div>
             <div className="space-y-2">
               {timeSlots.map(time => {
@@ -521,7 +521,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                       {slotBookings.length > 0 ? (
                         <div className="space-y-2">
                           {slotBookings.map(booking => (
-                            <div key={booking.id} className="bg-white p-3 rounded-lg border shadow-sm">
+                            <div
+                              key={booking.id}
+                              className="bg-white p-3 rounded-lg border shadow-sm cursor-pointer hover:bg-blue-50 transition-colors"
+                              onClick={() => { setEditingBooking(booking); setShowModal(true); }}
+                              title="Tap to view and manage booking"
+                            >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900">{booking.customer_name}</h4>
@@ -538,32 +543,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                                     }`}>
                                       {booking.payment_status?.replace('_', ' ') || 'Pending Payment'}
                                     </span>
-                                  </div>
-                                </div>
-                                <div className="flex-shrink-0 flex flex-col sm:flex-row items-end sm:items-center gap-2 ml-4">
-                                  <div className="flex items-center gap-2">
-                                    {booking.payment_status !== 'paid' ? (
-                                      <button onClick={() => markAsPaid(booking.id)} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Mark as Paid">
-                                        <CheckSquare className="w-4 h-4" />
-                                      </button>
-                                    ) : (
-                                      <button onClick={() => markAsUnpaid(booking.id)} className="p-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors" title="Revert Paid">
-                                        <XCircle className="w-4 h-4" />
-                                      </button>
-                                    )}
-                                    <button onClick={() => sendCustomerNotification(booking)} className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors" title="Send Customer Notification">
-                                      <Mail className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => sendInvoice(booking)} className="p-2 bg-purple-100 text-purple-600 rounded-lg hover:bg-purple-200 transition-colors" title="Send Invoice (Email)">
-                                      <Mail className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => copyInvoiceToClipboard(booking)} className="p-2 bg-green-100 text-green-600 rounded-lg hover:bg-green-200 transition-colors" title="Copy Invoice (WhatsApp)">
-                                      <Copy className="w-4 h-4" />
-                                    </button>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <button onClick={() => handleEdit(booking)} className="p-2 hover:bg-gray-100 rounded-lg transition"><Edit2 className="h-4 w-4" /></button>
-                                    <button onClick={() => handleDelete(booking.id)} className="p-2 hover:bg-gray-100 rounded-lg transition"><Trash2 className="h-4 w-4" /></button>
                                   </div>
                                 </div>
                               </div>
@@ -611,10 +590,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                             {booking.status}
                           </span>
                           <div className="flex gap-1">
-                            <button onClick={() => handleEdit(booking)} className="p-2 text-blue-600 hover:bg-blue-100 rounded">
+                            <button onClick={() => handleEdit(booking)} className="p-2 text-blue-600 hover:bg-blue-100 rounded" title="Edit booking">
                               <Edit2 className="h-4 w-4" />
                             </button>
-                            <button onClick={() => handleDelete(booking.id)} className="p-2 text-red-600 hover:bg-red-100 rounded">
+                            <button onClick={() => handleDelete(booking.id)} className="p-2 text-red-600 hover:bg-red-100 rounded" title="Delete booking">
                               <Trash2 className="h-4 w-4" />
                             </button>
                           </div>
@@ -639,7 +618,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer</label>
                       <select 
-                        value={customers.find(c => c.name === formData.customer_name)?.id || ''} 
+                        value={customers.find(c => c.name === formData.customer_name)?.id || ''}
                         onChange={(e) => {
                           const selectedCustomer = customers.find(c => c.id === e.target.value);
                           if (selectedCustomer) {
@@ -647,7 +626,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                           } else {
                             setFormData(prev => ({...prev, customer_id: undefined}));
                           }
-                        }} 
+                        }}
+                        aria-label="Select existing customer"
+                        title="Select existing customer"
                         className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select existing customer...</option>
@@ -662,7 +643,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                      <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                      <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select service">
                         <option value="">Select a service</option>
                         {services.map(s => <option key={s.name} value={s.name}>{s.name} - ₺{s.price}</option>)}
                       </select>
@@ -676,12 +657,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                        <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+                        <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select booking date" placeholder="Select date" />
                       </div>
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                        <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select time slot">
                           <option value="">Select time</option>
                           {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
@@ -689,7 +670,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                      <select value={formData.status} onChange={(e) => setFormData(prev => ({...prev, status: e.target.value as any}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                      <select value={formData.status} onChange={(e) => setFormData(prev => ({...prev, status: e.target.value as any}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" title="Select booking status">
                         <option value="scheduled">Scheduled</option>
                         <option value="completed">Completed</option>
                         <option value="cancelled">Cancelled</option>
