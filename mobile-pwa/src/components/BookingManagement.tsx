@@ -161,7 +161,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     } else if (currentView === 'history') {
       loadBookingHistory();
     } else {
-      loadAllBookings();
+      // Only Owner/Manager can see all bookings
+      if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+        loadAllBookings();
+      } else {
+        // Barbers should not see 'all' tab, but fallback to their own bookings if somehow triggered
+        loadUpcomingBookings();
+      }
     }
   }, [currentView, currentUser]);
 
@@ -698,7 +704,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       <div className="bg-white border border-gray-200 rounded-lg p-1 mb-6">
         <div className="overflow-x-auto">
           <div className="flex space-x-1 min-w-max">
-            {currentUser.role === 'Barber' && (
+            {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
               <button
                 onClick={() => setCurrentView('all')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm min-w-[120px] justify-center ${
@@ -708,7 +714,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                 }`}
               >
                 <Eye className="h-4 w-4" />
-                All My Bookings
+                All Bookings
               </button>
             )}
             <button
