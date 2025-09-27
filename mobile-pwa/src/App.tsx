@@ -151,43 +151,46 @@ function App() {
           }} />
         </div>
   <div className="min-h-screen flex flex-col relative" style={{ background: 'transparent' }}>
-          {/* Header */}
-    <div className="bg-white/40 shadow-lg border-b border-gray-200/30 sticky top-0 z-50">
-            <div className="max-w-full px-4 py-3">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-3">
-                  <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
-                  <div>
-                    <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
-                    <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      if (!hasModalOpen) {
-                        setUserNavPreference(!userNavPreference);
-                      }
-                    }}
-                    className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
-                    title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
-                  >
-                    {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
-                  </button>
-                  <LanguageSelector className="w-32" />
-                  <span className="text-xs text-gray-700">
-                    {currentUser.name} ({currentUser.role})
-                  </span>
-                  <button
-                    onClick={handleSignOut}
-                    className="text-gray-600 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-xs border border-gray-300"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              </div>
+    {/* Header - now fixed and slides out of view */}
+    <div
+      className={`bg-white/40 shadow-lg border-b border-gray-200/30 fixed left-0 w-full z-50 transition-all duration-300 ease-in-out ${isNavVisible ? 'top-0' : '-top-24'}`}
+      style={{ height: 64, minHeight: 64 }}
+    >
+      <div className="max-w-full px-4 py-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
+            <div>
+              <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
+              <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => {
+                if (!hasModalOpen) {
+                  setUserNavPreference(!userNavPreference);
+                }
+              }}
+              className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
+              title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
+            >
+              {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </button>
+            <LanguageSelector className="w-32" />
+            <span className="text-xs text-gray-700">
+              {currentUser.name} ({currentUser.role})
+            </span>
+            <button
+              onClick={handleSignOut}
+              className="text-gray-600 hover:text-gray-800 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors text-xs border border-gray-300"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
           {/* Navigation - responsive grid (mobile-first 3 columns) */}
           <div className={`bg-white/30 border-b border-gray-200/20 sticky top-[73px] z-40 shadow-sm transition-transform duration-300 ease-in-out ${
