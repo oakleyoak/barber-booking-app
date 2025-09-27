@@ -6,6 +6,8 @@
 - **Admin Panel Restricted to Owner**: Only users with the 'Owner' role can access the admin panel. Managers and other roles are denied access.
 - **Live Commission Rate Updates**: Changes to staff commission rates in the admin panel are immediately reflected in all earnings calculations and owner shares.
 - **Accessibility Improvements**: All form elements and buttons in the admin panel now include proper labels, placeholders, and titles for improved accessibility.
+- **Real-Time Supabase Sync for Earnings**: All earnings, owner and staff breakdowns, and summaries now pull directly from the Supabase `bookings` table for 100% live data accuracy. No more stale or missing figures.
+- **Bugfixes**: Fixed issues where detailed earnings and staff breakdowns showed zero due to out-of-sync transaction logic. All breakdowns now match the live bookings data.
 
 # Edge & Co Barbershop Management System
 
