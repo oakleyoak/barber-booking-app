@@ -122,46 +122,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     loadSettings();
   }, [currentUser.shop_name]);
 
-  // Swipe-to-close gesture for mobile top sheet (must be at top-level, after other hooks)
-  useEffect(() => {
-    if (!showBookingDetails) return;
-    const sheet = bottomSheetRef.current;
-    if (!sheet) return;
-
-    let startY = 0;
-    let lastY = 0;
-    let dragging = false;
-
-    const handleTouchStart = (e: any) => {
-      dragging = true;
-      startY = e.touches[0].clientY;
-      lastY = startY;
-    };
-    const handleTouchMove = (e: any) => {
-      if (!dragging) return;
-      lastY = e.touches[0].clientY;
-      const offset = lastY - startY; // Allow negative for upward drag
-      setDragOffset(offset);
-    };
-    const handleTouchEnd = () => {
-      if (!dragging) return;
-      dragging = false;
-      if (startY - lastY > 100) { // Upward swipe to close
-        closeBookingDetails();
-      } else {
-        setDragOffset(0);
-      }
-    };
-    sheet.addEventListener('touchstart', handleTouchStart);
-    sheet.addEventListener('touchmove', handleTouchMove);
-    sheet.addEventListener('touchend', handleTouchEnd);
-    return () => {
-      sheet.removeEventListener('touchstart', handleTouchStart);
-      sheet.removeEventListener('touchmove', handleTouchMove);
-      sheet.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [showBookingDetails]);
-
   // Load staff and customers when component mounts
   useEffect(() => {
     if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
