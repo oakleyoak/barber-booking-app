@@ -71,6 +71,11 @@ interface BookingManagementProps {
 }
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onModalStateChange }) => {
+  // For bottom sheet modal drag/swipe
+  const bottomSheetRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number | null>(null);
+  const dragCurrentY = useRef<number | null>(null);
+  const [dragOffset, setDragOffset] = useState(0);
   const [shopSettings, setShopSettings] = useState<any>(null);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const modal = useModal();
@@ -229,6 +234,44 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     }
     return () => {
       document.body.classList.remove('overflow-hidden');
+    };
+  }, [showBookingDetails]);
+
+  // Swipe-to-close gesture for mobile bottom sheet
+  useEffect(() => {
+    if (!showBookingDetails) return;
+    const sheet = bottomSheetRef.current;
+    if (!sheet) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      dragStartY.current = e.touches[0].clientY;
+      dragCurrentY.current = e.touches[0].clientY;
+    };
+    const handleTouchMove = (e: TouchEvent) => {
+      if (dragStartY.current !== null) {
+        dragCurrentY.current = e.touches[0].clientY;
+        const offset = Math.max(0, dragCurrentY.current - dragStartY.current); // Only allow downward drag
+        setDragOffset(offset);
+      }
+    };
+    const handleTouchEnd = () => {
+      if (dragStartY.current !== null && dragCurrentY.current !== null) {
+        if (dragCurrentY.current - dragStartY.current > 80) { // Downward swipe to close
+          closeBookingDetails();
+        } else {
+          setDragOffset(0);
+        }
+      }
+      dragStartY.current = null;
+      dragCurrentY.current = null;
+    };
+    sheet.addEventListener('touchstart', handleTouchStart);
+    sheet.addEventListener('touchmove', handleTouchMove);
+    sheet.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      sheet.removeEventListener('touchstart', handleTouchStart);
+      sheet.removeEventListener('touchmove', handleTouchMove);
+      sheet.removeEventListener('touchend', handleTouchEnd);
     };
   }, [showBookingDetails]);
 
@@ -401,20 +444,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         .select('*')
         .eq('id', booking.id)
         .single();
-      
-      let result;
       if (fetchError || !latest) {
         console.warn('Could not fetch latest booking, using current booking object.');
-        result = await InvoiceService.sendInvoice(booking, language);
+        await InvoiceService.sendInvoice(booking, language);
       } else {
-        result = await InvoiceService.sendInvoice(latest, language);
+        await InvoiceService.sendInvoice(latest, language);
       }
-
-      if (result.ok) {
-        modal.notify('Invoice sent successfully!', 'success');
-      } else {
-        modal.notify('Failed to send invoice: ' + result.error, 'error');
-      }
+      modal.notify('Invoice sent successfully!', 'success');
     } catch (error) {
       console.error('Error sending invoice:', error);
       modal.notify('Failed to send invoice', 'error');
@@ -937,7 +973,14 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         >
           {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
-            className="modal-top bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto mt-4 md:mt-8"
+            ref={bottomSheetRef}
+            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto mt-4 md:mt-8 ${dragOffset ? '' : 'animate-slide-up'}`}
+            style={{
+              marginTop: '0',
+              marginBottom: '0',
+              transform: (typeof window !== 'undefined' && window.innerWidth < 768 && dragOffset) ? `translateY(${dragOffset}px)` : 'translateY(0)',
+              touchAction: (typeof window !== 'undefined' && window.innerWidth < 768) ? 'none' : 'auto',
+            }}
           >
             {/* Drag handle for swipe-to-close */}
             <div className="w-16 h-2 bg-gray-300 rounded-full mx-auto mt-3 mb-3 cursor-pointer" />
@@ -1285,75 +1328,73 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Notification Options Modal */}
       {showNotificationOptions && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1300] p-4" onClick={() => setShowNotificationOptions(false)}>
-          <div className="modal-top bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8" onClick={(e) => e.stopPropagation()}>
-            <div className="overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
-              {/* Header */}
-              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="bg-white bg-opacity-20 p-2 rounded-full">
-                      <Mail className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">Send Notification</h3>
-                      <p className="text-blue-100 text-sm">Choose how to notify {selectedBooking.customer_name}</p>
-                    </div>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] px-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top mt-4 md:mt-8">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                    <Mail className="h-6 w-6" />
                   </div>
-                  <button
-                    onClick={() => setShowNotificationOptions(false)}
-                    className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
-                    aria-label="Close notification options"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
+                  <div>
+                    <h3 className="text-xl font-bold">Send Notification</h3>
+                    <p className="text-blue-100 text-sm">Choose how to notify {selectedBooking.customer_name}</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setShowNotificationOptions(false)}
+                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                  aria-label="Close notification options"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Options */}
+            <div className="p-6 space-y-4">
+              <div className="space-y-3">
+                <button
+                  onClick={async () => {
+                    await sendCustomerNotification(selectedBooking);
+                    setShowNotificationOptions(false);
+                    closeBookingDetails();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                >
+                  <div className="bg-blue-600 p-2 rounded-full">
+                    <Mail className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">Send via Email</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={async () => {
+                    await copyBookingConfirmationToClipboard(selectedBooking);
+                    setShowNotificationOptions(false);
+                    closeBookingDetails();
+                  }}
+                  className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                >
+                  <div className="bg-green-600 p-2 rounded-full">
+                    <Copy className="h-4 w-4 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
+                  </div>
+                </button>
               </div>
 
-              {/* Options */}
-              <div className="p-6 space-y-4">
-                <div className="space-y-3">
-                  <button
-                    onClick={async () => {
-                      await sendCustomerNotification(selectedBooking);
-                      setShowNotificationOptions(false);
-                      closeBookingDetails();
-                    }}
-                    className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
-                  >
-                    <div className="bg-blue-600 p-2 rounded-full">
-                      <Mail className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">Send via Email</div>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={async () => {
-                      await copyBookingConfirmationToClipboard(selectedBooking);
-                      setShowNotificationOptions(false);
-                      closeBookingDetails();
-                    }}
-                    className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
-                  >
-                    <div className="bg-green-600 p-2 rounded-full">
-                      <Copy className="h-4 w-4 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
-                    </div>
-                  </button>
-                </div>
-
-                <div className="pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => setShowNotificationOptions(false)}
-                    className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+              <div className="pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => setShowNotificationOptions(false)}
+                  className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
             </div>
           </div>

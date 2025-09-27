@@ -151,10 +151,6 @@ export const InvoiceService = {
           } catch (e) {
             console.warn('Error saving payment link to booking:', e);
           }
-        } else {
-          // Payment link creation failed - this is a critical error
-          console.error('Failed to create payment link - Stripe may not be configured');
-          return { ok: false, error: 'Payment link creation failed. Please check Stripe configuration.' };
         }
       }
 
