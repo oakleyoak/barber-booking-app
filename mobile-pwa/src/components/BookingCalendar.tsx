@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ShopSettingsService } from '../services/shopSettings';
+import { generateTimeSlots } from '../utils/timeSlots';
 import { useModal } from './ui/ModalProvider';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy } from 'lucide-react';
 import { bookingService, customerService } from '../services/completeDatabase';
@@ -14,6 +16,7 @@ interface BookingCalendarProps {
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
+  const [shopSettings, setShopSettings] = useState<any>(null);
   const modal = useModal();
   const { language } = useLanguage();
   const [selectedDate, setSelectedDate] = useState(() => getTodayLocal());
@@ -25,6 +28,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   type FormData = {
     customer_name: string;
     customer_id?: string;
@@ -342,19 +346,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
       modal.notify('Failed to copy invoice', 'error');
     }
   };
-
-  const timeSlots = [
-    '09:00', '09:15', '09:30', '09:45',
-    '10:00', '10:15', '10:30', '10:45',
-    '11:00', '11:15', '11:30', '11:45',
-    '12:00', '12:15', '12:30', '12:45',
-    '13:00', '13:15', '13:30', '13:45',
-    '14:00', '14:15', '14:30', '14:45',
-    '15:00', '15:15', '15:30', '15:45',
-    '16:00', '16:15', '16:30', '16:45',
-    '17:00', '17:15', '17:30', '17:45',
-    '18:00'
-  ];
+    // Load shop settings for slot generation
+    const loadSettings = async () => {
+      const settings = await ShopSettingsService.getSettings(currentUser.shop_name || 'Edge & Co');
+      setShopSettings(settings);
+      // Use fallback if missing
+      const open = (settings.opening_time || '09:00').slice(0,5);
+      const close = (settings.closing_time || '20:00').slice(0,5);
+      setTimeSlots(generateTimeSlots(open, close));
+    };
+    loadSettings();
+  }, [currentUser.shop_name]);
 
   const getStatusColor = (status: string) => {
     switch (status) {

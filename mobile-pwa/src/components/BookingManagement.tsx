@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ShopSettingsService } from '../services/shopSettings';
+import { generateTimeSlots } from '../utils/timeSlots';
 import { 
   Clock, 
   User, 
@@ -68,6 +70,8 @@ interface BookingManagementProps {
 }
 
 const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
+  const [shopSettings, setShopSettings] = useState<any>(null);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const modal = useModal();
   // Only declare language if not already declared above
   // If 'language' is already declared, use a different variable name
@@ -102,18 +106,16 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   });
 
   // Time slots for booking
-  const timeSlots = [
-    '09:00', '09:15', '09:30', '09:45',
-    '10:00', '10:15', '10:30', '10:45',
-    '11:00', '11:15', '11:30', '11:45',
-    '12:00', '12:15', '12:30', '12:45',
-    '13:00', '13:15', '13:30', '13:45',
-    '14:00', '14:15', '14:30', '14:45',
-    '15:00', '15:15', '15:30', '15:45',
-    '16:00', '16:15', '16:30', '16:45',
-    '17:00', '17:15', '17:30', '17:45',
-    '18:00'
-  ];
+  useEffect(() => {
+    const loadSettings = async () => {
+      const settings = await ShopSettingsService.getSettings(currentUser.shop_name || 'Edge & Co');
+      setShopSettings(settings);
+      const open = (settings.opening_time || '09:00').slice(0,5);
+      const close = (settings.closing_time || '20:00').slice(0,5);
+      setTimeSlots(generateTimeSlots(open, close));
+    };
+    loadSettings();
+  }, [currentUser.shop_name]);
 
   // Load staff and customers when component mounts
   useEffect(() => {
