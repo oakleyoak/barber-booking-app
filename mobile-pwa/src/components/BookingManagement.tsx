@@ -67,9 +67,10 @@ interface BookingManagementProps {
     role: string;
     shop_name: string;
   };
+  onModalStateChange?: (isOpen: boolean) => void;
 }
 
-const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) => {
+const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onModalStateChange }) => {
   // For bottom sheet modal drag/swipe
   const bottomSheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
@@ -273,6 +274,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       sheet.removeEventListener('touchend', handleTouchEnd);
     };
   }, [showBookingDetails]);
+
+  // Notify parent component when modal state changes
+  useEffect(() => {
+    onModalStateChange?.(showBookingDetails);
+  }, [showBookingDetails, onModalStateChange]);
 
   // Format date helper
   const formatDate = (dateString: string) => {

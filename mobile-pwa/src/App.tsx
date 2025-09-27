@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart, Globe } from 'lucide-react';
+import { User, Building, Mail, Lock, Eye, EyeOff, Calendar, TrendingUp, Users, Shield, ClipboardList, Package, AlertTriangle, DollarSign, BarChart, Globe, Menu, X } from 'lucide-react';
 import logoIcon from './assets/BWicon.png';
 import largeLogo from './assets/edgeandcoblackandwhitelogobackground.png';
 import { supabase } from './lib/supabase';
@@ -23,6 +23,7 @@ function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [currentView, setCurrentView] = useState('calendar');
+  const [isNavVisible, setIsNavVisible] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -158,6 +159,13 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setIsNavVisible(!isNavVisible)}
+                    className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
+                    title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
+                  >
+                    {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+                  </button>
                   <LanguageSelector className="w-32" />
                   <span className="text-xs text-gray-700">
                     {currentUser.name} ({currentUser.role})
@@ -174,7 +182,9 @@ function App() {
           </div>
 
           {/* Navigation - responsive grid (mobile-first 3 columns) */}
-          <div className="bg-white/30 border-b border-gray-200/20 sticky top-[73px] z-40 shadow-sm">
+          <div className={`bg-white/30 border-b border-gray-200/20 sticky top-[73px] z-40 shadow-sm transition-transform duration-300 ease-in-out ${
+            isNavVisible ? 'translate-y-0' : '-translate-y-full'
+          }`}>
             <div className="max-w-full px-2 py-3">
               <div className="w-full">
                 <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
@@ -352,7 +362,10 @@ function App() {
                 )}
 
                 {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
-                  <BookingManagement currentUser={currentUser} />
+                  <BookingManagement 
+                    currentUser={currentUser} 
+                    onModalStateChange={(isOpen) => setIsNavVisible(!isOpen)} 
+                  />
                 )}
 
                 {currentView === 'admin' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager') && (
