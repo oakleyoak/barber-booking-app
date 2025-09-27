@@ -157,19 +157,57 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
   // Load bookings based on view
   useEffect(() => {
     if (currentView === 'upcoming') {
-      loadUpcomingBookings();
+      loadPersonalUpcomingBookings();
     } else if (currentView === 'history') {
-      loadBookingHistory();
+      loadPersonalBookingHistory();
     } else {
-      // Only Owner/Manager can see all bookings
-      if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+      // Only Owner can see all bookings
+      if (currentUser.role === 'Owner') {
         loadAllBookings();
       } else {
-        // Barbers should not see 'all' tab, but fallback to their own bookings if somehow triggered
-        loadUpcomingBookings();
+        // Fallback: show personal upcoming bookings
+        loadPersonalUpcomingBookings();
       }
     }
   }, [currentView, currentUser]);
+
+  // Load only the current user's upcoming bookings
+  const loadPersonalUpcomingBookings = async () => {
+    try {
+      const today = getTodayLocal();
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`*, users(name)`)
+        .gte('date', today)
+        .eq('user_id', currentUser.id)
+        .order('date', { ascending: true })
+        .order('time', { ascending: true });
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      console.error('Error loading personal upcoming bookings:', error);
+      modal.notify('Failed to load upcoming bookings', 'error');
+    }
+  };
+
+  // Load only the current user's booking history
+  const loadPersonalBookingHistory = async () => {
+    try {
+      const today = getTodayLocal();
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`*, users(name)`)
+        .lt('date', today)
+        .eq('user_id', currentUser.id)
+        .order('date', { ascending: false })
+        .order('time', { ascending: false });
+      if (error) throw error;
+      setBookings(data || []);
+    } catch (error) {
+      console.error('Error loading personal booking history:', error);
+      modal.notify('Failed to load booking history', 'error');
+    }
+  };
 
   const openBookingDetails = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -704,7 +742,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       <div className="bg-white border border-gray-200 rounded-lg p-1 mb-6">
         <div className="overflow-x-auto">
           <div className="flex space-x-1 min-w-max">
-            {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
+            {currentUser.role === 'Owner' && (
               <button
                 onClick={() => setCurrentView('all')}
                 className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-sm min-w-[120px] justify-center ${
