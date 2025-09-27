@@ -421,13 +421,43 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                   </tbody>
                 </table>
               </div>
-              {showStaffReviews && (
-                <div className="mt-4 p-4 border rounded bg-white">
-                  <h4 className="font-bold mb-2">Review for {staffEarnings.find(s => s.staff.id === showStaffReviews)?.staff.name}</h4>
-                  <p>Feature coming soon: Staff performance, bookings, and notes.</p>
-                  <button className="mt-2 px-3 py-1 bg-gray-200 rounded" onClick={() => setShowStaffReviews(null)}>Close</button>
-                </div>
-              )}
+              {showStaffReviews && (() => {
+                const staffObj = staffEarnings.find(s => s.staff.id === showStaffReviews);
+                if (!staffObj) return null;
+                const staff = staffObj.staff;
+                const allBookings = weeklyBookings.concat(monthlyBookings).filter(b => b.user_id === staff.id);
+                const uniqueBookings = Array.from(new Set(allBookings.map(b => b.id))).map(id => allBookings.find(b => b.id === id));
+                const totalRevenue = uniqueBookings.reduce((sum, b) => sum + (b?.price || 0), 0);
+                const avgPrice = uniqueBookings.length ? (totalRevenue / uniqueBookings.length) : 0;
+                return (
+                  <div className="mt-4 p-4 border rounded bg-white max-w-xl">
+                    <h4 className="font-bold mb-2">Performance for {staff.name}</h4>
+                    <div className="mb-2 text-sm">
+                      <span className="font-semibold">Total Bookings:</span> {uniqueBookings.length}<br />
+                      <span className="font-semibold">Total Revenue:</span> ₺{totalRevenue.toLocaleString('tr-TR')}<br />
+                      <span className="font-semibold">Average Price:</span> ₺{avgPrice.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-semibold">Recent Bookings:</span>
+                      <ul className="max-h-32 overflow-y-auto text-xs mt-1">
+                        {uniqueBookings.slice(0, 10).map(b => b && (
+                          <li key={b.id} className="border-b last:border-b-0 py-1">
+                            {b.date} - {b.customer_name} - {b.service} - ₺{b.price} {b.notes ? (<span className="italic text-gray-500">({b.notes})</span>) : null}
+                          </li>
+                        ))}
+                        {uniqueBookings.length === 0 && <li className="text-gray-400">No bookings found.</li>}
+                      </ul>
+                    </div>
+                    <div className="mb-2">
+                      <span className="font-semibold">Staff Notes:</span>
+                      <div className="text-xs mt-1 text-gray-700">
+                        {staff.notes ? staff.notes : 'No notes available.'}
+                      </div>
+                    </div>
+                    <button className="mt-2 px-3 py-1 bg-gray-200 rounded" onClick={() => setShowStaffReviews(null)}>Close</button>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
