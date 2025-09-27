@@ -968,8 +968,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed left-0 right-0 z-[1000] flex items-end md:items-center justify-center bg-black bg-opacity-60"
-          style={{ top: 0, bottom: 0 }}
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black bg-opacity-60 p-2 md:p-4"
         >
           {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
@@ -1125,7 +1124,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Create Booking Form Modal */}
       {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
           <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
@@ -1297,7 +1296,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && bookingToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
           <div className="bg-white rounded-lg p-6 max-w-sm w-full">
             <h3 className="text-lg font-semibold mb-4">Confirm Deletion</h3>
             <p className="text-gray-600 mb-6">
@@ -1326,8 +1325,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Notification Options Modal */}
       {showNotificationOptions && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-[1200] px-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full mt-8 sm:mt-16 animate-fade-in-top">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] px-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full animate-fade-in-top">
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
               <div className="flex items-center justify-between">
