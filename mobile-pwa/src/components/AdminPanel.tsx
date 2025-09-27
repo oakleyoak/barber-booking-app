@@ -24,7 +24,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
     name: string;
     email: string;
     role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
-    shop_name: string;
     commission_rate: number;
     target_weekly: number;
     target_monthly: number;
@@ -32,7 +31,6 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
     name: '',
     email: '',
     role: 'Barber',
-    shop_name: '',
     commission_rate: 60, // Default to barber commission
     target_weekly: 2000,
     target_monthly: 8000
@@ -45,12 +43,8 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
-      // Get the shop name from current user or use default
-  const shopName = currentUser.shop_name || 'Edge & Co';
-      console.log('AdminPanel - Current user:', currentUser);
-      console.log('AdminPanel - Using shop name:', shopName);
-      console.log('AdminPanel - Current user shop_name:', currentUser.shop_name);
-      
+      // Shop name is always 'Edge & Co'
+      const shopName = 'Edge & Co';
       // Try to load shop settings with better error handling
       try {
         const settings = await ShopSettingsService.getSettings(shopName);
@@ -59,16 +53,11 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
         console.error('AdminPanel - Shop settings error:', settingsError);
         // Use a default settings object if shop_settings table doesn't exist
         setShopSettings({
-          shop_name: shopName,
           opening_time: '09:00',
           closing_time: '20:00',
-          closed_days: ['Thursday', 'Sunday'],
           daily_target: 1500,
           weekly_target: 9000,
           monthly_target: 45000,
-          barber_commission: 60,
-          manager_commission: 70,
-          apprentice_commission: 40,
           social_insurance_rate: 20,
           income_tax_rate: 15,
           income_tax_threshold: 3000
@@ -122,11 +111,11 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
   const handleSaveSettings = async () => {
     if (!shopSettings) return;
     try {
-  await ShopSettingsService.saveSettings(shopSettings.shop_name, shopSettings);
-  modal.notify('Settings saved successfully!', 'success');
+      await ShopSettingsService.saveSettings('Edge & Co', shopSettings);
+      modal.notify('Settings saved successfully!', 'success');
     } catch (error) {
       console.error('Error saving settings:', error);
-  modal.notify('Failed to save settings', 'error');
+      modal.notify('Failed to save settings', 'error');
     }
   };
 
@@ -139,17 +128,17 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
           setUsers((prev) => prev.map((u) => (u.id === editingUser.id ? updated : u)));
         }
       } else {
-        const created = await userManagementService.createUser({ ...newUser, password: 'changeme123' });
+        const created = await userManagementService.createUser({ ...newUser, shop_name: 'Edge & Co', password: 'changeme123' });
         if (created) {
           setUsers((prev) => [...prev, created]);
         }
       }
       setShowUserModal(false);
       setEditingUser(null);
-      setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
+      setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
     } catch (error) {
       console.error('Error saving user:', error);
-  modal.notify('Failed to save user', 'error');
+      modal.notify('Failed to save user', 'error');
     }
   };
 
@@ -689,16 +678,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
-                <input placeholder="Enter shop name" title="Shop Name"
-                  type="text"
-                  value={newUser.shop_name}
-                  onChange={(e) => setNewUser({ ...newUser, shop_name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  required
-                />
-              </div>
+
 
               <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
                 <button
