@@ -117,46 +117,6 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ onModalStateChange 
     };
   }, [showAddForm, onModalStateChange]);
 
-  // Touch event handlers for swipe-to-close functionality
-  const handleTouchStart = (e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (dragStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY.current;
-    if (diff > 0) { // Only allow downward drag
-      dragCurrentY.current = currentY;
-      setDragOffset(Math.min(diff, 300)); // Limit drag distance
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (dragOffset > 150) { // If dragged more than 150px, close modal
-      setShowAddForm('');
-      setShowNewTaskForm(false);
-      setNewTask({
-        name: '',
-        description: '',
-        frequency: 'daily',
-        priority: 'medium',
-        estimated_time: 15,
-        category: '',
-        compliance_requirement: false,
-        instructions: '',
-        equipment_name: '',
-        requires_specialist: false,
-        selectedId: undefined,
-        check_type: '',
-        acceptable_range: ''
-      });
-    }
-    setDragOffset(0);
-    dragStartY.current = null;
-    dragCurrentY.current = null;
-  };
-
   const loadData = async () => {
     try {
       setLoading(true);
@@ -319,15 +279,7 @@ const OperationsManual: React.FC<OperationsManualProps> = ({ onModalStateChange 
         
         {/* Modal */}
         <div
-          ref={bottomSheetRef}
-          className="fixed z-[1200] w-full md:max-w-2xl md:mx-auto md:inset-x-0 md:top-4 bottom-0 left-0 right-0 bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
-          style={{
-            transform: `translateY(${dragOffset}px)`,
-            transition: dragOffset === 0 ? 'transform 0.3s ease-out' : 'none'
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+          className="modal-top bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
         >
           {/* Drag handle for mobile */}
           <div className="md:hidden w-full flex justify-center pt-3 pb-2">

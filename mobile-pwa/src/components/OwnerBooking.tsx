@@ -49,12 +49,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
     amount: ServicePricingService.getServicePrice('Haircut')
   });
 
-  // For bottom sheet modal drag/swipe
-  const bottomSheetRef = useRef<HTMLDivElement>(null);
-  const dragStartY = useRef<number | null>(null);
-  const dragCurrentY = useRef<number | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-
   // Time slots for booking
   const timeSlots = [
     '09:00', '09:15', '09:30', '09:45',
@@ -109,38 +103,6 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       onModalStateChange?.(false);
     };
   }, [showBookingForm, onModalStateChange]);
-
-  // Touch event handlers for swipe-to-close functionality
-  const handleTouchStart = (e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (dragStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY.current;
-    if (diff > 0) { // Only allow downward drag
-      dragCurrentY.current = currentY;
-      setDragOffset(Math.min(diff, 300)); // Limit drag distance
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (dragOffset > 150) { // If dragged more than 150px, close modal
-      setShowBookingForm(false);
-      setBookingData({
-        customer_name: '',
-        service_type: 'Haircut',
-        staff_member: staffMembers.length > 0 ? staffMembers[0].name : '',
-        booking_date: new Date().toISOString().split('T')[0],
-        booking_time: '09:00',
-        amount: ServicePricingService.getServicePrice('Haircut')
-      });
-    }
-    setDragOffset(0);
-    dragStartY.current = null;
-    dragCurrentY.current = null;
-  };
 
   // Handle form submission
   const handleSubmit = async () => {
@@ -294,15 +256,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           
           {/* Modal */}
           <div
-            ref={bottomSheetRef}
-            className="fixed z-[1200] w-full md:max-w-md md:mx-auto md:inset-x-0 md:top-4 bottom-0 left-0 right-0 bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
-            style={{
-              transform: `translateY(${dragOffset}px)`,
-              transition: dragOffset === 0 ? 'transform 0.3s ease-out' : 'none'
-            }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="modal-top bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
           >
             {/* Drag handle for mobile */}
             <div className="md:hidden w-full flex justify-center pt-3 pb-2">

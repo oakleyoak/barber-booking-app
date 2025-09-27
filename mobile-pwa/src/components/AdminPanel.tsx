@@ -63,39 +63,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
     };
   }, [showUserModal, onModalStateChange]);
 
-  // Touch event handlers for swipe-to-close functionality
-  const handleTouchStart = (e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (dragStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY.current;
-    if (diff > 0) { // Only allow downward drag
-      dragCurrentY.current = currentY;
-      setDragOffset(Math.min(diff, 300)); // Limit drag distance
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (dragOffset > 150) { // If dragged more than 150px, close modal
-      setShowUserModal(false);
-      setEditingUser(null);
-      setNewUser({
-        name: '',
-        email: '',
-        role: 'Barber',
-        commission_rate: 60,
-        target_weekly: 2000,
-        target_monthly: 8000
-      });
-    }
-    setDragOffset(0);
-    dragStartY.current = null;
-    dragCurrentY.current = null;
-  };
-
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
@@ -575,12 +542,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
         <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] p-4">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowUserModal(false)} />
           <div 
-            ref={bottomSheetRef}
-            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
-            style={{ transform: `translateY(${dragOffset}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="modal-top bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
           >
             <div className="flex justify-center py-3 md:hidden">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>

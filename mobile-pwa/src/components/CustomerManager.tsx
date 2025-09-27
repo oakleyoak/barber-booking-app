@@ -91,48 +91,6 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     };
   }, [showForm, showBookingModal, showCustomerProfile, onModalStateChange]);
 
-  // Touch event handlers for swipe-to-close functionality
-  const handleTouchStart = (e: React.TouchEvent) => {
-    dragStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (dragStartY.current === null) return;
-    const currentY = e.touches[0].clientY;
-    const diff = currentY - dragStartY.current;
-    if (diff > 0) { // Only allow downward drag
-      dragCurrentY.current = currentY;
-      setDragOffset(Math.min(diff, 300)); // Limit drag distance
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (dragOffset > 150) { // If dragged more than 150px, close modal
-      setShowForm(false);
-      setShowBookingModal(false);
-      setShowCustomerProfile(false);
-      setEditingCustomer(null);
-      setSelectedCustomer(null);
-      setFormData({
-        name: '',
-        phone: '',
-        email: '',
-        notes: ''
-      });
-      setBookingData({
-        service: 'Haircut',
-        price: 700,
-        notes: '',
-        appointment_date: new Date().toISOString().split('T')[0],
-        appointment_time: '09:00',
-        user_id: currentUser.id
-      });
-    }
-    setDragOffset(0);
-    dragStartY.current = null;
-    dragCurrentY.current = null;
-  };
-
   const loadCustomers = async () => {
     try {
       setLoading(true);
@@ -512,15 +470,10 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
 
       {/* Customer Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowForm(false)} />
           <div 
-            ref={bottomSheetRef}
-            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out"
-            style={{ transform: `translateY(${dragOffset}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-hidden"
           >
             <div className="flex justify-center py-3 md:hidden">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
@@ -595,12 +548,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
         <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowBookingModal(false)} />
           <div 
-            ref={bottomSheetRef}
-            className="fixed bottom-0 left-0 right-0 md:relative md:bottom-auto md:left-auto md:right-auto bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
-            style={{ transform: `translateY(${dragOffset}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            className="modal-top bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
           >
             <div className="flex justify-center py-3 md:hidden">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
 import { generateTimeSlots } from '../utils/timeSlots';
 import { useModal } from './ui/ModalProvider';
-import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy } from 'lucide-react';
+import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy, Calendar as CalendarIcon } from 'lucide-react';
 import { bookingService, customerService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
 import { InvoiceService } from '../services/invoiceService';
@@ -54,6 +54,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editingBooking, setEditingBooking] = useState<Booking | null>(null);
+  const [showBookingDetails, setShowBookingDetails] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [showNotificationOptions, setShowNotificationOptions] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   type FormData = {
@@ -301,6 +304,38 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
     }
   };
 
+  const closeBookingDetails = () => {
+    setShowBookingDetails(false);
+    setSelectedBooking(null);
+  };
+
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  // Format time to display format
+  const formatTime = (timeString: string) => {
+    return timeString.slice(0, 5); // Remove seconds if present
+  };
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'bg-green-100 text-green-800';
+      case 'failed':
+      case 'refunded':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   const sendCustomerNotification = async (booking: Booking) => {
     try {
       // Always resolve customer's email from customers.email when possible
@@ -386,6 +421,31 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
     } catch (err) {
       console.error('Error copying invoice to clipboard:', err);
       modal.notify('Failed to copy invoice', 'error');
+    }
+  };
+
+  // Copy booking confirmation to clipboard for WhatsApp
+  const copyBookingConfirmationToClipboard = async (booking: Booking) => {
+    try {
+      const formattedDate = formatDate(booking.date);
+      const formattedTime = formatTime(booking.time);
+      const whatsappText = `Booking Confirmed!\nDate: ${formattedDate}\nTime: ${formattedTime}\nService: ${booking.service}\nBarber: ${booking.users?.name || 'Edge & Co Team'}\nPrice: ${booking.price} ₺\nThank you for choosing Edge & Co!\nReview: https://g.page/r/CQv1Qw1Qw1QwEAI/review`;
+      
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(whatsappText);
+      } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = whatsappText;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      modal.notify('Booking confirmation copied to clipboard! Share via WhatsApp.', 'success');
+    } catch (error) {
+      console.error('Error copying booking confirmation to clipboard:', error);
+      modal.notify('Failed to copy booking confirmation', 'error');
     }
   };
 
@@ -542,8 +602,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
                             <div
                               key={booking.id}
                               className="bg-white p-3 rounded-lg border shadow-sm cursor-pointer hover:bg-blue-50 transition-colors"
-                              onClick={() => { setEditingBooking(booking); setShowModal(true); }}
-                              title="Tap to view and manage booking"
+                              onClick={() => { setSelectedBooking(booking); setShowBookingDetails(true); }}
+                              title="Tap to view booking details"
                             >
                               <div className="flex justify-between items-start">
                                 <div className="flex-1">
@@ -704,6 +764,236 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
             </div>
           </div>
         )}
+
+      {/* Booking Details Modal */}
+      {showBookingDetails && selectedBooking && (
+        <div
+          className="fixed inset-0 z-[1200] flex bg-black bg-opacity-60 p-2 md:p-4"
+          style={{ pointerEvents: 'auto', position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh' }}
+        >
+          {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
+          <div
+            className="modal-top bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out mx-auto mt-4 md:mt-8"
+          >
+            {/* Drag handle for swipe-to-close */}
+            <div className="w-16 h-2 bg-gray-300 rounded-full mx-auto mt-3 mb-3 cursor-pointer" />
+            {/* Close button always visible in top-right */}
+            <button
+              onClick={closeBookingDetails}
+              className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 bg-white bg-opacity-80 rounded-full p-2 shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Close booking details"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            {/* Profile Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                  <CalendarIcon className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">{selectedBooking.customer_name}</h3>
+                  <p className="text-blue-100 text-sm">Booking Details</p>
+                </div>
+              </div>
+            </div>
+            {/* Booking Content */}
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+              {/* Booking Information */}
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-gray-600" />
+                  Booking Information
+                </h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CalendarIcon className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Date & Time</span>
+                    </div>
+                    <span className="font-medium">{formatDate(selectedBooking.date)} at {formatTime(selectedBooking.time)}</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Service & Price</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-medium">₺{selectedBooking.price}</div>
+                      <div className="text-sm text-gray-500">{selectedBooking.service}</div>
+                    </div>
+                  </div>
+                  {selectedBooking.users?.name && (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm text-gray-600">Barber</span>
+                      </div>
+                      <span className="font-medium">{selectedBooking.users.name}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">Status</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedBooking.status)}`}>
+                        {selectedBooking.status}
+                      </span>
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPaymentStatusColor(selectedBooking.payment_status || 'pending')}`}>
+                        {selectedBooking.payment_status?.replace('_', ' ') || 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {/* Notes Section */}
+              {selectedBooking.notes && (
+                <div>
+                  <h4 className="font-semibold text-gray-900 mb-3">Notes</h4>
+                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedBooking.notes}</p>
+                  </div>
+                </div>
+              )}
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3 pt-4">
+                {selectedBooking.payment_status !== 'paid' && (
+                  <button
+                    onClick={() => {
+                      markAsPaid(selectedBooking.id);
+                      closeBookingDetails();
+                    }}
+                    className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  >
+                    <CheckSquare className="h-4 w-4" />
+                    Mark Paid
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setShowNotificationOptions(true);
+                  }}
+                  className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Notification
+                </button>
+                <button
+                  onClick={() => {
+                    sendInvoice(selectedBooking);
+                    closeBookingDetails();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-purple-600 text-white py-3 rounded-lg hover:bg-purple-700 transition-colors font-medium"
+                >
+                  <Mail className="h-4 w-4" />
+                  Send Invoice (Email)
+                </button>
+                <button
+                  onClick={() => {
+                    copyInvoiceToClipboard(selectedBooking);
+                    closeBookingDetails();
+                  }}
+                  className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Copy className="h-4 w-4" />
+                  Copy Invoice (WhatsApp)
+                </button>
+              </div>
+              
+              <button
+                onClick={() => {
+                  handleDelete(selectedBooking.id);
+                  closeBookingDetails();
+                }}
+                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+              >
+                <X className="h-4 w-4" />
+                Delete Booking
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Options Modal */}
+      {showNotificationOptions && selectedBooking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1300] p-4" onClick={() => setShowNotificationOptions(false)}>
+          <div className="modal-top bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8" onClick={(e) => e.stopPropagation()}>
+            <div className="overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
+              {/* Header */}
+              <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                      <Mail className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold">Send Notification</h3>
+                      <p className="text-blue-100 text-sm">Choose how to notify {selectedBooking.customer_name}</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowNotificationOptions(false)}
+                    className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
+                    aria-label="Close notification options"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Options */}
+              <div className="p-6 space-y-4">
+                <div className="space-y-3">
+                  <button
+                    onClick={async () => {
+                      await sendCustomerNotification(selectedBooking);
+                      setShowNotificationOptions(false);
+                      closeBookingDetails();
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors"
+                  >
+                    <div className="bg-blue-600 p-2 rounded-full">
+                      <Mail className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Send via Email</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      await copyBookingConfirmationToClipboard(selectedBooking);
+                      setShowNotificationOptions(false);
+                      closeBookingDetails();
+                    }}
+                    className="w-full flex items-center gap-3 p-4 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
+                  >
+                    <div className="bg-green-600 p-2 rounded-full">
+                      <Copy className="h-4 w-4 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-semibold text-gray-900">Copy for WhatsApp</div>
+                    </div>
+                  </button>
+                </div>
+
+                <div className="pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => setShowNotificationOptions(false)}
+                    className="w-full py-2 px-4 text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       </div>
     </div>
   );
