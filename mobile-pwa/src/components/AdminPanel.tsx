@@ -167,6 +167,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
   };
 
   const exportReport = async (type: 'X' | 'Z') => {
+
     try {
       const today = new Date().toISOString().split('T')[0];
       const bookings = await bookingService.getBookingsByDate(today);
@@ -175,7 +176,8 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
         type,
         bookings
       };
-                <input title="Commission Rate"
+      // TODO: Implement actual export logic here (e.g., download as CSV or PDF)
+    } catch (error) {
       console.error('Error exporting report:', error);
     }
   };
@@ -676,12 +678,11 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
-                <input placeholder="Enter commission rate" title="Commission Rate"
+                <input title="Commission Rate"
                   type="number"
                   value={newUser.commission_rate}
                   onChange={(e) => setNewUser({ ...newUser, commission_rate: parseFloat(e.target.value) || 0 })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                  placeholder="Enter commission rate"
                   min="0"
                   max="100"
                   step="0.01"
