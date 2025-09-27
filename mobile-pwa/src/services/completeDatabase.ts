@@ -24,6 +24,7 @@ export interface User {
   created_at?: string;
   updated_at?: string;
   shop_settings?: string;
+  performance_notes?: string | null;
 }
 
 export interface Customer {
@@ -203,11 +204,10 @@ export const userService = {
 
   async getUserById(id: string): Promise<User | null> {
     const { data, error } = await supabase
-  .from('users')
-      .select('*')
+      .from('users')
+      .select('*, performance_notes')
       .eq('id', id)
       .single();
-    
     if (error) return null;
     return data;
   },
