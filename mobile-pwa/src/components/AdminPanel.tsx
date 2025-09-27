@@ -287,7 +287,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 onClick={() => {
                   setShowUserModal(true);
                   setEditingUser(null);
-                  setNewUser({ name: '', email: '', role: 'Barber', shop_name: '', commission_rate: 60, target_weekly: 2000, target_monthly: 8000 });
+                  setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 60, target_weekly: 2000, target_monthly: 8000 });
                 }}
                 className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base"
               >
