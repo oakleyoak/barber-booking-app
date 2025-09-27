@@ -27,33 +27,32 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
 
   // Owner's own earnings (from own bookings)
   const [ownEarnings, setOwnEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
+  // Staff earnings for owner (already declared above)
+
   useEffect(() => {
     if (currentUser.role === 'Owner') {
       (async () => {
+        // Get all bookings for this shop
+        const allBookings = await bookingService.getBookings();
         // Owner's own bookings: user_id === currentUser.id
-        const earnings = await EarningsService.getEarnings(currentUser.id);
+        const ownerBookings = allBookings.filter(b => b.user_id === currentUser.id);
         setOwnEarnings({
-          totalAmount: earnings.totalAmount,
-          bookingCount: earnings.bookingCount
+          totalAmount: ownerBookings.reduce((sum, b) => sum + (b.price || 0), 0),
+          bookingCount: ownerBookings.length
         });
-      })();
-    }
-  }, [currentUser.id]);
-  // Load staff earnings for owner
-  useEffect(() => {
-    if (currentUser.role === 'Owner') {
-      (async () => {
+        // Staff earnings: group by staff (exclude owner)
         const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
-        const earningsArr = await Promise.all(
-          staff.map(async (s) => {
-            const earnings = await EarningsService.getEarnings(s.id);
-            return {
-              staff: s,
-              earnings,
-            };
-          })
-        );
-        setStaffEarnings(earningsArr);
+        const staffArr = staff.map(s => {
+          const staffBookings = allBookings.filter(b => b.user_id === s.id);
+          return {
+            staff: s,
+            earnings: {
+              totalAmount: staffBookings.reduce((sum, b) => sum + (b.price || 0), 0),
+              bookingCount: staffBookings.length
+            }
+          };
+        });
+        setStaffEarnings(staffArr);
       })();
     }
   }, [currentUser.id, currentUser.shop_name]);
