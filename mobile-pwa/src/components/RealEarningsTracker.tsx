@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import type { Booking } from '../lib/supabase';
 import { TrendingUp, Calendar, DollarSign, Users, Target, Download } from 'lucide-react';
 import { bookingService, expenseService } from '../services/completeDatabase';
+import { UserManagementService } from '../services/userManagementService';
+import { EarningsService } from '../services/earningsService';
 import { ShopSettingsService } from '../services/shopSettings';
 import type { User as UserType } from '../lib/supabase';
 
@@ -20,6 +22,41 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
   const [expandedMonth, setExpandedMonth] = useState(false);
   const [commissionRate, setCommissionRate] = useState(60);
   const [loading, setLoading] = useState(true);
+  const [staffEarnings, setStaffEarnings] = useState<any[]>([]);
+  const [showStaffReviews, setShowStaffReviews] = useState<string | null>(null);
+
+  // Owner's own earnings (from own bookings)
+  const [ownEarnings, setOwnEarnings] = useState({ totalAmount: 0, bookingCount: 0 });
+  useEffect(() => {
+    if (currentUser.role === 'Owner') {
+      (async () => {
+        // Owner's own bookings: user_id === currentUser.id
+        const earnings = await EarningsService.getEarnings(currentUser.id);
+        setOwnEarnings({
+          totalAmount: earnings.totalAmount,
+          bookingCount: earnings.bookingCount
+        });
+      })();
+    }
+  }, [currentUser.id]);
+  // Load staff earnings for owner
+  useEffect(() => {
+    if (currentUser.role === 'Owner') {
+      (async () => {
+        const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
+        const earningsArr = await Promise.all(
+          staff.map(async (s) => {
+            const earnings = await EarningsService.getEarnings(s.id);
+            return {
+              staff: s,
+              earnings,
+            };
+          })
+        );
+        setStaffEarnings(earningsArr);
+      })();
+    }
+  }, [currentUser.id, currentUser.shop_name]);
 
   const formatCurrency = (amount: number) => {
     return `₺${amount.toLocaleString('tr-TR')}`;
@@ -336,51 +373,65 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         </div>
       )}
 
-      {/* Owner and Manager Earnings from Staff */}
-      {(currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Target className="h-5 w-5 mr-2" />
-            Owner Earnings from Staff
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Today's Share</p>
-                  <p className="text-xl font-bold text-green-600">
-                    ₺{(todayEarnings.totalAmount * 0.4).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-gray-500">40% of total revenue</p>
-                </div>
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Monthly Share</p>
-                  <p className="text-xl font-bold text-blue-600">
-                    ₺{(monthlyEarnings.totalAmount * 0.4).toFixed(2)}
-                  </p>
-                  <p className="text-xs text-gray-500">40% of total revenue</p>
-                </div>
-                <TrendingUp className="h-6 w-6 text-blue-600" />
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg border">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total Revenue</p>
-                  <p className="text-xl font-bold text-purple-600">
-                    ₺{monthlyEarnings.totalAmount.toFixed(2)}
-                  </p>
-                  <p className="text-xs text-gray-500">100% of all bookings</p>
-                </div>
-                <DollarSign className="h-6 w-6 text-purple-600" />
+      {/* Owner Earnings Breakdown */}
+      {currentUser.role === 'Owner' && (
+        <div className="bg-gray-50 rounded-lg p-4 space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+              <DollarSign className="h-5 w-5 mr-2" />
+              Owner's Own Bookings
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="bg-white p-4 rounded-lg border flex-1">
+                <p className="text-sm text-gray-600">Total from Own Bookings</p>
+                <p className="text-2xl font-bold text-blue-700">₺{ownEarnings.totalAmount.toLocaleString('tr-TR')}</p>
+                <p className="text-xs text-gray-500">{ownEarnings.bookingCount} bookings</p>
               </div>
             </div>
           </div>
+          {staffEarnings.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
+                <Target className="h-5 w-5 mr-2" />
+                Owner Earnings from Staff (per Employee)
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="px-2 py-1 text-left">Employee</th>
+                      <th className="px-2 py-1 text-left">Role</th>
+                      <th className="px-2 py-1 text-right">Total Revenue</th>
+                      <th className="px-2 py-1 text-right">Owner Share</th>
+                      <th className="px-2 py-1 text-center">Review</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {staffEarnings.map(({ staff, earnings }) => (
+                      <tr key={staff.id} className="border-b">
+                        <td className="px-2 py-1">{staff.name}</td>
+                        <td className="px-2 py-1">{staff.role}</td>
+                        <td className="px-2 py-1 text-right">₺{earnings.totalAmount.toLocaleString('tr-TR')}</td>
+                        <td className="px-2 py-1 text-right text-green-700 font-semibold">₺{(earnings.totalAmount * ((100 - staff.commission_rate) / 100)).toLocaleString('tr-TR')}</td>
+                        <td className="px-2 py-1 text-center">
+                          <button className="text-blue-600 underline text-xs" onClick={() => setShowStaffReviews(staff.id)}>
+                            Review
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {showStaffReviews && (
+                <div className="mt-4 p-4 border rounded bg-white">
+                  <h4 className="font-bold mb-2">Review for {staffEarnings.find(s => s.staff.id === showStaffReviews)?.staff.name}</h4>
+                  <p>Feature coming soon: Staff performance, bookings, and notes.</p>
+                  <button className="mt-2 px-3 py-1 bg-gray-200 rounded" onClick={() => setShowStaffReviews(null)}>Close</button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

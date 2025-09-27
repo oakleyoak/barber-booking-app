@@ -1,3 +1,12 @@
+# 🆕 Recent Features & Improvements (2025)
+
+- **15-Minute Appointment Slots**: All booking components now use 15-minute intervals for appointments, allowing for more precise scheduling.
+- **Dynamic Owner Earnings Calculation**: The owner's share from staff is now dynamically calculated based on each staff member's commission rate (Owner Share = 100% - Staff Commission Rate). No more hardcoded percentages.
+- **Per-Employee Earnings Breakdown**: Owners can view a detailed breakdown of earnings per employee, including the owner's share and a review option for each staff member.
+- **Admin Panel Restricted to Owner**: Only users with the 'Owner' role can access the admin panel. Managers and other roles are denied access.
+- **Live Commission Rate Updates**: Changes to staff commission rates in the admin panel are immediately reflected in all earnings calculations and owner shares.
+- **Accessibility Improvements**: All form elements and buttons in the admin panel now include proper labels, placeholders, and titles for improved accessibility.
+
 # Edge & Co Barbershop Management System
 
 A comprehensive business management system for Edge & Co Barbershop with booking management, earnings tracking, inventory management, multi-language support, and advanced communication features.

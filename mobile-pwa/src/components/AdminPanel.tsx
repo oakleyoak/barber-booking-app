@@ -175,11 +175,20 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
         type,
         bookings
       };
-    } catch (error) {
+                <input title="Commission Rate"
       console.error('Error exporting report:', error);
     }
   };
 
+          // TODO: Implement actual export logic here (e.g., download as CSV or PDF)
+  // Restrict admin panel to Owner only
+  if (currentUser.role !== 'Owner') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">Access denied. Admin panel is only available to the Owner.</div>
+      </div>
+    );
+  }
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -321,6 +330,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                         <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
+                              title="Edit user"
                               onClick={() => {
                                 setEditingUser(user);
                                 setNewUser(user);
@@ -331,6 +341,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                               <FaEdit />
                             </button>
                             <button
+                              title="Delete user"
                               onClick={() => handleDeleteUser(user.id)}
                               className="text-red-600 hover:text-red-900 p-1"
                             >
@@ -353,6 +364,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3">
               <h2 className="text-xl sm:text-2xl font-bold">Shop Settings</h2>
               <button
+                title="Save settings"
                 onClick={handleSaveSettings}
                 className="bg-green-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-green-700 flex items-center justify-center text-sm sm:text-base"
               >
@@ -368,7 +380,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Shop Name</label>
-                    <input
+                    <input placeholder="Enter shop name" title="Shop Name"
                       type="text"
                       value={shopSettings.shop_name}
                       onChange={(e) => setShopSettings({ ...shopSettings, shop_name: e.target.value })}
@@ -407,7 +419,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Opening Time</label>
-                    <input
+                    <input placeholder="Enter opening time" title="Opening Time"
                       type="time"
                       value={shopSettings.opening_time}
                       onChange={(e) => setShopSettings({ ...shopSettings, opening_time: e.target.value })}
@@ -416,7 +428,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Closing Time</label>
-                    <input
+                    <input placeholder="Enter closing time" title="Closing Time"
                       type="time"
                       value={shopSettings.closing_time}
                       onChange={(e) => setShopSettings({ ...shopSettings, closing_time: e.target.value })}
@@ -432,7 +444,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Daily Target (₺)</label>
-                    <input
+                    <input placeholder="Enter daily target" title="Daily Target"
                       type="number"
                       value={shopSettings.daily_target}
                       onChange={(e) => setShopSettings({ ...shopSettings, daily_target: parseFloat(e.target.value) || 0 })}
@@ -441,7 +453,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (₺)</label>
-                    <input
+                    <input placeholder="Enter weekly target" title="Weekly Target"
                       type="number"
                       value={shopSettings.weekly_target}
                       onChange={(e) => setShopSettings({ ...shopSettings, weekly_target: parseFloat(e.target.value) || 0 })}
@@ -450,7 +462,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (₺)</label>
-                    <input
+                    <input placeholder="Enter monthly target" title="Monthly Target"
                       type="number"
                       value={shopSettings.monthly_target}
                       onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) || 0 })}
@@ -465,7 +477,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Barber Commission (%)</label>
-                    <input
+                    <input placeholder="Enter barber commission" title="Barber Commission"
                       type="number"
                       step="0.01"
                       min="0"
@@ -477,7 +489,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Manager Commission (%)</label>
-                    <input
+                    <input placeholder="Enter manager commission" title="Manager Commission"
                       type="number"
                       step="0.01"
                       min="0"
@@ -489,7 +501,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Apprentice Commission (%)</label>
-                    <input
+                    <input placeholder="Enter apprentice commission" title="Apprentice Commission"
                       type="number"
                       step="0.01"
                       min="0"
@@ -508,7 +520,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Social Insurance Rate (%)</label>
-                    <input
+                    <input placeholder="Enter social insurance rate" title="Social Insurance Rate"
                       type="number"
                       step="0.01"
                       min="0"
@@ -520,7 +532,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Income Tax Rate (%)</label>
-                    <input
+                    <input placeholder="Enter income tax rate" title="Income Tax Rate"
                       type="number"
                       step="0.01"
                       min="0"
@@ -532,7 +544,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">Income Tax Threshold (₺)</label>
-                    <input
+                    <input placeholder="Enter income tax threshold" title="Income Tax Threshold"
                       type="number"
                       step="0.01"
                       min="0"
@@ -604,6 +616,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
                 {editingUser ? 'Edit User' : 'Add New User'}
               </h3>
               <button
+                title="Close modal"
                 onClick={() => setShowUserModal(false)}
                 className="text-gray-400 hover:text-gray-600 p-1"
               >
@@ -614,7 +627,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
             <form onSubmit={handleUserSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                <input
+                <input placeholder="Enter name" title="Name"
                   type="text"
                   value={newUser.name}
                   onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
@@ -625,7 +638,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
+                <input placeholder="Enter email" title="Email"
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
@@ -636,7 +649,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                <select
+                <select title="Role"
                   value={newUser.role}
                   onChange={(e) => {
                     const selectedRole = e.target.value as 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
@@ -663,7 +676,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Commission Rate (%)</label>
-                <input
+                <input placeholder="Enter commission rate" title="Commission Rate"
                   type="number"
                   value={newUser.commission_rate}
                   onChange={(e) => setNewUser({ ...newUser, commission_rate: parseFloat(e.target.value) || 0 })}
@@ -677,7 +690,7 @@ const AdminPanel = ({ currentUser }: { currentUser: { id: string; shop_name?: st
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Shop Name</label>
-                <input
+                <input placeholder="Enter shop name" title="Shop Name"
                   type="text"
                   value={newUser.shop_name}
                   onChange={(e) => setNewUser({ ...newUser, shop_name: e.target.value })}
