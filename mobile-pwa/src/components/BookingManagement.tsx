@@ -717,25 +717,27 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
         )}
       </div>
 
-      {/* Search Bar */}
-      <div className="relative mb-6">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-        <input
-          type="text"
-          placeholder="Search bookings by customer, service, or notes..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
-        />
-        {searchTerm && (
-          <button
-            onClick={() => setSearchTerm('')}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            aria-label="Clear search"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        )}
+      {/* Sticky Search Bar (present in all tabs) */}
+      <div className="sticky top-0 z-20 bg-white pb-2 mb-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search bookings by customer, service, or notes..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* View Tabs */}
@@ -897,30 +899,30 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start sm:items-center justify-center z-[1200] px-4 py-6 sm:py-4">
-          <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-[1200] flex items-end justify-center sm:items-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md bg-white rounded-t-2xl shadow-xl max-h-[90vh] overflow-y-auto animate-slide-up relative">
+            {/* Drag handle for swipe-to-close */}
+            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-2 sm:hidden" />
+            {/* Close button */}
+            <button
+              onClick={closeBookingDetails}
+              className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 bg-white bg-opacity-80 rounded-full p-2 shadow"
+              aria-label="Close booking details"
+            >
+              <X className="h-5 w-5" />
+            </button>
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
-                    <CalendarIcon className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">{selectedBooking.customer_name}</h3>
-                    <p className="text-blue-100 text-sm">Booking Details</p>
-                  </div>
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+              <div className="flex items-center gap-3">
+                <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                  <CalendarIcon className="h-6 w-6" />
                 </div>
-                <button
-                  onClick={closeBookingDetails}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
-                  aria-label="Close booking details"
-                >
-                  <X className="h-5 w-5" />
-                </button>
+                <div>
+                  <h3 className="text-xl font-bold">{selectedBooking.customer_name}</h3>
+                  <p className="text-blue-100 text-sm">Booking Details</p>
+                </div>
               </div>
             </div>
-
             {/* Booking Content */}
             <div className="p-6 space-y-6">
               {/* Booking Information */}
@@ -972,7 +974,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   </div>
                 </div>
               </div>
-
               {/* Notes Section */}
               {selectedBooking.notes && (
                 <div>
@@ -982,7 +983,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                   </div>
                 </div>
               )}
-
               {/* Action Buttons */}
               <div className="grid grid-cols-2 gap-3 pt-4">
                 {selectedBooking.payment_status !== 'paid' && (
