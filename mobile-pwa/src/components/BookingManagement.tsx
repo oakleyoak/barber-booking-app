@@ -995,13 +995,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed left-0 right-0 z-[1000] flex items-start sm:items-center justify-center bg-black bg-opacity-60"
+          className="fixed left-0 right-0 z-[1000] flex items-start md:items-center justify-center bg-black bg-opacity-60"
           style={{ top: '112px', bottom: 0 }} // 112px = header + tabs + search bar height, adjust as needed
         >
           {/* Full-screen top sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
-            className={`w-full sm:max-w-md bg-white shadow-2xl rounded-t-2xl sm:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
+            className={`w-full md:max-w-md bg-white shadow-2xl rounded-t-2xl md:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
             style={{
               transform: dragOffset ? `translateY(${dragOffset}px)` : 'translateY(0)',
               touchAction: 'none',
