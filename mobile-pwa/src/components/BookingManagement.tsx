@@ -899,10 +899,9 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
-        <div className="fixed inset-0 z-[1200] flex items-end justify-center sm:items-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md bg-white rounded-t-2xl shadow-xl max-h-[90vh] overflow-y-auto animate-slide-up relative">
-            {/* Drag handle for swipe-to-close */}
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-2 sm:hidden" />
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center">
+          {/* Full-screen overlay for mobile, centered modal for desktop */}
+          <div className="w-full h-full sm:h-auto sm:w-full max-w-md bg-white shadow-xl overflow-y-auto relative flex flex-col rounded-none sm:rounded-2xl animate-slide-up">
             {/* Close button */}
             <button
               onClick={closeBookingDetails}
@@ -912,7 +911,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
               <X className="h-5 w-5" />
             </button>
             {/* Profile Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-none sm:rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="bg-white bg-opacity-20 p-2 rounded-full">
                   <CalendarIcon className="h-6 w-6" />
@@ -924,7 +923,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
               </div>
             </div>
             {/* Booking Content */}
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 flex-1 overflow-y-auto">
               {/* Booking Information */}
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
