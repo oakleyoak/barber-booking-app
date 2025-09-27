@@ -122,6 +122,46 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     loadSettings();
   }, [currentUser.shop_name]);
 
+  // Swipe-to-close gesture for mobile bottom sheet (must be at top-level, after other hooks)
+  useEffect(() => {
+    if (!showBookingDetails) return;
+    const sheet = bottomSheetRef.current;
+    if (!sheet) return;
+
+    let startY = 0;
+    let lastY = 0;
+    let dragging = false;
+
+    const handleTouchStart = (e: any) => {
+      dragging = true;
+      startY = e.touches[0].clientY;
+      lastY = startY;
+    };
+    const handleTouchMove = (e: any) => {
+      if (!dragging) return;
+      lastY = e.touches[0].clientY;
+      const offset = Math.max(0, lastY - startY);
+      setDragOffset(offset);
+    };
+    const handleTouchEnd = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (lastY - startY > 100) {
+        closeBookingDetails();
+      } else {
+        setDragOffset(0);
+      }
+    };
+    sheet.addEventListener('touchstart', handleTouchStart);
+    sheet.addEventListener('touchmove', handleTouchMove);
+    sheet.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      sheet.removeEventListener('touchstart', handleTouchStart);
+      sheet.removeEventListener('touchmove', handleTouchMove);
+      sheet.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [showBookingDetails]);
+
   // Load staff and customers when component mounts
   useEffect(() => {
     if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
@@ -954,22 +994,28 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
 
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
-        <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-black bg-opacity-60">
-          {/* True mobile bottom sheet overlay with swipe-to-close */}
+        <div
+          className="fixed left-0 right-0 z-[1000] flex items-end sm:items-center justify-center bg-black bg-opacity-60"
+          style={{ top: '112px', bottom: 0 }} // 112px = header + tabs + search bar height, adjust as needed
+        >
+          {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
-            className="w-full max-w-md bg-white shadow-xl rounded-t-2xl max-h-[90vh] overflow-y-auto relative flex flex-col animate-slide-up touch-pan-y"
-            style={{ transform: dragOffset ? `translateY(${dragOffset}px)` : undefined, transition: dragOffset ? 'none' : 'transform 0.2s' }}
+            className={`w-full sm:max-w-md bg-white shadow-2xl rounded-t-2xl sm:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
+            style={{
+              transform: dragOffset ? `translateY(${dragOffset}px)` : 'translateY(0)',
+              touchAction: 'none',
+            }}
           >
-            {/* Drag handle */}
-            <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mt-3 mb-2 cursor-pointer" />
-            {/* Close button */}
+            {/* Drag handle for swipe-to-close */}
+            <div className="w-16 h-2 bg-gray-300 rounded-full mx-auto mt-3 mb-3 cursor-pointer" />
+            {/* Close button always visible in top-right */}
             <button
               onClick={closeBookingDetails}
-              className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 bg-white bg-opacity-80 rounded-full p-2 shadow"
+              className="absolute top-3 right-3 z-10 text-gray-500 hover:text-gray-700 bg-white bg-opacity-80 rounded-full p-2 shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
               aria-label="Close booking details"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
             {/* Profile Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-2xl">
@@ -1181,25 +1227,6 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
                     <option value="">Select existing customer...</option>
                     {customers.map(customer => (
                       <option key={customer.id} value={customer.id}>{customer.name}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
-                  <select
-                    value={bookingFormData.service_type}
-                    onChange={(e) => setBookingFormData(prev => ({ 
-                      ...prev, 
-                      service_type: e.target.value,
-                      price: ServicePricingService.getServicePrice(e.target.value)
-                    }))}
-                    className="w-full p-2 border rounded-lg"
-                    required
-                    aria-label="Select service type"
-                  >
-                    {Object.entries(SERVICES).map(([key, service]) => (
-                      <option key={key} value={key}>{service.name} - ₺{service.price}</option>
                     ))}
                   </select>
                 </div>
