@@ -16,6 +16,31 @@ interface BookingCalendarProps {
 }
 
 const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser }) => {
+  // Always ensure shop settings exist in Supabase and use them for slot generation
+  useEffect(() => {
+    const ensureSettingsAndSlots = async () => {
+      const shopName = currentUser.shop_name || 'Edge & Co';
+      let settings = await ShopSettingsService.getSettings(shopName);
+      if (!settings || !settings.opening_time || !settings.closing_time) {
+        // Create default settings in Supabase if missing
+        await ShopSettingsService.saveSettings(shopName, {
+          shop_name: shopName,
+          opening_time: '09:00',
+          closing_time: '20:00',
+          daily_target: 0,
+          weekly_target: 0,
+          monthly_target: 0
+        });
+        settings = await ShopSettingsService.getSettings(shopName);
+      }
+      setShopSettings(settings);
+      const open = settings.opening_time ? settings.opening_time.slice(0,5) : '09:00';
+      const close = settings.closing_time ? settings.closing_time.slice(0,5) : '20:00';
+      const slots = generateTimeSlots(open, close);
+      setTimeSlots(slots);
+    };
+    ensureSettingsAndSlots();
+  }, [currentUser.shop_name]);
   const [shopSettings, setShopSettings] = useState<any>(null);
   const modal = useModal();
   const { language } = useLanguage();
