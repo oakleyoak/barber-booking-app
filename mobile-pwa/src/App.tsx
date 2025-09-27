@@ -25,6 +25,7 @@ function App() {
   const [currentView, setCurrentView] = useState('calendar');
   const [hasModalOpen, setHasModalOpen] = useState(false);
   const [userNavPreference, setUserNavPreference] = useState(true);
+  const [forceNavVisible, setForceNavVisible] = useState(false); // allow manual override when modal open
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -32,8 +33,10 @@ function App() {
     role: 'Barber'
   });
 
-  // Computed navigation visibility: hide when modal is open, otherwise respect user preference
-  const isNavVisible = !hasModalOpen && userNavPreference;
+  // Computed navigation visibility:
+  // - When no modal is open -> follow userNavPreference
+  // - When a modal is open -> follow forceNavVisible (manual override), default hidden
+  const isNavVisible = hasModalOpen ? !!forceNavVisible : !!userNavPreference;
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -140,33 +143,30 @@ function App() {
       <ModalProvider>
         {/* Branded background image for the entire app */}
         <div aria-hidden="true" className="fixed inset-0 -z-50">
-          <div style={{
-            width: '100%',
-            height: '100%',
-            background: `url(${largeLogo}) center center / cover no-repeat, linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%)`,
-            position: 'absolute',
-            inset: 0,
-            zIndex: -50,
-            opacity: 0.18
-          }} />
+          <div className="absolute inset-0 -z-50 opacity-20 app-bg" />
         </div>
-  <div className="min-h-screen flex flex-col relative" style={{ background: 'transparent' }}>
-    {/* Header - fixed, only logo and shop name */}
-    <div className="bg-white/40 shadow-lg border-b border-gray-200/30 fixed left-0 w-full z-40 flex items-center px-4 py-3" style={{ height: 64, minHeight: 64, top: 0 }}>
-      <div className="flex items-center space-x-3">
-        <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
-        <div>
-          <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
-          <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
+  <div className="min-h-screen flex flex-col relative bg-transparent">
+    {/* Header - render only when navigation is visible or user forced it */}
+    {(isNavVisible || forceNavVisible) && (
+  <div className="bg-white/40 shadow-lg border-b border-gray-200/30 fixed left-0 w-full z-40 flex items-center px-4 py-3 transition-transform duration-200 h-16 header-top">
+        <div className="flex items-center space-x-3">
+          <img src={logoIcon} alt="Edge & Co Logo" className="h-10 w-10 object-contain rounded-full border-2 border-blue-200 shadow-md" />
+          <div>
+            <h1 className="text-lg font-bold brand-text-gradient">Edge & Co</h1>
+            <p className="text-xs text-blue-700 font-medium">{currentUser.shop_name}</p>
+          </div>
         </div>
       </div>
-    </div>
+    )}
 
-    {/* Top-right controls: always visible */}
-    <div className="fixed top-2 right-4 z-50 flex items-center space-x-2">
+  {/* Top-right controls: always visible and above modals */}
+  <div className="fixed top-2 right-4 z-[2000] flex items-center space-x-2">
       <button
         onClick={() => {
-          if (!hasModalOpen) {
+          if (hasModalOpen) {
+            // allow user to temporarily show nav while modal is open
+            setForceNavVisible(!forceNavVisible);
+          } else {
             setUserNavPreference(!userNavPreference);
           }
         }}
@@ -176,7 +176,7 @@ function App() {
       >
         {isNavVisible ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
       </button>
-      <LanguageSelector className="w-32" />
+  <LanguageSelector className="w-32" />
       <span className="text-xs text-gray-700 bg-white/80 px-2 py-1 rounded">
         {currentUser.name} ({currentUser.role})
       </span>
@@ -189,9 +189,11 @@ function App() {
     </div>
 
           {/* Navigation - fixed below header, fully slides out when hidden */}
-          <div className={`bg-white/30 border-b border-gray-200/20 fixed left-0 w-full z-30 shadow-sm transition-transform duration-300 ease-in-out ${isNavVisible ? 'translate-y-0' : '-translate-y-[-100%]'} flex justify-center`} style={{ top: 64 }}>
-            <div className="max-w-full px-2 py-3 w-full">
-              <div className="w-full">
+          {/* Navigation - render only when visible (no DOM occupation when hidden) */}
+          {(isNavVisible || forceNavVisible) && (
+            <div className={`bg-white/30 border-b border-gray-200/20 fixed left-0 w-full z-30 shadow-sm transition-transform duration-300 ease-in-out ${isNavVisible ? 'translate-y-0' : '-translate-y-full'} flex justify-center top-16 h-20 overflow-hidden`}>
+          <div className="max-w-full px-2 py-3 w-full">
+            <div className="w-full">
                 <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-10 gap-2 auto-rows-min">
                   {/* Core Features - Available to All Users */}
                   <button
@@ -329,6 +331,7 @@ function App() {
               </div>
             </div>
           </div>
+          )}
 
           {/* Content Area */}
           <div className="flex-1 overflow-auto">
@@ -386,9 +389,7 @@ function App() {
 
   // Login/Register form
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden" style={{
-  background: `url(${largeLogo}) center center / cover no-repeat, linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%)`
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden app-bg-login">
       {/* Branded background image */}
       {/* The background is now set via the style prop above */}
       <div className="rounded-xl shadow-xl p-8 w-full max-w-md relative z-10 bg-white/90 backdrop-blur-md border border-white/20">
@@ -434,6 +435,8 @@ function App() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  aria-label="User role"
+                  title="Select user role"
                 >
                   <option value="Barber">Barber</option>
                   <option value="Owner">Owner</option>
@@ -451,21 +454,37 @@ function App() {
               <input
                 type="email"
                 autoComplete="email"
+                inputMode="email"
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 required
+                aria-label="Email address"
               />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                autoComplete={isLogin ? 'current-password' : 'new-password'}
-                className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder={isLogin ? 'Enter your password' : 'Create a password'}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                required
-              />
+              {isLogin ? (
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter your password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  aria-label="Current password"
+                />
+              ) : (
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  required
+                  aria-label="New password"
+                />
+              )}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}

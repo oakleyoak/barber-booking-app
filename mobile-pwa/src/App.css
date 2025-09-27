@@ -257,3 +257,20 @@ button {
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
+
+/* App level helpers to avoid inline styles in components */
+.app-bg {
+  background-image: url('../assets/edgeandcoblackandwhitelogobackground.png'), linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%);
+  background-size: cover;
+  background-position: center center;
+}
+
+.app-bg-login {
+  background-image: url('../assets/edgeandcoblackandwhitelogobackground.png'), linear-gradient(135deg, #e0e7ef 0%, #fff 60%, #e0e7ef 100%);
+  background-size: cover;
+  background-position: center center;
+}
+
+.header-top {
+  top: 0;
+}
