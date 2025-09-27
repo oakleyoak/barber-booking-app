@@ -275,10 +275,11 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     };
   }, [showBookingDetails]);
 
-  // Notify parent component when modal state changes
+  // Notify parent component when any modal state changes
   useEffect(() => {
-    onModalStateChange?.(showBookingDetails);
-  }, [showBookingDetails, onModalStateChange]);
+    const hasAnyModalOpen = showBookingDetails || showBookingForm || showDeleteModal || showNotificationOptions;
+    onModalStateChange?.(hasAnyModalOpen);
+  }, [showBookingDetails, showBookingForm, showDeleteModal, showNotificationOptions, onModalStateChange]);
 
   // Format date helper
   const formatDate = (dateString: string) => {

@@ -23,13 +23,17 @@ function App() {
   const [currentUser, setCurrentUser] = useState<SupabaseUser | null>(null);
   const [isLogin, setIsLogin] = useState(true);
   const [currentView, setCurrentView] = useState('calendar');
-  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [hasModalOpen, setHasModalOpen] = useState(false);
+  const [userNavPreference, setUserNavPreference] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     name: '',
     role: 'Barber'
   });
+
+  // Computed navigation visibility: hide when modal is open, otherwise respect user preference
+  const isNavVisible = !hasModalOpen && userNavPreference;
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -160,7 +164,11 @@ function App() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => setIsNavVisible(!isNavVisible)}
+                    onClick={() => {
+                      if (!hasModalOpen) {
+                        setUserNavPreference(!userNavPreference);
+                      }
+                    }}
                     className="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100 transition-colors border border-gray-300"
                     title={isNavVisible ? "Hide Navigation" : "Show Navigation"}
                   >
@@ -364,7 +372,7 @@ function App() {
                 {currentView === 'bookings' && (currentUser?.role === 'Owner' || currentUser?.role === 'Manager' || currentUser?.role === 'Barber') && (
                   <BookingManagement 
                     currentUser={currentUser} 
-                    onModalStateChange={(isOpen) => setIsNavVisible(!isOpen)} 
+                    onModalStateChange={(isOpen) => setHasModalOpen(isOpen)} 
                   />
                 )}
 
