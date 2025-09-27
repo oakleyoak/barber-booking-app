@@ -122,7 +122,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     loadSettings();
   }, [currentUser.shop_name]);
 
-  // Swipe-to-close gesture for mobile bottom sheet (must be at top-level, after other hooks)
+  // Swipe-to-close gesture for mobile top sheet (must be at top-level, after other hooks)
   useEffect(() => {
     if (!showBookingDetails) return;
     const sheet = bottomSheetRef.current;
@@ -140,13 +140,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     const handleTouchMove = (e: any) => {
       if (!dragging) return;
       lastY = e.touches[0].clientY;
-      const offset = Math.max(0, lastY - startY);
+      const offset = lastY - startY; // Allow negative for upward drag
       setDragOffset(offset);
     };
     const handleTouchEnd = () => {
       if (!dragging) return;
       dragging = false;
-      if (lastY - startY > 100) {
+      if (startY - lastY > 100) { // Upward swipe to close
         closeBookingDetails();
       } else {
         setDragOffset(0);
@@ -276,7 +276,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     };
   }, [showBookingDetails]);
 
-  // Swipe-to-close gesture for mobile bottom sheet
+  // Swipe-to-close gesture for mobile top sheet
   useEffect(() => {
     if (!showBookingDetails) return;
     const sheet = bottomSheetRef.current;
@@ -289,13 +289,13 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
     const handleTouchMove = (e: TouchEvent) => {
       if (dragStartY.current !== null) {
         dragCurrentY.current = e.touches[0].clientY;
-        const offset = Math.max(0, dragCurrentY.current - dragStartY.current);
+        const offset = dragCurrentY.current - dragStartY.current; // Allow negative for upward drag
         setDragOffset(offset);
       }
     };
     const handleTouchEnd = () => {
       if (dragStartY.current !== null && dragCurrentY.current !== null) {
-        if (dragCurrentY.current - dragStartY.current > 80) {
+        if (dragStartY.current - dragCurrentY.current > 80) { // Upward swipe to close
           closeBookingDetails();
         } else {
           setDragOffset(0);
@@ -995,10 +995,10 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser }) =>
       {/* Booking Details Modal */}
       {showBookingDetails && selectedBooking && (
         <div
-          className="fixed left-0 right-0 z-[1000] flex items-end sm:items-center justify-center bg-black bg-opacity-60"
+          className="fixed left-0 right-0 z-[1000] flex items-start sm:items-center justify-center bg-black bg-opacity-60"
           style={{ top: '112px', bottom: 0 }} // 112px = header + tabs + search bar height, adjust as needed
         >
-          {/* Full-screen bottom sheet modal for mobile, centered modal for desktop */}
+          {/* Full-screen top sheet modal for mobile, centered modal for desktop */}
           <div
             ref={bottomSheetRef}
             className={`w-full sm:max-w-md bg-white shadow-2xl rounded-t-2xl sm:rounded-2xl max-h-[95vh] min-h-[60vh] overflow-y-auto relative flex flex-col transition-transform duration-300 ease-out ${dragOffset ? '' : 'animate-slide-up'}`}
