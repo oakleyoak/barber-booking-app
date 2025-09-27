@@ -351,7 +351,7 @@ export const InvoiceService = {
         name: 'Credit/Debit Card',
         type: 'online',
         details: stripeUrl,
-        icon: ''
+        icon: '💳'
       });
     }
 
@@ -364,6 +364,17 @@ export const InvoiceService = {
     });
 
     return methods;
+  },
+
+  // Format payment method details for HTML (makes URLs clickable)
+  formatPaymentDetails: (details: string, methodType: string): string => {
+    // Check if details is a URL (starts with http/https)
+    if (details.startsWith('http://') || details.startsWith('https://')) {
+      return `<a href="${details}" style="display: inline-block; background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px 0;" target="_blank">💳 Pay Now</a>`;
+    }
+
+    // For non-URL details (like IBAN info), format with line breaks
+    return details.replace('\n', '<br>');
   },
 
   // Generate invoice HTML
@@ -445,7 +456,7 @@ export const InvoiceService = {
             ${paymentMethods.map(method => `
               <div class="payment-method">
                 <h4>${method.icon} ${method.name}</h4>
-                <p>${method.details.replace('\n', '<br>')}</p>
+                <p>${InvoiceService.formatPaymentDetails(method.details, method.type)}</p>
               </div>
             `).join('')}
           </div>
