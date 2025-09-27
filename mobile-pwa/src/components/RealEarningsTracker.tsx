@@ -84,8 +84,9 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
     const today = new Date();
     const weekStart = getWeekStart(today);
     const monthStart = getMonthStart(today);
-    const userId = currentUser.id;
-    // Get all bookings for week and month for this user
+    // Only filter by userId for Barbers/Apprentices
+    const restrictToUser = currentUser.role === 'Barber' || currentUser.role === 'Apprentice';
+    const userId = restrictToUser ? currentUser.id : undefined;
     const [week, month] = await Promise.all([
       bookingService.getBookingsByDateRange(
         weekStart.toISOString().split('T')[0],
