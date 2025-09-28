@@ -215,7 +215,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
       // Reset booking form
       setBookingData({
         service: 'Haircut',
-        price: 700,
+        price: SERVICES.find(s => s.name === 'Haircut')?.price || 70000,
         notes: '',
         appointment_date: new Date().toISOString().split('T')[0],
         appointment_time: '09:00',
