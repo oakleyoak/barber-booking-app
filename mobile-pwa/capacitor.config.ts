@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
     }
   },
   includePlugins: [
-    'stripe-terminal-plugin'
+    '@edgeandco/stripe-terminal-plugin'
   ]
 };
 

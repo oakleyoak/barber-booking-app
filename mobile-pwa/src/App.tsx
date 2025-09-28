@@ -17,7 +17,6 @@ import IncidentReports from './components/IncidentReports';
 import ModalProvider from './components/ui/ModalProvider';
 import LanguageSelector from './i18n/LanguageSelector';
 import { useLanguage } from './i18n/LanguageContext';
-import POS from './components/POS';
 
 function App() {
   const { t } = useLanguage();
@@ -243,18 +242,6 @@ function App() {
                     </button>
                     
                     <button
-                      onClick={() => setCurrentView('pos')}
-                      className={`flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 rounded-lg transition-colors text-xs w-full ${
-                        currentView === 'pos'
-                          ? 'bg-green-700 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                      }`}
-                    >
-                      <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 mb-1" />
-                      <span className="text-center leading-tight">POS</span>
-                    </button>
-                    
-                    <button
                       onClick={() => setCurrentView('operations')}
                       className={`flex flex-col items-center justify-center px-2 py-1 sm:px-3 sm:py-2 rounded-lg transition-colors text-xs min-w-[60px] sm:min-w-[70px] ${
                         currentView === 'operations'
@@ -352,10 +339,6 @@ function App() {
 
                 {currentView === 'customers' && (
                   <CustomerManager currentUser={currentUser!} />
-                )}
-
-                {currentView === 'pos' && (
-                  <POS currentUser={currentUser!} />
                 )}
 
                 {currentView === 'operations' && (

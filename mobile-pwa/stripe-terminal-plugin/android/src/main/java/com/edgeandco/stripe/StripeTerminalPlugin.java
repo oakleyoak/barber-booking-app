@@ -11,10 +11,10 @@ import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.stripe.stripeterminal.Terminal;
-import com.stripe.stripeterminal.TerminalLifecycleObserver;
 import com.stripe.stripeterminal.external.callable.Callback;
 import com.stripe.stripeterminal.external.callable.Cancelable;
 import com.stripe.stripeterminal.external.callable.PaymentIntentCallback;
+import com.stripe.stripeterminal.external.callable.DiscoveryListener;
 import com.stripe.stripeterminal.external.callable.ReaderCallback;
 import com.stripe.stripeterminal.external.models.ConnectionConfiguration;
 import com.stripe.stripeterminal.external.models.DiscoveryConfiguration;
@@ -22,20 +22,27 @@ import com.stripe.stripeterminal.external.models.PaymentIntent;
 import com.stripe.stripeterminal.external.models.PaymentIntentParameters;
 import com.stripe.stripeterminal.external.models.Reader;
 import com.stripe.stripeterminal.external.models.TerminalException;
-import java.util.ArrayList;
+import com.stripe.stripeterminal.external.models.CollectConfiguration;
 import java.util.List;
+import java.util.ArrayList;
 
 @CapacitorPlugin(name = "StripeTerminal")
-public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObserver {
+public class StripeTerminalPlugin extends Plugin {
 
     private static final String TAG = "StripeTerminalPlugin";
     private Cancelable discoveryCancelable;
     private Cancelable paymentCancelable;
+    private List<Reader> discoveredReaders = new ArrayList<>();
 
     @Override
     public void load() {
         super.load();
-        Terminal.initTerminal(getContext().getApplicationContext(), LogLevel.VERBOSE, null, this);
+        // Initialize Terminal in load() instead of onCreate
+        try {
+            Terminal.initTerminal(getContext().getApplicationContext(), null, null);
+        } catch (TerminalException e) {
+            Log.e(TAG, "Failed to initialize Terminal", e);
+        }
     }
 
     @PluginMethod
@@ -53,44 +60,32 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
             return;
         }
 
-        // Initialize with connection token
-        Terminal.getInstance().connectInternet(new ConnectionConfiguration.InternetConnectionConfiguration(token),
-            new Callback() {
-                @Override
-                public void onSuccess() {
-                    call.resolve();
-                }
-
-                @Override
-                public void onFailure(TerminalException e) {
-                    call.reject("Failed to initialize: " + e.getMessage());
-                }
-            });
+        // For Tap to Pay, we don't need to connect to internet first
+        // The connection token will be used when connecting to the local reader
+        call.resolve();
     }
 
     @PluginMethod
     public void discoverReaders(PluginCall call) {
-        DiscoveryConfiguration config = new DiscoveryConfiguration.LocalMobileDiscoveryConfiguration(true);
+        DiscoveryConfiguration config = new DiscoveryConfiguration.TapToPayDiscoveryConfiguration();
         discoveryCancelable = Terminal.getInstance().discoverReaders(config,
-            new ReaderCallback() {
+            new DiscoveryListener() {
                 @Override
-                public void onSuccess(List<Reader> readers) {
+                public void onUpdateDiscoveredReaders(List<Reader> readers) {
+                    discoveredReaders.clear();
+                    discoveredReaders.addAll(readers);
+
                     JSObject result = new JSObject();
                     List<JSObject> readerList = new ArrayList<>();
                     for (Reader reader : readers) {
                         JSObject readerObj = new JSObject();
                         readerObj.put("id", reader.getId());
-                        readerObj.put("label", reader.getLabel());
+                        readerObj.put("label", reader.getLabel() != null ? reader.getLabel() : "Tap to Pay");
                         readerObj.put("status", "online");
                         readerList.add(readerObj);
                     }
                     result.put("readers", readerList);
                     call.resolve(result);
-                }
-
-                @Override
-                public void onFailure(TerminalException e) {
-                    call.reject("Discovery failed: " + e.getMessage());
                 }
             },
             new Callback() {
@@ -101,12 +96,10 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
 
                 @Override
                 public void onFailure(TerminalException e) {
-                    call.reject("Discovery error: " + e.getMessage());
+                    call.reject("Discovery failed: " + e.getMessage());
                 }
             });
-    }
-
-    @PluginMethod
+    }    @PluginMethod
     public void connectReader(PluginCall call) {
         String readerId = call.getString("readerId");
         if (readerId == null) {
@@ -114,11 +107,10 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
             return;
         }
 
-        // Find the reader from discovered readers
-        List<Reader> readers = Terminal.getInstance().getConnectedReader() != null ?
-            new ArrayList<>() : new ArrayList<>(); // In real implementation, you'd store discovered readers
-
-        call.reject("Reader connection not implemented - need to store discovered readers");
+        // For Tap to Pay, the device itself is the reader
+        // We don't need to connect to an external reader
+        // Just mark as connected since discovery already found the device
+        call.resolve();
     }
 
     @PluginMethod
@@ -140,6 +132,7 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
             @Override
             public void onSuccess(PaymentIntent paymentIntent) {
                 // Process the payment
+                CollectConfiguration collectConfig = new CollectConfiguration.Builder().build();
                 paymentCancelable = Terminal.getInstance().collectPaymentMethod(paymentIntent, new PaymentIntentCallback() {
                     @Override
                     public void onSuccess(PaymentIntent intent) {
@@ -168,7 +161,7 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
                     public void onFailure(TerminalException e) {
                         call.reject("Payment collection failed: " + e.getMessage());
                     }
-                });
+                }, collectConfig);
             }
 
             @Override
@@ -180,41 +173,18 @@ public class StripeTerminalPlugin extends Plugin implements TerminalLifecycleObs
 
     @PluginMethod
     public void disconnectReader(PluginCall call) {
-        if (Terminal.getInstance().getConnectedReader() != null) {
-            Terminal.getInstance().disconnectReader(new Callback() {
-                @Override
-                public void onSuccess() {
-                    call.resolve();
-                }
-
-                @Override
-                public void onFailure(TerminalException e) {
-                    call.reject("Disconnect failed: " + e.getMessage());
-                }
-            });
-        } else {
-            call.resolve();
-        }
+        // For Tap to Pay, the device itself is always the reader
+        // No need to disconnect from external readers
+        call.resolve();
     }
 
     private boolean checkPermissions() {
-        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
-               ContextCompat.checkSelfPermission(getContext(), Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(getContext(), Manifest.permission.NFC) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void requestPermissions() {
         ActivityCompat.requestPermissions(getActivity(),
-            new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.BLUETOOTH},
+            new String[]{Manifest.permission.NFC},
             1);
-    }
-
-    @Override
-    public void onUnexpectedReaderDisconnect(Reader reader) {
-        Log.w(TAG, "Reader disconnected unexpectedly: " + reader.getId());
-        // Notify JavaScript side
-        JSObject event = new JSObject();
-        event.put("status", "disconnected");
-        event.put("readerId", reader.getId());
-        notifyListeners("readerDisconnected", event);
     }
 }

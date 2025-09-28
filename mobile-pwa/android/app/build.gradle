@@ -61,8 +61,9 @@ dependencies {
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
     implementation project(':capacitor-cordova-android-plugins')
     
-    // Stripe Terminal SDK
-    implementation 'com.stripe:stripeterminal:3.7.0'
+    // Stripe Terminal SDK (includes Tap to Pay)
+    implementation 'com.stripe:stripeterminal:4.7.3'
+    
 }
 
 apply from: 'capacitor.build.gradle'
