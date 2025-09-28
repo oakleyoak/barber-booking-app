@@ -65,6 +65,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
     };
   }, [showUserModal, onModalStateChange]);
 
+  // Populate form when editing a user
+  useEffect(() => {
+    if (editingUser) {
+      setNewUser({
+        name: editingUser.name || '',
+        email: editingUser.email || '',
+        role: editingUser.role || 'Barber',
+        commission_rate: editingUser.commission_rate || 60,
+        target_daily: editingUser.target_daily || 400,
+        target_weekly: editingUser.target_weekly || 2000,
+        target_monthly: editingUser.target_monthly || 8000
+      });
+    }
+  }, [editingUser]);
+
   const loadAdminData = async () => {
     setIsLoading(true);
     try {
@@ -80,9 +95,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
         setShopSettings({
           opening_time: '09:00',
           closing_time: '20:00',
-          daily_target: 1500,
-          weekly_target: 9000,
-          monthly_target: 45000,
           social_insurance_rate: 20,
           income_tax_rate: 15,
           income_tax_threshold: 3000
@@ -413,39 +425,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
                   </div>
                 </div>
               </div>
-              {/* Revenue Targets */}
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Revenue Targets</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Daily Target (₺)</label>
-                    <input placeholder="Enter daily target" title="Daily Target"
-                      type="number"
-                      value={shopSettings.daily_target}
-                      onChange={(e) => setShopSettings({ ...shopSettings, daily_target: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Weekly Target (₺)</label>
-                    <input placeholder="Enter weekly target" title="Weekly Target"
-                      type="number"
-                      value={shopSettings.weekly_target}
-                      onChange={(e) => setShopSettings({ ...shopSettings, weekly_target: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Monthly Target (₺)</label>
-                    <input placeholder="Enter monthly target" title="Monthly Target"
-                      type="number"
-                      value={shopSettings.monthly_target}
-                      onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                </div>
-              </div>
               {/* Tax Settings */}
               <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
                 <h3 className="text-lg font-semibold mb-4">Tax Settings</h3>
@@ -632,6 +611,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
                     type="number"
                     value={newUser.target_daily}
                     onChange={(e) => setNewUser({ ...newUser, target_daily: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Weekly Target ($)</label>
+                  <input title="Weekly Target"
+                    type="number"
+                    value={newUser.target_weekly}
+                    onChange={(e) => setNewUser({ ...newUser, target_weekly: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Monthly Target ($)</label>
+                  <input title="Monthly Target"
+                    type="number"
+                    value={newUser.target_monthly}
+                    onChange={(e) => setNewUser({ ...newUser, target_monthly: parseFloat(e.target.value) || 0 })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     min="0"
                     step="0.1"

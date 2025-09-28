@@ -8,6 +8,7 @@ export interface User {
   role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
+  target_daily: number;
   target_weekly: number;
   target_monthly: number;
   created_at?: string;
@@ -21,6 +22,7 @@ export interface UserCreate {
   role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
+  target_daily: number;
   target_weekly: number;
   target_monthly: number;
 }
@@ -31,6 +33,7 @@ export interface UserUpdate {
   role?: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name?: string;
   commission_rate?: number;
+  target_daily?: number;
   target_weekly?: number;
   target_monthly?: number;
   is_active?: boolean;
@@ -176,6 +179,42 @@ export class UserManagementService {
   }
 
   /**
+   * Create a new user (alias for addStaffMember for AdminPanel compatibility)
+   */
+  static async createUser(userData: UserCreate & { password: string }): Promise<User | null> {
+    return this.addStaffMember(userData.shop_name, userData);
+  }
+
+  /**
+   * Update user details (alias for updateStaffMember for AdminPanel compatibility)
+   */
+  static async updateUser(userId: string, updates: UserUpdate): Promise<User | null> {
+    try {
+      // Get the user's shop name first
+      const { data: user } = await supabase
+        .from('users')
+        .select('shop_name')
+        .eq('id', userId)
+        .single();
+
+      if (!user) {
+        console.error('User not found for update');
+        return null;
+      }
+
+      const success = await this.updateStaffMember(user.shop_name, userId, updates);
+      if (success) {
+        // Return the updated user
+        return await this.getStaffMember(user.shop_name, userId);
+      }
+      return null;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      return null;
+    }
+  }
+
+  /**
    * Promote/demote staff member (apprentice <-> barber <-> manager)
    */
   static async promoteStaffMember(shopName: string, userId: string, newRole: 'Manager' | 'Barber' | 'Apprentice'): Promise<boolean> {
@@ -251,6 +290,49 @@ export class UserManagementService {
       return (data || []).length > 0;
     } catch (error) {
       console.error('Error checking email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get all users for a shop (AdminPanel compatibility)
+   */
+  static async getAllUsers(shopName: string = 'Edge & Co'): Promise<User[]> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('shop_name', shopName)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting all users:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Delete user (AdminPanel compatibility)
+   */
+  static async deleteUser(userId: string): Promise<boolean> {
+    try {
+      // Get the user's shop name first
+      const { data: user } = await supabase
+        .from('users')
+        .select('shop_name')
+        .eq('id', userId)
+        .single();
+
+      if (!user) {
+        console.error('User not found for deletion');
+        return false;
+      }
+
+      return await this.deleteStaffMember(user.shop_name, userId);
+    } catch (error) {
+      console.error('Error deleting user:', error);
       return false;
     }
   }
