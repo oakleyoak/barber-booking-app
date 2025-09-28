@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
     }
   },
   includePlugins: [
-    './stripe-terminal-plugin'
+    'stripe-terminal-plugin'
   ]
 };
 
