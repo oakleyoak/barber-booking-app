@@ -18,7 +18,10 @@ const config: CapacitorConfig = {
       androidScaleType: "CENTER_CROP",
       showSpinner: false
     }
-  }
+  },
+  includePlugins: [
+    './stripe-terminal-plugin'
+  ]
 };
 
 export default config;

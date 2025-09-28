@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CreditCard, Smartphone, Receipt, Plus, Minus, X } from 'lucide-react';
 import { SERVICES } from '../services/servicePricing';
+import { StripeTerminal } from '../../stripe-terminal-plugin/src';
 
 interface POSProps {
   currentUser: {
@@ -66,8 +67,55 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
     const total = getTotal();
     if (total === 0) return;
 
-    // TODO: Integrate with Stripe Tap & Pay
-    alert(`Processing card payment of ₺${total} (includes ₺50 processing fee) with Stripe Tap & Pay\n\nThis feature will be implemented with:\n- Stripe Terminal SDK\n- NFC/Contactless payment processing\n- Receipt generation`);
+    try {
+      // Get connection token from backend
+      const tokenResponse = await fetch('/.netlify/functions/stripe-connection-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const tokenData = await tokenResponse.json();
+      if (!tokenData.success) {
+        throw new Error(tokenData.message || 'Failed to get connection token');
+      }
+
+      // Convert to cents for Stripe (multiply by 100)
+      const amountInCents = Math.round(total * 100);
+
+      // Initialize Stripe Terminal
+      await StripeTerminal.initialize({
+        token: tokenData.secret
+      });
+
+      // Discover readers (for Tap to Pay on Android)
+      const { readers } = await StripeTerminal.discoverReaders();
+
+      if (readers.length === 0) {
+        alert('No payment readers found. Make sure Tap to Pay is enabled on your device.');
+        return;
+      }
+
+      // Connect to the first available reader (Tap to Pay)
+      await StripeTerminal.connectReader({ readerId: readers[0].id });
+
+      // Process the payment
+      const result = await StripeTerminal.processPayment({
+        amount: amountInCents,
+        currency: 'try' // Turkish Lira
+      });
+
+      // Success! Generate receipt
+      alert(`Payment successful! ₺${total}\nPayment ID: ${result.paymentIntent.id}\n\nReceipt will be generated.`);
+
+      // Clear cart after successful payment
+      setCart([]);
+
+    } catch (error) {
+      console.error('Payment failed:', error);
+      alert(`Payment failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   };
 
   return (
