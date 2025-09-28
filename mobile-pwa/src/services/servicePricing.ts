@@ -6,14 +6,14 @@ export interface ServiceOption {
 }
 
 export const SERVICES: ServiceOption[] = [
-  { name: 'Haircut', price: 70000, duration: 45, description: 'Professional haircut and styling' },
-  { name: 'Beard trim', price: 30000, duration: 15, description: 'Beard trimming and shaping' },
-  { name: 'Blowdry', price: 50000, duration: 30, description: 'Hair blowdry and styling' },
-  { name: 'Face mask', price: 20000, duration: 30, description: 'Facial treatment and mask' },
-  { name: 'Colour', price: 100000, duration: 60, description: 'Hair coloring service' },
-  { name: 'Wax', price: 50000, duration: 60, description: 'Hair waxing and styling' },
-  { name: 'Massage', price: 70000, duration: 45, description: 'Relaxing head and neck massage' },
-  { name: 'Shave', price: 50000, duration: 30, description: 'Traditional wet shave' }
+  { name: 'Haircut', price: 700, duration: 45, description: 'Professional haircut and styling' },
+  { name: 'Beard trim', price: 300, duration: 15, description: 'Beard trimming and shaping' },
+  { name: 'Blowdry', price: 500, duration: 30, description: 'Hair blowdry and styling' },
+  { name: 'Face mask', price: 200, duration: 30, description: 'Facial treatment and mask' },
+  { name: 'Colour', price: 1000, duration: 60, description: 'Hair coloring service' },
+  { name: 'Wax', price: 500, duration: 60, description: 'Hair waxing and styling' },
+  { name: 'Massage', price: 700, duration: 45, description: 'Relaxing head and neck massage' },
+  { name: 'Shave', price: 500, duration: 30, description: 'Traditional wet shave' }
 ];
 
 export class ServicePricingService {

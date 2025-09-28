@@ -44,7 +44,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
   // Booking form data
   const [bookingData, setBookingData] = useState({
     service: 'Haircut',
-    price: SERVICES.find(s => s.name === 'Haircut')?.price || 70000,
+    price: SERVICES.find(s => s.name === 'Haircut')?.price || 700,
     notes: '',
     appointment_date: new Date().toISOString().split('T')[0],
     appointment_time: '09:00',
@@ -215,7 +215,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
       // Reset booking form
       setBookingData({
         service: 'Haircut',
-        price: SERVICES.find(s => s.name === 'Haircut')?.price || 70000,
+        price: SERVICES.find(s => s.name === 'Haircut')?.price || 700,
         notes: '',
         appointment_date: new Date().toISOString().split('T')[0],
         appointment_time: '09:00',
@@ -579,7 +579,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                   >
                     {services.map(service => (
                       <option key={service.name} value={service.name}>
-                        {service.name} - ₺{(service.price / 100).toFixed(2)}
+                        {service.name} - ₺{service.price}
                       </option>
                     ))}
                   </select>

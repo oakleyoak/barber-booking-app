@@ -350,7 +350,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       let whatsappText = `📅 *BOOKING CONFIRMATION - Edge & Co Barbershop*\n\n`;
       whatsappText += `👤 Customer: *${booking.customer_name}*\n`;
       whatsappText += `✂️ Service: ${booking.service}\n`;
-      whatsappText += `💰 Price: ₺${(booking.price / 100).toFixed(2)}\n`;
+      whatsappText += `💰 Price: ₺${booking.price}\n`;
       whatsappText += `📅 Date: ${formattedDate}\n`;
       whatsappText += `⏰ Time: ${formattedTime}\n`;
 
@@ -841,7 +841,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                       <DollarSign className="h-3.5 w-3.5 text-gray-400" />
-                      <span>₺{(booking.price / 100).toFixed(2)} - {booking.service}</span>
+                      <span>₺{booking.price} - {booking.service}</span>
                     </div>
                     {booking.users?.name && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -978,7 +978,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                       <span className="text-sm text-gray-600">Service & Price</span>
                     </div>
                     <div className="text-right">
-                      <div className="font-medium">₺{(selectedBooking.price / 100).toFixed(2)}</div>
+                      <div className="font-medium">₺{selectedBooking.price}</div>
                       <div className="text-sm text-gray-500">{selectedBooking.service}</div>
                     </div>
                   </div>

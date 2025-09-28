@@ -85,7 +85,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
                   className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 text-left transition-colors"
                 >
                   <div className="font-medium text-sm">{service.name}</div>
-                  <div className="text-green-600 font-semibold">₺{(service.price / 100).toFixed(2)}</div>
+                  <div className="text-green-600 font-semibold">₺{service.price}</div>
                 </button>
               ))}
             </div>
@@ -126,7 +126,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
                     <div key={item.name} className="flex items-center justify-between bg-white p-3 rounded border">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-green-600">₺{(item.price / 100).toFixed(2)} each</div>
+                        <div className="text-green-600">₺{item.price} each</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button

@@ -84,7 +84,7 @@ const ServiceMenu: React.FC<ServiceMenuProps> = ({
                   </div>
                 ) : (
                   <div className="flex items-center gap-1">
-                    <span className="text-lg font-bold text-blue-600">₺{(getServicePrice(service) / 100).toFixed(2)}</span>
+                    <span className="text-lg font-bold text-blue-600">₺{getServicePrice(service)}</span>
                     {allowCustomPricing && (
                       <button
                         onClick={(e) => {
