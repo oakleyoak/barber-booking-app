@@ -22,6 +22,7 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
   const [expandedWeek, setExpandedWeek] = useState(false);
   const [expandedMonth, setExpandedMonth] = useState(false);
   const [commissionRate, setCommissionRate] = useState(60);
+  const [targets, setTargets] = useState({ daily: 0, weekly: 0, monthly: 0 });
   const [loading, setLoading] = useState(true);
   const [staffEarnings, setStaffEarnings] = useState<any[]>([]);
   const [showStaffReviews, setShowStaffReviews] = useState<string | null>(null);
@@ -43,16 +44,18 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         });
         // Staff earnings: group by staff (exclude owner)
         const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
-        const staffArr = staff.map(s => {
+        const staffArr = await Promise.all(staff.map(async (s) => {
           const staffBookings = allBookings.filter(b => b.user_id === s.id);
+          const commissionRate = await ShopSettingsService.getCommissionRate(s.role, currentUser.shop_name || '');
           return {
             staff: s,
             earnings: {
               totalAmount: staffBookings.reduce((sum, b) => sum + (b.price || 0), 0),
               bookingCount: staffBookings.length
-            }
+            },
+            commissionRate
           };
-        });
+        }));
         setStaffEarnings(staffArr);
       })();
     }
@@ -126,11 +129,15 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
       setLoading(true);
       const userId = currentUser.role === 'Barber' ? currentUser.id : undefined;
       
-      // Get commission rate for the current user
-      if (currentUser.role !== 'Owner' && currentUser.role !== 'Manager') {
+      // Get commission rate and targets for the current user
+      if (currentUser.role !== 'Owner') {
         const rate = await ShopSettingsService.getCommissionRate(currentUser.role, currentUser.shop_name || '');
         setCommissionRate(rate);
       }
+      
+      // Get targets for all staff
+      const userTargets = await ShopSettingsService.getTargets(currentUser.shop_name || '');
+      setTargets(userTargets);
       
       // Get earnings data
       const [today, weekly, monthly] = await Promise.all([
@@ -372,6 +379,60 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         </div>
       )}
 
+      {/* Targets Info for Staff */}
+      {(currentUser.role === 'Barber' || currentUser.role === 'Manager' || currentUser.role === 'Apprentice') && (
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <Target className="h-5 w-5 mr-2" />
+            Revenue Targets
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Daily Target</p>
+                  <p className="text-xl font-bold text-blue-600">
+                    ₺{targets.daily.toLocaleString('tr-TR')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Progress: ₺{todayEarnings.totalAmount.toLocaleString('tr-TR')} ({((todayEarnings.totalAmount / targets.daily) * 100).toFixed(1)}%)
+                  </p>
+                </div>
+                <Target className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Weekly Target</p>
+                  <p className="text-xl font-bold text-green-600">
+                    ₺{targets.weekly.toLocaleString('tr-TR')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Progress: ₺{weeklyEarnings.totalAmount.toLocaleString('tr-TR')} ({((weeklyEarnings.totalAmount / targets.weekly) * 100).toFixed(1)}%)
+                  </p>
+                </div>
+                <TrendingUp className="h-6 w-6 text-green-600" />
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600">Monthly Target</p>
+                  <p className="text-xl font-bold text-purple-600">
+                    ₺{targets.monthly.toLocaleString('tr-TR')}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Progress: ₺{monthlyEarnings.totalAmount.toLocaleString('tr-TR')} ({((monthlyEarnings.totalAmount / targets.monthly) * 100).toFixed(1)}%)
+                  </p>
+                </div>
+                <DollarSign className="h-6 w-6 text-purple-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Owner Earnings Breakdown */}
       {currentUser.role === 'Owner' && (
         <div className="bg-gray-50 rounded-lg p-4 space-y-6">
@@ -406,12 +467,12 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
                     </tr>
                   </thead>
                   <tbody>
-                    {staffEarnings.map(({ staff, earnings }) => (
+                    {staffEarnings.map(({ staff, earnings, commissionRate }) => (
                       <tr key={staff.id} className="border-b">
                         <td className="px-2 py-1">{staff.name}</td>
                         <td className="px-2 py-1">{staff.role}</td>
                         <td className="px-2 py-1 text-right">₺{earnings.totalAmount.toLocaleString('tr-TR')}</td>
-                        <td className="px-2 py-1 text-right text-green-700 font-semibold">₺{(earnings.totalAmount * ((100 - staff.commission_rate) / 100)).toLocaleString('tr-TR')}</td>
+                        <td className="px-2 py-1 text-right text-green-700 font-semibold">₺{(earnings.totalAmount * ((100 - commissionRate) / 100)).toLocaleString('tr-TR')}</td>
                         <td className="px-2 py-1 text-center">
                           <button className="text-blue-600 underline text-xs" onClick={() => setShowStaffReviews(staff.id)}>
                             Review
