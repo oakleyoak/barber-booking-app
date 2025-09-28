@@ -46,15 +46,15 @@ const StaffReviewModal = ({ staffId, onClose }: { staffId: string, onClose: () =
           <h4 className="font-bold mb-2">Performance for {staff?.name}</h4>
           <div className="mb-2 text-sm">
             <span className="font-semibold">Total Bookings:</span> {bookings.length}<br />
-            <span className="font-semibold">Total Revenue:</span> ₺{totalRevenue.toLocaleString('tr-TR')}<br />
-            <span className="font-semibold">Average Price:</span> ₺{avgPrice.toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
+            <span className="font-semibold">Total Revenue:</span> ₺{(totalRevenue / 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 })}<br />
+            <span className="font-semibold">Average Price:</span> ₺{(avgPrice / 100).toLocaleString('tr-TR', { maximumFractionDigits: 2 })}
           </div>
           <div className="mb-2">
             <span className="font-semibold">Recent Bookings:</span>
             <ul className="max-h-32 overflow-y-auto text-xs mt-1">
               {bookings.slice(0, 10).map(b => (
                 <li key={b.id} className="border-b last:border-b-0 py-1">
-                  {b.date} - {b.customer_name} - {b.service} - ₺{b.price} {b.notes ? (<span className="italic text-gray-500">({b.notes})</span>) : null}
+                  {b.date} - {b.customer_name} - {b.service} - ₺{(b.price / 100).toFixed(2)} {b.notes ? (<span className="italic text-gray-500">({b.notes})</span>) : null}
                 </li>
               ))}
               {bookings.length === 0 && <li className="text-gray-400">No bookings found.</li>}

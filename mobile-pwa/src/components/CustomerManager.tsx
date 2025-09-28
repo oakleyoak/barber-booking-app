@@ -579,7 +579,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                   >
                     {services.map(service => (
                       <option key={service.name} value={service.name}>
-                        {service.name} - ₺{service.price}
+                        {service.name} - ₺{(service.price / 100).toFixed(2)}
                       </option>
                     ))}
                   </select>
