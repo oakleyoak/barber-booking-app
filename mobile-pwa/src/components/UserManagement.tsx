@@ -11,6 +11,7 @@ interface NewStaffForm {
   email: string;
   role: 'Manager' | 'Barber' | 'Apprentice';
   commission_rate: number;
+  target_daily: number;
   target_weekly: number;
   target_monthly: number;
 }
@@ -25,6 +26,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
     email: '',
     role: 'Apprentice',
     commission_rate: 0,
+    target_daily: 0,
     target_weekly: 0,
     target_monthly: 0,
   });
@@ -59,6 +61,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
         role: newStaff.role,
         shop_name: shopName,
         commission_rate: newStaff.commission_rate,
+        target_daily: newStaff.target_daily,
         target_weekly: newStaff.target_weekly,
         target_monthly: newStaff.target_monthly,
       };
@@ -72,6 +75,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ shopName }) => {
           email: '',
           role: 'Apprentice',
           commission_rate: 0,
+          target_daily: 0,
           target_weekly: 0,
           target_monthly: 0,
         });

@@ -28,10 +28,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
         await ShopSettingsService.saveSettings(shopName, {
           shop_name: shopName,
           opening_time: '09:00',
-          closing_time: '20:00',
-          daily_target: 0,
-          weekly_target: 0,
-          monthly_target: 0
+          closing_time: '20:00'
         });
         settings = await ShopSettingsService.getSettings(shopName);
       }

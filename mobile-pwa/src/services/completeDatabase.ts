@@ -19,6 +19,7 @@ export interface User {
   role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
+  target_daily: number;
   target_weekly: number;
   target_monthly: number;
   created_at?: string;

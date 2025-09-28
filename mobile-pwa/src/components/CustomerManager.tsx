@@ -470,18 +470,27 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
 
       {/* Customer Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] p-4">
           <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowForm(false)} />
           <div 
-            className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-hidden"
+            className="modal-top bg-white rounded-t-2xl md:rounded-2xl shadow-lg w-full md:max-w-md max-h-[90vh] md:max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out mt-4 md:mt-8"
           >
             <div className="flex justify-center py-3 md:hidden">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
             </div>
             <div className="px-6 pb-6 pt-0 md:p-6 overflow-y-auto max-h-[calc(90vh-3rem)] md:max-h-[calc(85vh-3rem)]">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
-              </h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  {editingCustomer ? 'Edit Customer' : 'Add New Customer'}
+                </h3>
+                <button
+                  title="Close modal"
+                  onClick={() => setShowForm(false)}
+                  className="text-gray-400 hover:text-gray-600 p-1"
+                >
+                  <X size={20} />
+                </button>
+              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
@@ -490,6 +499,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                     value={formData.name}
                     onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter customer name"
                     required
                   />
                 </div>
@@ -500,6 +510,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                     value={formData.phone}
                     onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter phone number"
                     required
                   />
                 </div>
@@ -510,6 +521,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                     value={formData.email}
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter email address"
                   />
                 </div>
                 <div>
@@ -519,6 +531,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                     onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     rows={3}
+                    placeholder="Enter any additional notes"
                   />
                 </div>
                 <div className="flex space-x-3 pt-4">
