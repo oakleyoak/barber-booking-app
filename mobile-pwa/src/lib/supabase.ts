@@ -20,6 +20,7 @@ export interface User {
   role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
   shop_name: string;
   commission_rate: number;
+  target_daily: number;
   target_weekly: number;
   target_monthly: number;
   shop_settings?: string;
@@ -132,12 +133,6 @@ export interface ShopSettings {
   opening_time?: string;
   closing_time?: string;
   closed_days?: string[];
-  daily_target: number;
-  weekly_target: number;
-  monthly_target: number;
-  barber_commission?: number;
-  manager_commission?: number;
-  apprentice_commission?: number;
   social_insurance_rate?: number;
   income_tax_rate?: number;
   income_tax_threshold?: number;

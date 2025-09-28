@@ -30,6 +30,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
     email: string;
     role: 'Owner' | 'Manager' | 'Barber' | 'Apprentice';
     commission_rate: number;
+    target_daily: number;
     target_weekly: number;
     target_monthly: number;
   }>({
@@ -37,6 +38,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
     email: '',
     role: 'Barber',
     commission_rate: 60, // Default to barber commission
+    target_daily: 400,
     target_weekly: 2000,
     target_monthly: 8000
   });
@@ -81,9 +83,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
           daily_target: 1500,
           weekly_target: 9000,
           monthly_target: 45000,
-          barber_commission: 60,
-          manager_commission: 70,
-          apprentice_commission: 40,
           social_insurance_rate: 20,
           income_tax_rate: 15,
           income_tax_threshold: 3000
@@ -161,7 +160,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
       }
       setShowUserModal(false);
       setEditingUser(null);
-      setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 50, target_weekly: 2000, target_monthly: 8000 });
+      setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 50, target_daily: 400, target_weekly: 2000, target_monthly: 8000 });
     } catch (error) {
       console.error('Error saving user:', error);
       modal.notify('Failed to save user', 'error');
@@ -313,7 +312,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
                 onClick={() => {
                   setShowUserModal(true);
                   setEditingUser(null);
-                  setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 60, target_weekly: 2000, target_monthly: 8000 });
+                  setNewUser({ name: '', email: '', role: 'Barber', commission_rate: 60, target_daily: 400, target_weekly: 2000, target_monthly: 8000 });
                 }}
                 className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center text-sm sm:text-base"
               >
@@ -442,48 +441,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
                       type="number"
                       value={shopSettings.monthly_target}
                       onChange={(e) => setShopSettings({ ...shopSettings, monthly_target: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* Commission Settings */}
-              <div className="bg-gray-50 p-4 sm:p-6 rounded-lg">
-                <h3 className="text-lg font-semibold mb-4">Commission Settings</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Barber Commission (%)</label>
-                    <input placeholder="Enter barber commission" title="Barber Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.barber_commission}
-                      onChange={(e) => setShopSettings({ ...shopSettings, barber_commission: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Manager Commission (%)</label>
-                    <input placeholder="Enter manager commission" title="Manager Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.manager_commission}
-                      onChange={(e) => setShopSettings({ ...shopSettings, manager_commission: parseFloat(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Apprentice Commission (%)</label>
-                    <input placeholder="Enter apprentice commission" title="Apprentice Commission"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="100"
-                      value={shopSettings.apprentice_commission}
-                      onChange={(e) => setShopSettings({ ...shopSettings, apprentice_commission: parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     />
                   </div>
@@ -666,6 +623,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ currentUser, onModalStateChange
                     min="0"
                     max="100"
                     step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Daily Target ($)</label>
+                  <input title="Daily Target"
+                    type="number"
+                    value={newUser.target_daily}
+                    onChange={(e) => setNewUser({ ...newUser, target_daily: parseFloat(e.target.value) || 0 })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.1"
                   />
                 </div>
 

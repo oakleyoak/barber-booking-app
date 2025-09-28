@@ -4,12 +4,6 @@ import { ShopSettings } from '../lib/supabase';
 export const defaultShopSettings: ShopSettings = {
   id: '',
   shop_name: '',
-  daily_target: 1500,
-  weekly_target: 9000,
-  monthly_target: 45000,
-  barber_commission: 60,
-  manager_commission: 70,
-  apprentice_commission: 40,
   social_insurance_rate: 20,
   income_tax_rate: 15,
   income_tax_threshold: 3000,
@@ -44,45 +38,6 @@ export class ShopSettingsService {
     } catch (error) {
       console.error('Error saving shop settings:', error);
       throw new Error('Failed to save settings');
-    }
-  }
-
-  static async getCommissionRate(role: string, shopName: string): Promise<number> {
-    try {
-      const settings = await this.getSettings(shopName);
-      switch (role.toLowerCase()) {
-        case 'barber':
-          return settings.barber_commission ?? defaultShopSettings.barber_commission ?? 60;
-        case 'manager':
-          return settings.manager_commission ?? defaultShopSettings.manager_commission ?? 70;
-        case 'apprentice':
-          return settings.apprentice_commission ?? defaultShopSettings.apprentice_commission ?? 40;
-        case 'owner':
-          return 100; // Owner always gets 100%
-        default:
-          return defaultShopSettings.barber_commission ?? 60;
-      }
-    } catch (error) {
-      console.error('Error getting commission rate:', error);
-      return defaultShopSettings.barber_commission ?? 60;
-    }
-  }
-
-  static async getTargets(shopName: string): Promise<{ daily: number; weekly: number; monthly: number }> {
-    try {
-      const settings = await this.getSettings(shopName);
-      return {
-        daily: settings.daily_target ?? defaultShopSettings.daily_target,
-        weekly: settings.weekly_target ?? defaultShopSettings.weekly_target,
-        monthly: settings.monthly_target ?? defaultShopSettings.monthly_target
-      };
-    } catch (error) {
-      console.error('Error getting targets:', error);
-      return {
-        daily: defaultShopSettings.daily_target,
-        weekly: defaultShopSettings.weekly_target,
-        monthly: defaultShopSettings.monthly_target
-      };
     }
   }
 

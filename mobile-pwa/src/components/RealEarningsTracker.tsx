@@ -4,8 +4,8 @@ import { TrendingUp, Calendar, DollarSign, Users, Target, Download } from 'lucid
 import { bookingService, expenseService } from '../services/completeDatabase';
 import { UserManagementService } from '../services/userManagementService';
 import { EarningsService } from '../services/earningsService';
-import { ShopSettingsService } from '../services/shopSettings';
 import type { User as UserType } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import StaffReviewModal from './StaffReviewModal';
 
 interface RealEarningsTrackerProps {
@@ -46,14 +46,13 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
         const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
         const staffArr = await Promise.all(staff.map(async (s) => {
           const staffBookings = allBookings.filter(b => b.user_id === s.id);
-          const commissionRate = await ShopSettingsService.getCommissionRate(s.role, currentUser.shop_name || '');
           return {
             staff: s,
             earnings: {
               totalAmount: staffBookings.reduce((sum, b) => sum + (b.price || 0), 0),
               bookingCount: staffBookings.length
             },
-            commissionRate
+            commissionRate: s.commission_rate || 60
           };
         }));
         setStaffEarnings(staffArr);
@@ -69,6 +68,33 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
     loadEarnings();
     loadDetailedBookings();
   }, [currentUser.id]);
+
+  // Real-time subscription to user changes (for commission and targets)
+  useEffect(() => {
+    const subscription = supabase
+      .channel('user_changes')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'users',
+        filter: `id=eq.${currentUser.id}`
+      }, (payload) => {
+        // Reload commission rate and targets when user data changes
+        if (currentUser.role !== 'Owner') {
+          setCommissionRate(payload.new.commission_rate || 60);
+        }
+        setTargets({
+          daily: payload.new.target_daily || 400,
+          weekly: payload.new.target_weekly || 2000,
+          monthly: payload.new.target_monthly || 8000
+        });
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [currentUser.id, currentUser.role]);
 
   const getWeekStart = (date: Date) => {
     const d = new Date(date);
@@ -129,15 +155,17 @@ const RealEarningsTracker: React.FC<RealEarningsTrackerProps> = ({ currentUser }
       setLoading(true);
       const userId = currentUser.role === 'Barber' ? currentUser.id : undefined;
       
-      // Get commission rate and targets for the current user
+      // Get commission rate and targets from current user
       if (currentUser.role !== 'Owner') {
-        const rate = await ShopSettingsService.getCommissionRate(currentUser.role, currentUser.shop_name || '');
-        setCommissionRate(rate);
+        setCommissionRate(currentUser.commission_rate || 60);
       }
       
-      // Get targets for all staff
-      const userTargets = await ShopSettingsService.getTargets(currentUser.shop_name || '');
-      setTargets(userTargets);
+      // Set targets from current user
+      setTargets({
+        daily: currentUser.target_daily || 400,
+        weekly: currentUser.target_weekly || 2000,
+        monthly: currentUser.target_monthly || 8000
+      });
       
       // Get earnings data
       const [today, weekly, monthly] = await Promise.all([
