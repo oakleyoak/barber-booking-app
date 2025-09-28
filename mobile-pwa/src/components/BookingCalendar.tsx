@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
+import { SERVICES } from '../services/servicePricing';
 import { generateTimeSlots } from '../utils/timeSlots';
 import { useModal } from './ui/ModalProvider';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy } from 'lucide-react';
@@ -77,16 +78,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
     notes: ''
   });
 
-  const services = [
-    { name: 'Haircut', duration: 45, price: 700 },
-    { name: 'Beard trim', duration: 15, price: 300 },
-    { name: 'Blowdry', duration: 30, price: 500 },
-    { name: 'Face mask', duration: 30, price: 200 },
-    { name: 'Colour', duration: 60, price: 1000 },
-    { name: 'Wax', duration: 60, price: 500 },
-    { name: 'Massage', duration: 45, price: 700 },
-    { name: 'Shave', duration: 30, price: 500 }
-  ];
+  const services = SERVICES;
 
   // Always start with today's date when component mounts
   useEffect(() => {

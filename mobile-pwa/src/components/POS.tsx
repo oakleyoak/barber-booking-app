@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { DollarSign, CreditCard, Smartphone, Receipt, Plus, Minus, X } from 'lucide-react';
+import { CreditCard, Smartphone, Receipt, Plus, Minus, X } from 'lucide-react';
+import { SERVICES } from '../services/servicePricing';
 
 interface POSProps {
   currentUser: {
@@ -16,14 +17,8 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
   const [selectedService, setSelectedService] = useState('');
   const [customAmount, setCustomAmount] = useState('');
 
-  // Sample services - in real app, these would come from your service pricing
-  const services = [
-    { name: 'Haircut', price: 700 },
-    { name: 'Shave', price: 300 },
-    { name: 'Haircut + Shave', price: 900 },
-    { name: 'Beard Trim', price: 200 },
-    { name: 'Hair Wash', price: 150 },
-  ];
+  // Use real services from servicePricing.ts
+  const services = SERVICES.map(s => ({ name: s.name, price: s.price }));
 
   const addToCart = (service: {name: string, price: number}) => {
     setCart(prev => {
@@ -74,7 +69,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
     <div className="max-w-4xl mx-auto">
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
         <div className="flex items-center mb-6">
-          <DollarSign className="h-8 w-8 text-green-600 mr-3" />
+          <CreditCard className="h-8 w-8 text-green-600 mr-3" />
           <h1 className="text-2xl font-bold text-gray-900">Point of Sale</h1>
         </div>
 
@@ -90,7 +85,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
                   className="bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg p-3 text-left transition-colors"
                 >
                   <div className="font-medium text-sm">{service.name}</div>
-                  <div className="text-green-600 font-semibold">${(service.price / 100).toFixed(2)}</div>
+                  <div className="text-green-600 font-semibold">₺{(service.price / 100).toFixed(2)}</div>
                 </button>
               ))}
             </div>
@@ -131,7 +126,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
                     <div key={item.name} className="flex items-center justify-between bg-white p-3 rounded border">
                       <div className="flex-1">
                         <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-green-600">${(item.price / 100).toFixed(2)} each</div>
+                        <div className="text-green-600">₺{(item.price / 100).toFixed(2)} each</div>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -167,7 +162,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
             <div className="mt-4">
               <div className="flex justify-between items-center text-lg font-semibold mb-4">
                 <span>Total:</span>
-                <span className="text-green-600">${(getTotal() / 100).toFixed(2)}</span>
+                <span className="text-green-600">₺{(getTotal() / 100).toFixed(2)}</span>
               </div>
 
               <button
