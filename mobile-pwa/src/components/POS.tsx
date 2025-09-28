@@ -14,7 +14,7 @@ interface POSProps {
 
 const POS: React.FC<POSProps> = ({ currentUser }) => {
   const [cart, setCart] = useState<Array<{name: string, price: number, quantity: number}>>([]);
-  const [selectedService, setSelectedService] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('card');
   const [customAmount, setCustomAmount] = useState('');
 
   // Use real services from servicePricing.ts
@@ -54,6 +54,12 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
   };
 
   const getTotal = () => {
+    const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const processingFee = paymentMethod === 'card' ? 50 : 0;
+    return subtotal + processingFee;
+  };
+
+  const getSubtotal = () => {
     return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   };
 
@@ -61,8 +67,10 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
     const total = getTotal();
     if (total === 0) return;
 
+    const feeText = paymentMethod === 'card' ? ' (includes ₺50 processing fee)' : '';
+
     // TODO: Integrate with Stripe Tap & Pay
-    alert(`Processing payment of $${(total / 100).toFixed(2)} with Stripe Tap & Pay\n\nThis feature will be implemented with:\n- Stripe Terminal SDK\n- NFC/Contactless payment processing\n- Receipt generation`);
+    alert(`Processing ${paymentMethod} payment of ₺${total}${feeText} with Stripe Tap & Pay\n\nThis feature will be implemented with:\n- Stripe Terminal SDK\n- NFC/Contactless payment processing\n- Receipt generation`);
   };
 
   return (
@@ -160,9 +168,49 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
 
             {/* Total and Payment */}
             <div className="mt-4">
-              <div className="flex justify-between items-center text-lg font-semibold mb-4">
-                <span>Total:</span>
-                <span className="text-green-600">₺{(getTotal() / 100).toFixed(2)}</span>
+              {/* Payment Method Selection */}
+              <div className="mb-4">
+                <h3 className="text-sm font-medium mb-2">Payment Method</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPaymentMethod('card')}
+                    className={`flex-1 py-2 px-4 rounded-lg border ${
+                      paymentMethod === 'card'
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    💳 Card (+₺50 fee)
+                  </button>
+                  <button
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`flex-1 py-2 px-4 rounded-lg border ${
+                      paymentMethod === 'cash'
+                        ? 'bg-green-600 text-white border-green-600'
+                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    💵 Cash (No fee)
+                  </button>
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-4">
+                <div className="flex justify-between items-center text-sm mb-2">
+                  <span>Subtotal:</span>
+                  <span>₺{getSubtotal()}</span>
+                </div>
+                {paymentMethod === 'card' && (
+                  <div className="flex justify-between items-center text-sm mb-2 text-orange-600">
+                    <span>Processing Fee:</span>
+                    <span>₺50</span>
+                  </div>
+                )}
+                <div className="border-t pt-2 flex justify-between items-center text-lg font-semibold">
+                  <span>Total:</span>
+                  <span className="text-green-600">₺{getTotal()}</span>
+                </div>
               </div>
 
               <button
@@ -171,7 +219,7 @@ const POS: React.FC<POSProps> = ({ currentUser }) => {
                 className="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Smartphone className="h-5 w-5" />
-                Pay with Tap & Pay
+                Pay with {paymentMethod === 'card' ? 'Tap & Pay' : 'Cash'}
               </button>
             </div>
           </div>
