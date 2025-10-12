@@ -308,12 +308,15 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     try {
       const { error } = await supabase
         .from('bookings')
-        .update({ payment_status: 'paid' })
+        .update({ 
+          payment_status: 'paid',
+          status: 'completed' // Automatically mark as completed when paid
+        })
         .eq('id', bookingId);
 
       if (error) throw error;
       
-      modal.notify('Payment status updated!', 'success');
+      modal.notify('Booking marked as paid and completed!', 'success');
       
       // Reload current view
       if (currentView === 'upcoming') {

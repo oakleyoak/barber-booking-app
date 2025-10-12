@@ -288,7 +288,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .update({ payment_status: 'paid', payment_method: 'cash', payment_received_at: new Date().toISOString() })
+        .update({ 
+          payment_status: 'paid', 
+          payment_method: 'cash', 
+          payment_received_at: new Date().toISOString(),
+          status: 'completed' // Automatically mark as completed when paid
+        })
         .eq('id', bookingId)
         .select('*')
         .single();
@@ -300,7 +305,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
         setBookings(prev => prev.map(b => (b.id === bookingId ? updatedBooking : b)));
         setMonthlyBookings(prev => prev.map(b => (b.id === bookingId ? updatedBooking : b)));
       }
-      modal.notify('Booking marked as paid!', 'success');
+      modal.notify('Booking marked as paid and completed!', 'success');
     } catch (err) {
       console.error('Error marking as paid:', err);
       modal.notify('Failed to mark booking as paid', 'error');
