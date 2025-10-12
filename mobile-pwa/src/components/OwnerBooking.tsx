@@ -17,6 +17,7 @@ interface Staff {
 
 interface BookingData {
   customer_name: string;
+  customer_id?: string;
   service_type: string;
   staff_member: string;
   booking_date: string;
@@ -42,13 +43,13 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
-
-  // State for custom searchable dropdown
-  const [customerSearch, setCustomerSearch] = useState('');
+  
+  // Customer search state
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
-  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const customerInputRef = useRef<HTMLDivElement>(null);
-
+  
   const [bookingData, setBookingData] = useState<BookingData>({
     customer_name: '',
     service_type: 'Haircut',
@@ -75,17 +76,15 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   // Use the same service options as BookingCalendar
   const serviceOptions = SERVICES;
 
-  // Effect to handle clicks outside the custom dropdown to close it
+  // Click outside to close customer dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
-        setIsCustomerDropdownOpen(false);
+        setShowCustomerDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Load staff members and customers when component mounts
@@ -278,7 +277,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
       ) : (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200]" onClick={() => setShowBookingForm(false)} />
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200]" onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} />
           
           {/* Modal */}
           <div
@@ -295,54 +294,68 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
               
               <div className="space-y-4">
                 <div className="relative" ref={customerInputRef}>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
                   <input
                     type="text"
-                    value={bookingData.customer_name}
+                    value={customerSearchInput || bookingData.customer_name}
                     onChange={(e) => {
-                      const search = e.target.value;
-                      setBookingData(prev => ({ ...prev, customer_name: search }));
-                      setCustomerSearch(search);
-                      if (search) {
-                        setFilteredCustomers(
-                          [...customers]
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
-                        );
+                      const searchValue = e.target.value;
+                      setCustomerSearchInput(searchValue);
+                      setBookingData(prev => ({ ...prev, customer_name: searchValue, customer_id: undefined }));
+                      
+                      // Filter customers as user types
+                      if (searchValue.trim()) {
+                        const filtered = customers
+                          .filter(c => c.name.toLowerCase().includes(searchValue.toLowerCase()))
+                          .sort((a, b) => a.name.localeCompare(b.name));
+                        setFilteredCustomers(filtered);
+                        setShowCustomerDropdown(true);
                       } else {
-                        setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                        setFilteredCustomers([]);
+                        setShowCustomerDropdown(false);
                       }
-                      setIsCustomerDropdownOpen(true);
                     }}
                     onFocus={() => {
-                      setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
-                      setIsCustomerDropdownOpen(true);
+                      if (customerSearchInput || bookingData.customer_name) {
+                        const filtered = customers
+                          .filter(c => c.name.toLowerCase().includes((customerSearchInput || bookingData.customer_name).toLowerCase()))
+                          .sort((a, b) => a.name.localeCompare(b.name));
+                        setFilteredCustomers(filtered);
+                        setShowCustomerDropdown(true);
+                      }
                     }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                    placeholder="Type or select existing customer"
-                    autoFocus
+                    placeholder="Type customer name..."
+                    required
                     autoComplete="off"
+                    autoFocus
                     aria-label="Customer name"
                   />
-                  {isCustomerDropdownOpen && (
-                    <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-                      {filteredCustomers.length > 0 ? (
-                        filteredCustomers.map(customer => (
-                          <div
-                            key={customer.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={() => {
-                              setBookingData(prev => ({ ...prev, customer_name: customer.name }));
-                              setIsCustomerDropdownOpen(false);
-                              setCustomerSearch('');
-                            }}
-                          >
-                            {customer.name}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500">No customers found. Type to add a new one.</div>
-                      )}
+                  
+                  {/* Filtered customer dropdown */}
+                  {showCustomerDropdown && filteredCustomers.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {filteredCustomers.map(customer => (
+                        <div
+                          key={customer.id}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setBookingData(prev => ({
+                              ...prev,
+                              customer_id: customer.id,
+                              customer_name: customer.name
+                            }));
+                            setCustomerSearchInput('');
+                            setShowCustomerDropdown(false);
+                          }}
+                        >
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          {customer.phone && (
+                            <div className="text-xs text-gray-500">{customer.phone}</div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -428,7 +441,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                   Add Booking
                 </button>
                 <button
-                  onClick={() => setShowBookingForm(false)}
+                  onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }}
                   className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
                 >
                   Cancel

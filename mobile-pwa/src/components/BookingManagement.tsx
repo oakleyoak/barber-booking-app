@@ -78,30 +78,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
   const [customers, setCustomers] = useState<any[]>([]);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   
-  // State for custom searchable dropdown
-  const [customerSearch, setCustomerSearch] = useState('');
+  // Customer search state
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
   const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
-  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
   const customerInputRef = useRef<HTMLDivElement>(null);
-
+  
   const bottomSheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number | null>(null);
   const modal = useModal();
   const { language } = useLanguage();
-
-  // Effect to handle clicks outside the custom dropdown to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
-        setIsCustomerDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   const loadPersonalUpcomingBookings = async () => {
     try {
@@ -199,6 +186,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       sheet.removeEventListener('touchend', handleTouchEnd);
     };
   }, [showBookingDetails]);
+
+  // Click outside to close customer dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
+        setShowCustomerDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Notify parent component when any modal state changes
   useEffect(() => {
@@ -1176,7 +1174,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Create New Booking</h3>
-                <button onClick={() => setShowBookingForm(false)} className="text-gray-400 hover:text-gray-600" aria-label="Close booking form">
+                <button onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} className="text-gray-400 hover:text-gray-600" aria-label="Close booking form">
                   <X className="w-5 h-5" />
                 </button>
               </div>
@@ -1215,58 +1213,68 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   modal.notify('Failed to save booking', 'error');
                 }
               }} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                <div className="relative" ref={customerInputRef}>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
                   <input
                     type="text"
-                    value={bookingFormData.customer_name}
-                    onChange={e => {
-                      const search = e.target.value;
-                      setBookingFormData({ ...bookingFormData, customer_name: search, customer_id: '' });
-                      setCustomerSearch(search);
-                      if (search) {
-                        setFilteredCustomers(
-                          [...customers]
-                            .sort((a, b) => a.name.localeCompare(b.name))
-                            .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
-                        );
+                    value={customerSearchInput || bookingFormData.customer_name}
+                    onChange={(e) => {
+                      const searchValue = e.target.value;
+                      setCustomerSearchInput(searchValue);
+                      setBookingFormData(prev => ({ ...prev, customer_name: searchValue, customer_id: '' }));
+                      
+                      // Filter customers as user types
+                      if (searchValue.trim()) {
+                        const filtered = customers
+                          .filter(c => c.name.toLowerCase().includes(searchValue.toLowerCase()))
+                          .sort((a, b) => a.name.localeCompare(b.name));
+                        setFilteredCustomers(filtered);
+                        setShowCustomerDropdown(true);
                       } else {
-                        setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                        setFilteredCustomers([]);
+                        setShowCustomerDropdown(false);
                       }
-                      setIsCustomerDropdownOpen(true);
                     }}
                     onFocus={() => {
-                      setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
-                      setIsCustomerDropdownOpen(true);
+                      if (customerSearchInput || bookingFormData.customer_name) {
+                        const filtered = customers
+                          .filter(c => c.name.toLowerCase().includes((customerSearchInput || bookingFormData.customer_name).toLowerCase()))
+                          .sort((a, b) => a.name.localeCompare(b.name));
+                        setFilteredCustomers(filtered);
+                        setShowCustomerDropdown(true);
+                      }
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full p-2 border rounded-lg"
+                    placeholder="Type customer name..."
                     required
                     autoComplete="off"
-                    placeholder="Search or type to add new"
+                    aria-label="Customer name"
                   />
-                  {isCustomerDropdownOpen && (
-                    <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
-                      {filteredCustomers.length > 0 ? (
-                        filteredCustomers.map(customer => (
-                          <div
-                            key={customer.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                            onMouseDown={() => {
-                              setBookingFormData({
-                                ...bookingFormData,
-                                customer_name: customer.name,
-                                customer_id: customer.id
-                              });
-                              setIsCustomerDropdownOpen(false);
-                              setCustomerSearch('');
-                            }}
-                          >
-                            {customer.name}
-                          </div>
-                        ))
-                      ) : (
-                        <div className="px-4 py-2 text-gray-500">No customers found. Type to add a new one.</div>
-                      )}
+                  
+                  {/* Filtered customer dropdown */}
+                  {showCustomerDropdown && filteredCustomers.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                      {filteredCustomers.map(customer => (
+                        <div
+                          key={customer.id}
+                          className="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setBookingFormData(prev => ({
+                              ...prev,
+                              customer_id: customer.id,
+                              customer_name: customer.name
+                            }));
+                            setCustomerSearchInput('');
+                            setShowCustomerDropdown(false);
+                          }}
+                        >
+                          <div className="font-medium text-gray-900">{customer.name}</div>
+                          {customer.phone && (
+                            <div className="text-xs text-gray-500">{customer.phone}</div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1377,7 +1385,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowBookingForm(false)}
+                    onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }}
                     className="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400 transition-colors"
                   >
                     Cancel
