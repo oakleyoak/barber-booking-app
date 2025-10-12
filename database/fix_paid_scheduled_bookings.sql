@@ -10,17 +10,18 @@
 -- Step 1: Preview bookings that will be updated
 SELECT 
   id,
-  booking_date,
+  date,
+  time,
   customer_name,
-  service_name,
-  total_price,
+  service,
+  price,
   status,
   payment_status,
-  payment_received_at
+  created_at
 FROM bookings
 WHERE payment_status = 'paid' 
   AND status = 'scheduled'
-ORDER BY booking_date DESC;
+ORDER BY date DESC;
 
 -- Step 2: Show count of affected bookings
 SELECT COUNT(*) as affected_bookings_count
@@ -37,7 +38,7 @@ WHERE payment_status = 'paid'
 -- Step 4: Verify the update
 SELECT 
   COUNT(*) as completed_paid_bookings,
-  SUM(total_price) as total_revenue
+  SUM(price) as total_revenue
 FROM bookings
 WHERE payment_status = 'paid' 
   AND status = 'completed';
