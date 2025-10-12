@@ -6,7 +6,7 @@ import { customerService, type Customer, userService, bookingService } from '../
 import { SERVICES } from '../services/servicePricing';
 import { supabase } from '../lib/supabase';
 import { NotificationsService } from '../services/notifications';
-import { Phone, Mail, User as UserIcon, Calendar, Edit, Trash2, Plus, Search, X, Clock, MapPin } from 'lucide-react';
+import { Phone, Mail, User as UserIcon, Calendar, Edit, Trash2, Plus, Search, X, Clock, MapPin, DollarSign, TrendingUp } from 'lucide-react';
 
 interface CustomerManagerProps {
   currentUser: {
@@ -31,6 +31,13 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
   const [showCustomerProfile, setShowCustomerProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [allStaff, setAllStaff] = useState<{id: string, name: string, email: string}[]>([]);
+  const [customerStats, setCustomerStats] = useState<{
+    totalVisits: number;
+    completedVisits: number;
+    cancelledVisits: number;
+    totalSpent: number;
+    lastVisitDate: string | null;
+  } | null>(null);
 
   // Remove bottom sheet modal logic for top-aligned modals
 
@@ -109,14 +116,44 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     }
   };
 
-  const openCustomerProfile = (customer: Customer) => {
+  const openCustomerProfile = async (customer: Customer) => {
     setSelectedCustomer(customer);
     setShowCustomerProfile(true);
+    
+    // Fetch customer statistics
+    try {
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('status, price, date')
+        .eq('customer_id', customer.id)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      if (bookings) {
+        const completed = bookings.filter(b => b.status === 'completed');
+        const cancelled = bookings.filter(b => b.status === 'cancelled');
+        const totalSpent = completed.reduce((sum, b) => sum + (b.price || 0), 0);
+        const lastVisit = completed.length > 0 ? completed[0].date : null;
+
+        setCustomerStats({
+          totalVisits: bookings.length,
+          completedVisits: completed.length,
+          cancelledVisits: cancelled.length,
+          totalSpent: totalSpent,
+          lastVisitDate: lastVisit
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching customer stats:', error);
+      setCustomerStats(null);
+    }
   };
 
   const closeCustomerProfile = () => {
     setShowCustomerProfile(false);
     setSelectedCustomer(null);
+    setCustomerStats(null);
   };
 
   const openBookingModal = (customer: Customer) => {
@@ -363,114 +400,151 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
 
       {/* Customer Profile Modal */}
       {showCustomerProfile && selectedCustomer && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200] p-4">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowCustomerProfile(false)} />
-          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto mt-4 md:mt-8">
-            {/* Profile Header */}
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="bg-white bg-opacity-20 p-2 rounded-full">
-                    <UserIcon className="h-6 w-6" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold">{selectedCustomer.name}</h3>
-                    <p className="text-blue-100 text-sm">Customer Profile</p>
-                  </div>
+        <Modal isOpen={showCustomerProfile} onClose={closeCustomerProfile} maxWidth="600px">
+          {/* Profile Header */}
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-xl -m-6 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-white bg-opacity-20 p-2 rounded-full">
+                  <UserIcon className="h-6 w-6" />
                 </div>
-                <button
-                  onClick={closeCustomerProfile}
-                  className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Profile Content */}
-            <div className="p-6 space-y-6">
-              {/* Contact Information */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-gray-600" />
-                  Contact Information
-                </h4>
-                <div className="space-y-3">
-                  {selectedCustomer.phone && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Phone className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">Phone</span>
-                      </div>
-                      <a
-                        href={`tel:${selectedCustomer.phone}`}
-                        className="text-blue-600 font-medium hover:underline"
-                      >
-                        {selectedCustomer.phone}
-                      </a>
-                    </div>
-                  )}
-                  {selectedCustomer.email && (
-                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Mail className="h-4 w-4 text-gray-500" />
-                        <span className="text-sm text-gray-600">Email</span>
-                      </div>
-                      <a
-                        href={`mailto:${selectedCustomer.email}`}
-                        className="text-blue-600 font-medium hover:underline truncate max-w-[60%]"
-                      >
-                        {selectedCustomer.email}
-                      </a>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Notes Section */}
-              {selectedCustomer.notes && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Notes</h4>
-                  <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCustomer.notes}</p>
-                  </div>
+                  <h3 className="text-xl font-bold">{selectedCustomer.name}</h3>
+                  <p className="text-blue-100 text-sm">Customer Profile</p>
                 </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-3 pt-4">
-                <button
-                  onClick={() => openBookingModal(selectedCustomer)}
-                  className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Book Appointment
-                </button>
-                <button
-                  onClick={() => {
-                    handleEdit(selectedCustomer);
-                    closeCustomerProfile();
-                  }}
-                  className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-                >
-                  <Edit className="h-4 w-4" />
-                  Edit Details
-                </button>
               </div>
-              
               <button
-                onClick={() => {
-                  handleDelete(selectedCustomer.id);
-                  closeCustomerProfile();
-                }}
-                className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+                onClick={closeCustomerProfile}
+                className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors"
               >
-                <Trash2 className="h-4 w-4" />
-                Delete Customer
+                <X className="h-5 w-5" />
               </button>
             </div>
           </div>
-        </div>
+
+          {/* Statistics Grid */}
+          {customerStats && (
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
+                <div className="flex items-center gap-2 text-green-700 mb-2">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="text-xs font-medium">Total Visits</span>
+                </div>
+                <p className="text-2xl font-bold text-green-900">{customerStats.completedVisits}</p>
+                <p className="text-xs text-green-600 mt-1">
+                  {customerStats.cancelledVisits > 0 && `${customerStats.cancelledVisits} cancelled`}
+                </p>
+              </div>
+
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="flex items-center gap-2 text-blue-700 mb-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span className="text-xs font-medium">Total Spent</span>
+                </div>
+                <p className="text-2xl font-bold text-blue-900">R{customerStats.totalSpent.toFixed(2)}</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  {customerStats.completedVisits > 0 && `Avg: R${(customerStats.totalSpent / customerStats.completedVisits).toFixed(2)}`}
+                </p>
+              </div>
+
+              {customerStats.lastVisitDate && (
+                <div className="col-span-2 bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-lg border border-purple-200">
+                  <div className="flex items-center gap-2 text-purple-700 mb-2">
+                    <Clock className="h-4 w-4" />
+                    <span className="text-xs font-medium">Last Visit</span>
+                  </div>
+                  <p className="text-lg font-bold text-purple-900">
+                    {new Date(customerStats.lastVisitDate).toLocaleDateString('en-ZA', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Contact Information */}
+          <div className="mb-6">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Phone className="h-4 w-4 text-gray-600" />
+              Contact Information
+            </h4>
+            <div className="space-y-3">
+              {selectedCustomer.phone && (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Phone</span>
+                  </div>
+                  <a
+                    href={`tel:${selectedCustomer.phone}`}
+                    className="text-blue-600 font-medium hover:underline"
+                  >
+                    {selectedCustomer.phone}
+                  </a>
+                </div>
+              )}
+              {selectedCustomer.email && (
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">Email</span>
+                  </div>
+                  <a
+                    href={`mailto:${selectedCustomer.email}`}
+                    className="text-blue-600 font-medium hover:underline truncate max-w-[60%]"
+                  >
+                    {selectedCustomer.email}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notes Section */}
+          {selectedCustomer.notes && (
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-900 mb-3">Notes</h4>
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedCustomer.notes}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <button
+              onClick={() => openBookingModal(selectedCustomer)}
+              className="flex items-center justify-center gap-2 bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              <Calendar className="h-4 w-4" />
+              Book Appointment
+            </button>
+            <button
+              onClick={() => {
+                handleEdit(selectedCustomer);
+                closeCustomerProfile();
+              }}
+              className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Details
+            </button>
+          </div>
+          
+          <button
+            onClick={() => {
+              handleDelete(selectedCustomer.id);
+              closeCustomerProfile();
+            }}
+            className="w-full flex items-center justify-center gap-2 bg-red-50 text-red-600 py-3 rounded-lg hover:bg-red-100 transition-colors font-medium border border-red-200"
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete Customer
+          </button>
+        </Modal>
       )}
 
       {/* Customer Form Modal */}
