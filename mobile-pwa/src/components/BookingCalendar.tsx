@@ -696,30 +696,32 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
                 <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer</label>
-                    <select 
-                      value={customers.find(c => c.name === formData.customer_name)?.id || ''}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
+                    <input 
+                      type="text" 
+                      value={formData.customer_name} 
                       onChange={(e) => {
-                        const selectedCustomer = customers.find(c => c.id === e.target.value);
-                        if (selectedCustomer) {
-                          setFormData(prev => ({...prev, customer_name: selectedCustomer.name, customer_id: selectedCustomer.id, notes: (selectedCustomer as any).notes || ''}));
+                        const inputValue = e.target.value;
+                        setFormData(prev => ({...prev, customer_name: inputValue}));
+                        // Check if the input matches an existing customer
+                        const matchingCustomer = customers.find(c => c.name.toLowerCase() === inputValue.toLowerCase());
+                        if (matchingCustomer) {
+                          setFormData(prev => ({...prev, customer_id: matchingCustomer.id, notes: (matchingCustomer as any).notes || ''}));
                         } else {
                           setFormData(prev => ({...prev, customer_id: undefined}));
                         }
                       }}
-                      aria-label="Select existing customer"
-                      title="Select existing customer"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select existing customer...</option>
-                      {customers.map(customer => (
-                        <option key={customer.id} value={customer.id}>{customer.name}</option>
+                      list="customer-list"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                      placeholder="Type or select existing customer" 
+                      required 
+                      aria-label="Customer name"
+                    />
+                    <datalist id="customer-list">
+                      {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
+                        <option key={customer.id} value={customer.name} />
                       ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
-                    <input type="text" value={formData.customer_name} onChange={(e) => setFormData(prev => ({...prev, customer_name: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Or enter new customer name" required />
+                    </datalist>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>

@@ -5,6 +5,7 @@ import { UserManagementService } from '../services/userManagementService';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
 import { EarningsService } from '../services/earningsService';
 import { supabase } from '../lib/supabase';
+import { customerService, type Customer } from '../services/completeDatabase';
 
 interface Staff {
   id: string;
@@ -39,6 +40,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   const modal = useModal();
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [bookingData, setBookingData] = useState<BookingData>({
     customer_name: '',
@@ -66,9 +68,9 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   // Use the same service options as BookingCalendar
   const serviceOptions = SERVICES;
 
-  // Load staff members when component mounts
+  // Load staff members and customers when component mounts
   useEffect(() => {
-    const loadStaff = async () => {
+    const loadData = async () => {
       try {
         // Sync staff first
         await UserManagementService.syncStaffToCurrentShop(currentUser.shop_name);
@@ -76,16 +78,20 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
         const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
         setStaffMembers(staff);
         
+        // Load customers
+        const allCustomers = await customerService.getCustomers();
+        setCustomers(allCustomers);
+        
         // If staff found, set first one as default
         if (staff.length > 0) {
           setBookingData(prev => ({ ...prev, staff_member: staff[0].name }));
         }
       } catch (error) {
-        console.error('Error loading staff:', error);
+        console.error('Error loading data:', error);
       }
     };
     
-    loadStaff();
+    loadData();
   }, [currentUser.shop_name]);
 
   // Modal state management for body scroll prevention and navigation integration
@@ -269,15 +275,22 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
                   <input
                     type="text"
                     value={bookingData.customer_name}
                     onChange={(e) => setBookingData(prev => ({ ...prev, customer_name: e.target.value }))}
+                    list="customer-list-owner-booking"
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                    placeholder="Enter customer name"
+                    placeholder="Type or select existing customer"
                     autoFocus
+                    aria-label="Customer name"
                   />
+                  <datalist id="customer-list-owner-booking">
+                    {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
+                      <option key={customer.id} value={customer.name} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>

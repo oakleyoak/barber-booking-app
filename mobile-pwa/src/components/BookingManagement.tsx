@@ -1139,34 +1139,28 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   <input
                     type="text"
                     value={bookingFormData.customer_name}
-                    onChange={(e) => setBookingFormData(prev => ({ ...prev, customer_name: e.target.value }))}
+                    onChange={(e) => {
+                      const inputValue = e.target.value;
+                      setBookingFormData(prev => ({ ...prev, customer_name: inputValue }));
+                      // Check if the input matches an existing customer
+                      const matchingCustomer = customers.find(c => c.name.toLowerCase() === inputValue.toLowerCase());
+                      if (matchingCustomer) {
+                        setBookingFormData(prev => ({ ...prev, customer_id: matchingCustomer.id }));
+                      } else {
+                        setBookingFormData(prev => ({ ...prev, customer_id: '' }));
+                      }
+                    }}
+                    list="customer-list-booking-management"
                     className="w-full p-2 border rounded-lg"
                     required
-                    placeholder="Enter customer name"
+                    placeholder="Type or select existing customer"
                     aria-label="Customer name"
                   />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Existing Customer (Optional)</label>
-                  <select
-                    value={bookingFormData.customer_id}
-                    onChange={(e) => {
-                      const selectedCustomer = customers.find(c => c.id === e.target.value);
-                      setBookingFormData(prev => ({ 
-                        ...prev, 
-                        customer_id: e.target.value,
-                        customer_name: selectedCustomer ? selectedCustomer.name : prev.customer_name
-                      }));
-                    }}
-                    className="w-full p-2 border rounded-lg"
-                    aria-label="Select existing customer"
-                  >
-                    <option value="">Select existing customer...</option>
-                    {customers.map(customer => (
-                      <option key={customer.id} value={customer.id}>{customer.name}</option>
+                  <datalist id="customer-list-booking-management">
+                    {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
+                      <option key={customer.id} value={customer.name} />
                     ))}
-                  </select>
+                  </datalist>
                 </div>
                 
                 <div>
