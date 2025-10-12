@@ -122,18 +122,25 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     
     // Fetch customer statistics
     try {
-      // Get ALL bookings for this customer by BOTH customer_id AND customer_name (case-insensitive)
-      // This handles: new bookings (with customer_id), old bookings (without customer_id), and case variations
-      const { data: bookings, error } = await supabase
+      console.log(`Fetching bookings for customer: "${customer.name}" (ID: ${customer.id})`);
+      
+      // Use RPC call for reliable case-insensitive search OR just fetch all and filter client-side
+      // Fetch ALL bookings and filter client-side for 100% reliability
+      const { data: allBookings, error } = await supabase
         .from('bookings')
         .select('id, status, price, date, customer_id, customer_name')
-        .or(`customer_id.eq.${customer.id},customer_name.ilike.${customer.name}`)
         .order('date', { ascending: false });
 
       if (error) throw error;
 
-      console.log(`Total bookings found for ${customer.name}:`, bookings?.length || 0);
-      if (bookings && bookings.length > 0) {
+      // Filter client-side for BOTH customer_id match AND case-insensitive name match
+      const bookings = allBookings?.filter(b => 
+        b.customer_id === customer.id || 
+        b.customer_name?.toLowerCase().trim() === customer.name.toLowerCase().trim()
+      ) || [];
+
+      console.log(`Total bookings found for ${customer.name}:`, bookings.length);
+      if (bookings.length > 0) {
         console.log('Booking details:', bookings.map(b => ({ 
           name: b.customer_name, 
           status: b.status, 
@@ -143,7 +150,7 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
         })));
       }
 
-      if (bookings && bookings.length > 0) {
+      if (bookings.length > 0) {
         const completed = bookings.filter(b => b.status === 'completed');
         const cancelled = bookings.filter(b => b.status === 'cancelled');
         const scheduled = bookings.filter(b => b.status === 'scheduled');
