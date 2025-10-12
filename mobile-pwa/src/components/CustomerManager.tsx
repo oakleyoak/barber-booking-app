@@ -122,7 +122,8 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     
     // Fetch customer statistics
     try {
-      const { data: bookings, error } = await supabase
+      // First try to get bookings by customer_id (for new bookings)
+      let { data: bookings, error } = await supabase
         .from('bookings')
         .select('status, price, date')
         .eq('customer_id', customer.id)
@@ -130,11 +131,28 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
 
       if (error) throw error;
 
-      if (bookings) {
+      console.log(`Bookings found by customer_id for ${customer.name}:`, bookings?.length || 0);
+
+      // If no bookings found by customer_id, try searching by customer_name (for old bookings)
+      if (!bookings || bookings.length === 0) {
+        const { data: nameBookings, error: nameError } = await supabase
+          .from('bookings')
+          .select('status, price, date')
+          .eq('customer_name', customer.name)
+          .order('date', { ascending: false });
+
+        if (nameError) throw nameError;
+        bookings = nameBookings;
+        console.log(`Bookings found by customer_name for ${customer.name}:`, bookings?.length || 0);
+      }
+
+      if (bookings && bookings.length > 0) {
         const completed = bookings.filter(b => b.status === 'completed');
         const cancelled = bookings.filter(b => b.status === 'cancelled');
         const totalSpent = completed.reduce((sum, b) => sum + (b.price || 0), 0);
         const lastVisit = completed.length > 0 ? completed[0].date : null;
+
+        console.log('Customer stats calculated:', { completed: completed.length, totalSpent, lastVisit });
 
         setCustomerStats({
           totalVisits: bookings.length,
@@ -142,6 +160,15 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
           cancelledVisits: cancelled.length,
           totalSpent: totalSpent,
           lastVisitDate: lastVisit
+        });
+      } else {
+        console.log('No bookings found for customer:', customer.name);
+        setCustomerStats({
+          totalVisits: 0,
+          completedVisits: 0,
+          cancelledVisits: 0,
+          totalSpent: 0,
+          lastVisitDate: null
         });
       }
     } catch (error) {
@@ -441,9 +468,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
                   <DollarSign className="h-4 w-4" />
                   <span className="text-xs font-medium">Total Spent</span>
                 </div>
-                <p className="text-2xl font-bold text-blue-900">R{customerStats.totalSpent.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-blue-900">₺{customerStats.totalSpent.toFixed(2)}</p>
                 <p className="text-xs text-blue-600 mt-1">
-                  {customerStats.completedVisits > 0 && `Avg: R${(customerStats.totalSpent / customerStats.completedVisits).toFixed(2)}`}
+                  {customerStats.completedVisits > 0 && `Avg: ₺${(customerStats.totalSpent / customerStats.completedVisits).toFixed(2)}`}
                 </p>
               </div>
 
