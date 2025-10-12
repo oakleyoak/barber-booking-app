@@ -710,9 +710,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
           <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
             <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => { setShowModal(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} />
             <div 
-              className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out"
+              className="bg-white rounded-2xl shadow-lg w-full max-w-md overflow-hidden transform transition-transform duration-300 ease-out my-auto"
             >
-              <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[calc(85vh-3rem)]">
+              <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[90vh]">
                 <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="relative" ref={customerInputRef}>
