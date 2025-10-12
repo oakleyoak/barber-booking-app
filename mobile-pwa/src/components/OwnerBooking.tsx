@@ -280,9 +280,10 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           <div className="fixed inset-0 bg-black bg-opacity-50 z-[1200]" onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} />
           
           {/* Modal */}
-          <div
-            className="modal-top bg-white rounded-t-lg md:rounded-lg shadow-xl max-h-[90vh] overflow-hidden mt-4"
-          >
+          <div className="fixed inset-0 z-[1300] flex items-start justify-center pt-10 p-4 pointer-events-none">
+            <div
+              className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[85vh] overflow-hidden pointer-events-auto"
+            >
             {/* Drag handle for mobile */}
             <div className="md:hidden w-full flex justify-center pt-3 pb-2">
               <div className="w-12 h-1.5 bg-gray-300 rounded-full"></div>
@@ -448,6 +449,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </>
       )}
