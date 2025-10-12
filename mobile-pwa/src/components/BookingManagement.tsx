@@ -234,6 +234,35 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
     }
   }, [bookings, searchTerm]);
 
+  // Load staff members and customers for booking form
+  useEffect(() => {
+    const loadFormData = async () => {
+      try {
+        // Load staff members
+        if (currentUser.role === 'Owner' || currentUser.role === 'Manager') {
+          const staff = await UserManagementService.getStaffMembers(currentUser.shop_name);
+          setStaffMembers(staff);
+        }
+        
+        // Load customers
+        const allCustomers = await customerService.getCustomers();
+        setCustomers(allCustomers);
+
+        // Load time slots
+        const settings = await ShopSettingsService.getSettings(currentUser.shop_name);
+        const slots = generateTimeSlots(
+          settings?.opening_time || '09:00',
+          settings?.closing_time || '18:00'
+        );
+        setTimeSlots(slots);
+      } catch (error) {
+        console.error('Error loading form data:', error);
+      }
+    };
+
+    loadFormData();
+  }, [currentUser.shop_name, currentUser.role]);
+
   // Format date helper
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -719,7 +748,23 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
             </div>
             {currentUser.role === 'Owner' && (
               <button
-                onClick={() => setShowCreateBooking(true)}
+                onClick={() => {
+                  setBookingFormData({
+                    customer_name: '',
+                    customer_id: '',
+                    staff_member: '',
+                    service: '',
+                    service_type: '',
+                    price: 0,
+                    date: '',
+                    booking_date: new Date().toISOString().split('T')[0],
+                    time: '',
+                    booking_time: '09:00',
+                    notes: ''
+                  });
+                  setSelectedBooking(null);
+                  setShowBookingForm(true);
+                }}
                 className="flex items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition-colors shadow-sm w-full sm:w-auto justify-center"
               >
                 <Plus className="h-4 w-4" />
@@ -810,7 +855,23 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
           </p>
           {!searchTerm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
             <button
-              onClick={() => setShowBookingForm(true)}
+              onClick={() => {
+                setBookingFormData({
+                  customer_name: '',
+                  customer_id: '',
+                  staff_member: '',
+                  service: '',
+                  service_type: '',
+                  price: 0,
+                  date: '',
+                  booking_date: new Date().toISOString().split('T')[0],
+                  time: '',
+                  booking_time: '09:00',
+                  notes: ''
+                });
+                setSelectedBooking(null);
+                setShowBookingForm(true);
+              }}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
             >
               Create First Booking
@@ -1172,8 +1233,35 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                     required
                     aria-label="Select staff member"
                   >
+                    <option value="">Select a staff member...</option>
                     {staffMembers.map(staff => (
                       <option key={staff.id} value={staff.id}>{staff.name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Service *</label>
+                  <select
+                    value={bookingFormData.service_type}
+                    onChange={(e) => {
+                      const service = SERVICES.find(s => s.name === e.target.value);
+                      setBookingFormData(prev => ({
+                        ...prev,
+                        service_type: e.target.value,
+                        service: e.target.value,
+                        price: service?.price || 0
+                      }));
+                    }}
+                    className="w-full p-2 border rounded-lg"
+                    required
+                    aria-label="Select service"
+                  >
+                    <option value="">Select a service...</option>
+                    {SERVICES.map(service => (
+                      <option key={service.name} value={service.name}>
+                        {ServicePricingService.formatServiceDisplay(service)}
+                      </option>
                     ))}
                   </select>
                 </div>
