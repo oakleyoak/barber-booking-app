@@ -42,6 +42,13 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
   const [staffMembers, setStaffMembers] = useState<Staff[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // State for custom searchable dropdown
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerInputRef = useRef<HTMLDivElement>(null);
+
   const [bookingData, setBookingData] = useState<BookingData>({
     customer_name: '',
     service_type: 'Haircut',
@@ -67,6 +74,19 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
 
   // Use the same service options as BookingCalendar
   const serviceOptions = SERVICES;
+
+  // Effect to handle clicks outside the custom dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Load staff members and customers when component mounts
   useEffect(() => {
@@ -274,23 +294,57 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
               <h3 className="text-lg font-semibold mb-4 pt-2 md:pt-0">Add New Booking for Staff</h3>
               
               <div className="space-y-4">
-                <div>
+                <div className="relative" ref={customerInputRef}>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
                   <input
                     type="text"
                     value={bookingData.customer_name}
-                    onChange={(e) => setBookingData(prev => ({ ...prev, customer_name: e.target.value }))}
-                    list="customer-list-owner-booking"
+                    onChange={(e) => {
+                      const search = e.target.value;
+                      setBookingData(prev => ({ ...prev, customer_name: search }));
+                      setCustomerSearch(search);
+                      if (search) {
+                        setFilteredCustomers(
+                          [...customers]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+                        );
+                      } else {
+                        setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                      }
+                      setIsCustomerDropdownOpen(true);
+                    }}
+                    onFocus={() => {
+                      setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                      setIsCustomerDropdownOpen(true);
+                    }}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2"
                     placeholder="Type or select existing customer"
                     autoFocus
+                    autoComplete="off"
                     aria-label="Customer name"
                   />
-                  <datalist id="customer-list-owner-booking">
-                    {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
-                      <option key={customer.id} value={customer.name} />
-                    ))}
-                  </datalist>
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map(customer => (
+                          <div
+                            key={customer.id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={() => {
+                              setBookingData(prev => ({ ...prev, customer_name: customer.name }));
+                              setIsCustomerDropdownOpen(false);
+                              setCustomerSearch('');
+                            }}
+                          >
+                            {customer.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500">No customers found. Type to add a new one.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div>

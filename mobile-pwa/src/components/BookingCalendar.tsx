@@ -56,6 +56,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [showNotificationOptions, setShowNotificationOptions] = useState(false);
   const [selectedBookingForNotification, setSelectedBookingForNotification] = useState<Booking | null>(null);
+  
+  // State for custom searchable dropdown
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerInputRef = useRef<HTMLDivElement>(null);
+
   type FormData = {
     customer_name: string;
     customer_id?: string;
@@ -85,6 +92,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
     const today = getTodayLocal();
     setSelectedDate(today);
     setCurrentMonth(new Date());
+  }, []);
+
+  // Effect to handle clicks outside the custom dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -192,7 +212,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
         }
       }
 
-  setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' });
+      setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' });
       setEditingBooking(null);
       setShowModal(false);
       await loadData();
@@ -690,77 +710,115 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
           <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
             <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setShowModal(false)} />
             <div 
-              className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-hidden transform transition-transform duration-300 ease-out"
+              className="bg-white rounded-2xl shadow-lg w-full max-w-md max-h-[85vh] overflow-y-auto"
             >
-              <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[calc(85vh-3rem)]">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name *</label>
-                    <input 
-                      type="text" 
-                      value={formData.customer_name} 
-                      onChange={(e) => {
-                        const inputValue = e.target.value;
-                        setFormData(prev => ({...prev, customer_name: inputValue}));
-                        // Check if the input matches an existing customer
-                        const matchingCustomer = customers.find(c => c.name.toLowerCase() === inputValue.toLowerCase());
-                        if (matchingCustomer) {
-                          setFormData(prev => ({...prev, customer_id: matchingCustomer.id, notes: (matchingCustomer as any).notes || ''}));
-                        } else {
-                          setFormData(prev => ({...prev, customer_id: undefined}));
-                        }
-                      }}
-                      list="customer-list"
-                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" 
-                      placeholder="Type or select existing customer" 
-                      required 
-                      aria-label="Customer name"
-                    />
-                    <datalist id="customer-list">
-                      {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
-                        <option key={customer.id} value={customer.name} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Service</label>
-                    <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select service">
-                      <option value="">Select a service</option>
-                      {services.map(s => <option key={s.name} value={s.name}>{s.name} - ₺{s.price}</option>)}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Custom Price (₺) *</label>
-                    <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData(prev => ({...prev, price: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter custom amount" />
-                    <p className="text-xs text-gray-500 mt-1">Modify this amount as needed</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                      <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select booking date" placeholder="Select date" />
+              <div className="p-6">
+                <h3 className="text-xl font-semibold mb-4">{editingBooking ? 'Edit Booking' : 'Create Booking'}</h3>
+                <form onSubmit={handleSubmit}>
+                  <div className="grid grid-cols-1 gap-4">
+                    
+                    <div className="relative" ref={customerInputRef}>
+                      <label htmlFor="customer_name" className="block text-sm font-medium text-gray-700 mb-1">Customer</label>
+                      <input
+                        type="text"
+                        id="customer_name"
+                        name="customer_name"
+                        value={formData.customer_name}
+                        onChange={e => {
+                          const search = e.target.value;
+                          setFormData({ ...formData, customer_name: search, customer_id: undefined });
+                          setCustomerSearch(search);
+                          if (search) {
+                            setFilteredCustomers(
+                              [...customers]
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+                            );
+                          } else {
+                            setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                          }
+                          setIsCustomerDropdownOpen(true);
+                        }}
+                        onFocus={() => {
+                          setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                          setIsCustomerDropdownOpen(true);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        required
+                        autoComplete="off"
+                        placeholder="Search or type to add new"
+                      />
+                      {isCustomerDropdownOpen && (
+                        <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                          {filteredCustomers.length > 0 ? (
+                            filteredCustomers.map(customer => (
+                              <div
+                                key={customer.id}
+                                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                onMouseDown={() => { // Use onMouseDown to fire before onBlur
+                                  setFormData({
+                                    ...formData,
+                                    customer_name: customer.name,
+                                    customer_id: customer.id
+                                  });
+                                  setIsCustomerDropdownOpen(false);
+                                  setCustomerSearch('');
+                                }}
+                              >
+                                {customer.name}
+                              </div>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500">No customers found. Type to add a new one.</div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                      <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select time slot">
-                        <option value="">Select time</option>
-                        {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                      <label htmlFor="service" className="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                      <select value={formData.service} onChange={(e) => { const s = services.find(s => s.name === e.target.value); setFormData(prev => ({ ...prev, service: e.target.value, price: s ? s.price.toString() : '' })); }} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select service">
+                        <option value="">Select a service</option>
+                        {services.map(s => <option key={s.name} value={s.name}>{s.name} - ₺{s.price}</option>)}
                       </select>
+                      <p className="text-xs text-gray-500 mt-1">Price will auto-fill but can be customized below</p>
                     </div>
+                    <div>
+                      <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">Price (₺)</label>
+                      <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData(prev => ({...prev, price: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required placeholder="Enter custom amount" />
+                      <p className="text-xs text-gray-500 mt-1">Modify this amount as needed</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                        <input type="date" value={formData.date} onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select booking date" placeholder="Select date" />
+                      </div>
+
+                      <div>
+                        <label htmlFor="time" className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                        <select value={formData.time} onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" required title="Select time slot">
+                          <option value="">Select time</option>
+                          {timeSlots.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                      <textarea
+                        id="notes"
+                        name="notes"
+                        value={formData.notes}
+                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                        rows={2}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      ></textarea>
+                    </div>
+
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select value={formData.status} onChange={(e) => setFormData(prev => ({...prev, status: e.target.value as any}))} className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" title="Select booking status">
-                      <option value="scheduled">Scheduled</option>
-                      <option value="completed">Completed</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
-                  </div>
-                  <div className="flex justify-end space-x-3 pt-4">
-                    <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); setFormData({ customer_name: '', customer_id: undefined, service: '', price: '', date: selectedDate, time: '', status: 'scheduled', notes: '' }); }} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors">Cancel</button>
-                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">{editingBooking ? 'Update' : 'Create'}</button>
+                  <div className="mt-6 flex justify-end gap-3">
+                    <button type="button" onClick={() => { setShowModal(false); setEditingBooking(null); }} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancel</button>
+                    <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">{editingBooking ? 'Update' : 'Create'}</button>
                   </div>
                 </form>
               </div>

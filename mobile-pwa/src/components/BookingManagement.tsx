@@ -77,11 +77,31 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
   const [staffMembers, setStaffMembers] = useState<UserType[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
+  
+  // State for custom searchable dropdown
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [filteredCustomers, setFilteredCustomers] = useState<any[]>([]);
+  const [isCustomerDropdownOpen, setIsCustomerDropdownOpen] = useState(false);
+  const customerInputRef = useRef<HTMLDivElement>(null);
+
   const bottomSheetRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number | null>(null);
   const dragCurrentY = useRef<number | null>(null);
   const modal = useModal();
   const { language } = useLanguage();
+
+  // Effect to handle clicks outside the custom dropdown to close it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (customerInputRef.current && !customerInputRef.current.contains(event.target as Node)) {
+        setIsCustomerDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const loadPersonalUpcomingBookings = async () => {
     try {
@@ -1200,28 +1220,55 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                   <input
                     type="text"
                     value={bookingFormData.customer_name}
-                    onChange={(e) => {
-                      const inputValue = e.target.value;
-                      setBookingFormData(prev => ({ ...prev, customer_name: inputValue }));
-                      // Check if the input matches an existing customer
-                      const matchingCustomer = customers.find(c => c.name.toLowerCase() === inputValue.toLowerCase());
-                      if (matchingCustomer) {
-                        setBookingFormData(prev => ({ ...prev, customer_id: matchingCustomer.id }));
+                    onChange={e => {
+                      const search = e.target.value;
+                      setBookingFormData({ ...bookingFormData, customer_name: search, customer_id: '' });
+                      setCustomerSearch(search);
+                      if (search) {
+                        setFilteredCustomers(
+                          [...customers]
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+                        );
                       } else {
-                        setBookingFormData(prev => ({ ...prev, customer_id: '' }));
+                        setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
                       }
+                      setIsCustomerDropdownOpen(true);
                     }}
-                    list="customer-list-booking-management"
-                    className="w-full p-2 border rounded-lg"
+                    onFocus={() => {
+                      setFilteredCustomers([...customers].sort((a, b) => a.name.localeCompare(b.name)));
+                      setIsCustomerDropdownOpen(true);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     required
-                    placeholder="Type or select existing customer"
-                    aria-label="Customer name"
+                    autoComplete="off"
+                    placeholder="Search or type to add new"
                   />
-                  <datalist id="customer-list-booking-management">
-                    {[...customers].sort((a, b) => a.name.localeCompare(b.name)).map(customer => (
-                      <option key={customer.id} value={customer.name} />
-                    ))}
-                  </datalist>
+                  {isCustomerDropdownOpen && (
+                    <div className="absolute z-20 w-full bg-white border border-gray-300 rounded-md mt-1 max-h-48 overflow-y-auto shadow-lg">
+                      {filteredCustomers.length > 0 ? (
+                        filteredCustomers.map(customer => (
+                          <div
+                            key={customer.id}
+                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                            onMouseDown={() => {
+                              setBookingFormData({
+                                ...bookingFormData,
+                                customer_name: customer.name,
+                                customer_id: customer.id
+                              });
+                              setIsCustomerDropdownOpen(false);
+                              setCustomerSearch('');
+                            }}
+                          >
+                            {customer.name}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="px-4 py-2 text-gray-500">No customers found. Type to add a new one.</div>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div>
