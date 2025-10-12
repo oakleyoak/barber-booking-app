@@ -71,7 +71,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
       (customer.phone && customer.phone.includes(searchTerm)) ||
       (customer.email && customer.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-    setFilteredCustomers(filtered);
+    // Keep filtered list sorted alphabetically
+    const sortedFiltered = filtered.sort((a, b) => a.name.localeCompare(b.name));
+    setFilteredCustomers(sortedFiltered);
   }, [customers, searchTerm]);
 
   // Modal state management for body scroll prevention and navigation integration
@@ -95,7 +97,9 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     try {
       setLoading(true);
       const data = await customerService.getCustomers();
-      setCustomers(data);
+      // Sort customers alphabetically by name
+      const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
+      setCustomers(sortedData);
     } catch (error) {
       console.error('Error loading customers:', error);
       modal.notify('Failed to load customers', 'error');
