@@ -467,11 +467,12 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
               <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border border-green-200">
                 <div className="flex items-center gap-2 text-green-700 mb-2">
                   <TrendingUp className="h-4 w-4" />
-                  <span className="text-xs font-medium">Total Visits</span>
+                  <span className="text-xs font-medium">Completed Visits</span>
                 </div>
                 <p className="text-2xl font-bold text-green-900">{customerStats.completedVisits}</p>
                 <p className="text-xs text-green-600 mt-1">
-                  {customerStats.cancelledVisits > 0 && `${customerStats.cancelledVisits} cancelled`}
+                  {customerStats.totalVisits > customerStats.completedVisits && 
+                    `${customerStats.totalVisits - customerStats.completedVisits} upcoming/cancelled`}
                 </p>
               </div>
 
