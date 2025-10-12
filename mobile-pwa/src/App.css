@@ -10,17 +10,10 @@
   }
 }
 
-/* Modal alignment at top for all screens */
+/* Modal alignment centered in viewport */
 .modal-top {
-  align-items: flex-start !important;
+  align-items: center !important;
   justify-content: center !important;
-  padding-top: 2.5rem;
-}
-
-@media (min-width: 700px) {
-  .modal-top {
-    padding-top: 4rem;
-  }
 }
 
 /* Main content max width for large screens */
