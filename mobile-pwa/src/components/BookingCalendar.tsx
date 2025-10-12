@@ -171,18 +171,47 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // IMPORTANT: Ensure customer exists and get customer_id BEFORE creating booking
+      let customerId = formData.customer_id;
+      
+      if (!customerId) {
+        // Try to find existing customer by name (case-insensitive)
+        let customer = customers.find(c => c.name.toLowerCase().trim() === formData.customer_name.toLowerCase().trim());
+        
+        if (!customer) {
+          // Customer doesn't exist, create new one
+          console.log('Creating new customer:', formData.customer_name);
+          const newCustomer = await customerService.createCustomer({
+            name: formData.customer_name.trim(),
+            last_visit: formData.date || selectedDate,
+            user_id: currentUser.id
+          });
+          if (newCustomer) {
+            setCustomers(prev => [...prev, newCustomer]);
+            customerId = newCustomer.id;
+            customer = newCustomer;
+          }
+        } else {
+          customerId = customer.id;
+          // Update last visit
+          await customerService.updateCustomer(customer.id, { last_visit: formData.date || selectedDate });
+        }
+      }
+
       const formattedTime = formData.time.length === 5 ? `${formData.time}:00` : formData.time;
       const bookingData = {
-        customer_name: formData.customer_name,
-  customer_id: formData.customer_id || undefined,
+        customer_name: formData.customer_name.trim(),
+        customer_id: customerId, // Now we ALWAYS have a customer_id
         service: formData.service,
         price: Number(formData.price),
         date: formData.date || selectedDate,
         time: formattedTime,
         status: formData.status,
-  notes: formData.notes,
+        notes: formData.notes,
         user_id: currentUser.id
       };
+
+      console.log('Creating booking with customer_id:', customerId);
 
       if (editingBooking) {
         const updated = await bookingService.updateBooking(editingBooking.id, bookingData);
@@ -195,19 +224,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
         if (newBooking) {
           setBookings(prev => [...prev, newBooking]);
           setMonthlyBookings(prev => [...prev, newBooking]);
-          const customer = customers.find(c => c.name === formData.customer_name);
-          if (customer) {
-            await customerService.updateCustomer(customer.id, { last_visit: selectedDate });
-          } else {
-            const newCustomer = await customerService.createCustomer({
-              name: formData.customer_name,
-              last_visit: selectedDate,
-              user_id: currentUser.id
-            });
-            if (newCustomer) {
-              setCustomers(prev => [...prev, newCustomer]);
-            }
-          }
         }
       }
 

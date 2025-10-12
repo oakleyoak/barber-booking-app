@@ -519,12 +519,41 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
         return;
       }
 
-  // Create the booking. Do NOT store customer_email on bookings table; rely on customers.email.
+      // IMPORTANT: Ensure customer exists and get customer_id BEFORE creating booking
+      let customerId = bookingFormData.customer_id;
+      
+      if (!customerId) {
+        // Try to find existing customer by name (case-insensitive)
+        let customer = customers.find(c => c.name.toLowerCase().trim() === bookingFormData.customer_name.toLowerCase().trim());
+        
+        if (!customer) {
+          // Customer doesn't exist, create new one
+          console.log('Creating new customer:', bookingFormData.customer_name);
+          const newCustomer = await customerService.createCustomer({
+            name: bookingFormData.customer_name.trim(),
+            last_visit: bookingFormData.booking_date,
+            user_id: currentUser.id
+          });
+          if (newCustomer) {
+            setCustomers(prev => [...prev, newCustomer]);
+            customerId = newCustomer.id;
+            customer = newCustomer;
+          }
+        } else {
+          customerId = customer.id;
+          // Update last visit
+          await customerService.updateCustomer(customer.id, { last_visit: bookingFormData.booking_date });
+        }
+      }
+
+      console.log('Creating booking with customer_id:', customerId);
+
+      // Create the booking with proper customer_id
       const { data: booking, error: bookingError } = await supabase
         .from('bookings')
         .insert({
-          customer_name: bookingFormData.customer_name,
-          customer_id: bookingFormData.customer_id || null,
+          customer_name: bookingFormData.customer_name.trim(),
+          customer_id: customerId, // Now we ALWAYS have a customer_id
           service: bookingFormData.service_type,
           price: bookingFormData.price,
           date: bookingFormData.booking_date,
