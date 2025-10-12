@@ -1169,8 +1169,8 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
 
       {/* Create Booking Form Modal */}
       {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex z-[1200] modal-top p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden my-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
             <div className="p-6 overflow-y-auto max-h-[90vh]">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-semibold">Create New Booking</h3>
