@@ -122,37 +122,42 @@ const CustomerManager: React.FC<CustomerManagerProps> = ({ currentUser, onModalS
     
     // Fetch customer statistics
     try {
-      // First try to get bookings by customer_id (for new bookings)
-      let { data: bookings, error } = await supabase
+      // Get ALL bookings for this customer by BOTH customer_id AND customer_name (case-insensitive)
+      // This handles: new bookings (with customer_id), old bookings (without customer_id), and case variations
+      const { data: bookings, error } = await supabase
         .from('bookings')
-        .select('status, price, date')
-        .eq('customer_id', customer.id)
+        .select('id, status, price, date, customer_id, customer_name')
+        .or(`customer_id.eq.${customer.id},customer_name.ilike.${customer.name}`)
         .order('date', { ascending: false });
 
       if (error) throw error;
 
-      console.log(`Bookings found by customer_id for ${customer.name}:`, bookings?.length || 0);
-
-      // If no bookings found by customer_id, try searching by customer_name (for old bookings)
-      if (!bookings || bookings.length === 0) {
-        const { data: nameBookings, error: nameError } = await supabase
-          .from('bookings')
-          .select('status, price, date')
-          .eq('customer_name', customer.name)
-          .order('date', { ascending: false });
-
-        if (nameError) throw nameError;
-        bookings = nameBookings;
-        console.log(`Bookings found by customer_name for ${customer.name}:`, bookings?.length || 0);
+      console.log(`Total bookings found for ${customer.name}:`, bookings?.length || 0);
+      if (bookings && bookings.length > 0) {
+        console.log('Booking details:', bookings.map(b => ({ 
+          name: b.customer_name, 
+          status: b.status, 
+          price: b.price,
+          date: b.date,
+          has_customer_id: !!b.customer_id
+        })));
       }
 
       if (bookings && bookings.length > 0) {
         const completed = bookings.filter(b => b.status === 'completed');
         const cancelled = bookings.filter(b => b.status === 'cancelled');
+        const scheduled = bookings.filter(b => b.status === 'scheduled');
         const totalSpent = completed.reduce((sum, b) => sum + (b.price || 0), 0);
         const lastVisit = completed.length > 0 ? completed[0].date : null;
 
-        console.log('Customer stats calculated:', { completed: completed.length, totalSpent, lastVisit });
+        console.log('Customer stats calculated:', { 
+          total: bookings.length,
+          completed: completed.length, 
+          scheduled: scheduled.length,
+          cancelled: cancelled.length,
+          totalSpent, 
+          lastVisit 
+        });
 
         setCustomerStats({
           totalVisits: bookings.length,
