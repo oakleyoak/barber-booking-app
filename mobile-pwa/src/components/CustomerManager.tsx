@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { User } from '../lib/supabase';
+import Modal from './Modal';
 import { customerService, type Customer, userService, bookingService } from '../services/completeDatabase';
 import { SERVICES } from '../services/servicePricing';
 import { supabase } from '../lib/supabase';

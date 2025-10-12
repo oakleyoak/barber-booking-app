@@ -3,6 +3,7 @@ import { ShopSettingsService } from '../services/shopSettings';
 import { SERVICES } from '../services/servicePricing';
 import { generateTimeSlots } from '../utils/timeSlots';
 import { useModal } from './ui/ModalProvider';
+import Modal from './Modal';
 import { Calendar, Clock, User, Plus, Edit2, Trash2, Check, X, ChevronLeft, ChevronRight, List, Grid3X3, RefreshCw, Mail, Receipt, CheckSquare, XCircle, Copy } from 'lucide-react';
 import { bookingService, customerService } from '../services/completeDatabase';
 import { NotificationsService } from '../services/notifications';
@@ -706,14 +707,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
           </div>
         )}
 
-        {showModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
-            <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => { setShowModal(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} />
-            <div 
-              className="bg-white rounded-2xl shadow-lg w-full max-w-md overflow-hidden transform transition-transform duration-300 ease-out"
-            >
-              <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[90vh]">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
+        <Modal 
+          isOpen={showModal}
+          onClose={() => { setShowModal(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }}
+        >
+          <div className="px-6 pb-6 pt-6 overflow-y-auto flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">{editingBooking ? 'Edit Booking' : 'New Booking'}</h3>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="relative" ref={customerInputRef}>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Customer *</label>
@@ -822,9 +821,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ currentUser, onModalS
                   </div>
                 </form>
               </div>
-            </div>
-          </div>
-        )}
+        </Modal>
 
         {/* Notification Options Modal */}
         {showNotificationOptions && selectedBookingForNotification && (

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useModal } from './ui/ModalProvider';
 import { UserPlus, Calendar, Clock, User, Phone, Mail, Save, X } from 'lucide-react';
+import Modal from './Modal';
 import { UserManagementService } from '../services/userManagementService';
 import { SERVICES, ServicePricingService } from '../services/servicePricing';
 import { EarningsService } from '../services/earningsService';
@@ -275,13 +276,12 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
           </div>
         </div>
       ) : (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} />
-          <div 
-            className="bg-white rounded-2xl shadow-lg w-full max-w-md overflow-hidden transform transition-transform duration-300 ease-out"
-          >
-            <div className="px-6 pb-6 pt-6 overflow-y-auto max-h-[90vh]">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Booking for Staff</h3>
+        <Modal 
+          isOpen={true}
+          onClose={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }}
+        >
+          <div className="px-6 pb-6 pt-6 overflow-y-auto flex-1">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Booking for Staff</h3>
               
               <div className="space-y-4">
                 <div className="relative" ref={customerInputRef}>
@@ -439,8 +439,7 @@ const OwnerBooking: React.FC<OwnerBookingProps> = ({ currentUser, onBookingCreat
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

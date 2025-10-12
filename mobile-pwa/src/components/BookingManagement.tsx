@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShopSettingsService } from '../services/shopSettings';
 import { generateTimeSlots } from '../utils/timeSlots';
+import Modal from './Modal';
 import {
   Clock,
   User,
@@ -1168,16 +1169,17 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
       )}
 
       {/* Create Booking Form Modal */}
-      {showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager') && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1200] p-4">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden">
-            <div className="p-6 overflow-y-auto max-h-[90vh]">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Create New Booking</h3>
-                <button onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} className="text-gray-400 hover:text-gray-600" aria-label="Close booking form">
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+      <Modal 
+        isOpen={showBookingForm && (currentUser.role === 'Owner' || currentUser.role === 'Manager')}
+        onClose={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }}
+      >
+        <div className="p-6 overflow-y-auto flex-1">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Create New Booking</h3>
+            <button onClick={() => { setShowBookingForm(false); setCustomerSearchInput(''); setShowCustomerDropdown(false); }} className="text-gray-400 hover:text-gray-600" aria-label="Close booking form">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
               
               <form onSubmit={async (e) => {
                 e.preventDefault();
@@ -1393,9 +1395,7 @@ const BookingManagement: React.FC<BookingManagementProps> = ({ currentUser, onMo
                 </div>
               </form>
             </div>
-          </div>
-        </div>
-      )}
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && bookingToDelete && (
